@@ -1,0 +1,34 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  password             String?   // For credentials auth
+  role                 String    @default("USER") // ADMIM, USER
+  lastApprovedUploadAt DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  notes                Note[]
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  university  String
+  faculty     String
+  department  String
+  fileUrl     String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  uploaderId  String
+  uploader    User     @relation(fields: [uploaderId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

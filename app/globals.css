@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand Palette from Image */
+  --brand-dark: #003B46;
+  /* Deep Teal/Cyan */
+  --brand-darker: #022c22;
+  /* Very Dark Teal (almost black) */
+  --brand-primary: #0ce0ff;
+  /* Bright Cyan Accent */
+  --brand-secondary: #075985;
+  /* Muted Blue/Teal */
+
+  --background: #003B46;
+  --foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-darker: var(--brand-darker);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+
+  --font-sans: var(--font-outfit);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-outfit), sans-serif;
+}
