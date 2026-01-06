@@ -13,11 +13,31 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) return null
-                const user = await prisma.user.findUnique({ where: { email: credentials.email } })
-                if (!user || !user.password) return null
-                const isValid = await bcrypt.compare(credentials.password, user.password)
-                if (!isValid) return null
-                return { id: user.id, email: user.email, role: user.role }
+                try {
+                    const user = await prisma.user.findUnique({ where: { email: credentials.email } })
+
+                    if (!user) {
+                        console.log("Login Failed: User not found for email:", credentials.email);
+                        return null
+                    }
+
+                    if (!user.password) {
+                        console.log("Login Failed: User has no password set (OAuth user?)");
+                        return null
+                    }
+
+                    const isValid = await bcrypt.compare(credentials.password, user.password)
+
+                    if (!isValid) {
+                        console.log("Login Failed: Password mismatch for user:", credentials.email);
+                        return null
+                    }
+
+                    return { id: user.id, email: user.email, role: user.role }
+                } catch (error) {
+                    console.error("Login Error:", error);
+                    return null;
+                }
             }
         })
     ],
@@ -32,8 +52,8 @@ export const authOptions: NextAuthOptions = {
         },
         async session({ session, token }) {
             if (session.user) {
-                (session.user as any).id = (token as any).id
-                    (session.user as any).role = (token as any).role
+                (session.user as any).id = (token as any).id;
+                (session.user as any).role = (token as any).role;
             }
             return session
         }

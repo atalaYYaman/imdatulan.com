@@ -1,70 +1,42 @@
-'use client'
 
-import { signIn } from "next-auth/react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import React from 'react';
+import SignInForm from '@/components/auth/SignInForm';
+import Link from 'next/link';
 
 export default function SignInPage() {
-    const router = useRouter()
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-    const [error, setError] = useState("")
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        const res = await signIn("credentials", {
-            email,
-            password,
-            redirect: false
-        })
-
-        if (res?.error) {
-            setError("Invalid email or password")
-        } else {
-            router.push("/")
-            router.refresh()
-        }
-    }
-
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-100">
-            <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
-                <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">Giriş Yap</h1>
-                {error && <div className="mb-4 text-center text-red-500">{error}</div>}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="mt-1 block w-full rounded-md border text-black border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Şifre</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="mt-1 block w-full rounded-md border text-black border-gray-300 p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                        Giriş Yap
-                    </button>
-                </form>
-                <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-600">
-                        Hesabın yok mu? <a href="/auth/signup" className="text-blue-600 hover:text-blue-500">Kaydol</a>
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+            <div className="sm:mx-auto sm:w-full sm:max-w-md">
+                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    Giriş Yap
+                </h2>
+                <p className="mt-2 text-center text-sm text-gray-600">
+                    Hesabınız yok mu?{' '}
+                    <Link href="/auth/signup" className="font-medium text-teal-600 hover:text-teal-500">
+                        Hemen Kayıt Ol
+                    </Link>
+                </p>
+            </div>
+
+            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+                    <SignInForm />
+                </div>
+
+                {/* Footer Links */}
+                <div className="mt-6 text-center text-xs text-gray-500 space-y-2">
+                    <p>
+                        <Link href="/support/missing-university" className="font-medium text-teal-600 hover:text-teal-500">
+                            Üniversiteniz listede yok mu?
+                        </Link>
+                    </p>
+                    <p>
+                        <Link href="/support/login-issue" className="font-medium text-teal-600 hover:text-teal-500">
+                            Giriş sorunu mu yaşıyorsunuz?
+                        </Link>
                     </p>
                 </div>
             </div>
         </div>
-    )
+    );
 }

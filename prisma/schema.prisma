@@ -4,31 +4,78 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
 model User {
-  id                   String    @id @default(cuid())
-  email                String    @unique
-  password             String?   // For credentials auth
-  role                 String    @default("USER") // ADMIM, USER
+  id       String  @id @default(cuid())
+  email    String  @unique
+  password String? // For credentials auth
+  role     String  @default("USER") // ADMIM, USER
+
+  // Identity Info
+  firstName    String?
+  lastName     String?
+  birthYear    Int?
+  tcIdentityNo String? @unique
+
+  // Academic Info
+  university    String?
+  programLevel  String? // "Ön Lisans", "Lisans", "Yüksek Lisans", "Doktora"
+  faculty       String?
+  department    String?
+  studentClass  String?
+  studentNumber String? @unique
+
+  // Consents
+  marketingConsent Boolean @default(false)
+
   lastApprovedUploadAt DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   notes                Note[]
 }
 
+model University {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isActive  Boolean   @default(true)
+  faculties Faculty[]
+}
+
+model Faculty {
+  id           String       @id @default(cuid())
+  name         String
+  universityId String
+  university   University   @relation(fields: [universityId], references: [id])
+  departments  Department[]
+}
+
+model Department {
+  id        String  @id @default(cuid())
+  name      String
+  facultyId String
+  faculty   Faculty @relation(fields: [facultyId], references: [id])
+}
+
 model Note {
-  id          String   @id @default(cuid())
-  title       String
-  university  String
-  faculty     String
-  department  String
-  fileUrl     String
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  uploaderId  String
-  uploader    User     @relation(fields: [uploaderId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String @id @default(cuid())
+  title      String
+  university String
+  faculty    String
+  department String
+  fileUrl    String
+  status     String @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  // Metadata
+  courseName  String?
+  type        String? // Ders Notu, İmdat Sorular, etc.
+  term        String? // 2025 Güz, etc.
+  description String? // User description
+
+  uploaderId String
+  uploader   User     @relation(fields: [uploaderId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

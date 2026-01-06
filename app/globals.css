@@ -1,33 +1,29 @@
 @import "tailwindcss";
 
-:root {
-  /* Brand Palette from Image */
-  --brand-dark: #003B46;
-  /* Deep Teal/Cyan */
-  --brand-darker: #022c22;
-  /* Very Dark Teal (almost black) */
-  --brand-primary: #0ce0ff;
-  /* Bright Cyan Accent */
-  --brand-secondary: #075985;
-  /* Muted Blue/Teal */
+@theme {
+  --color-background: #01353D;
+  /* Deep Teal from image */
+  --color-foreground: #FFFFFF;
 
-  --background: #003B46;
-  --foreground: #ffffff;
+  --color-primary: #22d3ee;
+  /* Cyan 400 */
+  --color-primary-foreground: #01353D;
+
+  --color-card: #002A30;
+  /* Slightly darker/lighter for cards */
+  --color-card-foreground: #FFFFFF;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-brand-dark: var(--brand-dark);
-  --color-brand-darker: var(--brand-darker);
-  --color-brand-primary: var(--brand-primary);
-  --color-brand-secondary: var(--brand-secondary);
-
-  --font-sans: var(--font-outfit);
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply antialiased;
+  }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-outfit), sans-serif;
+@layer utilities {
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
 }

@@ -7,46 +7,56 @@ export default function Navbar() {
     const { data: session } = useSession()
 
     return (
-        <nav className="bg-white shadow-sm border-b border-gray-200">
+        <nav className="bg-white border-b border-gray-100 py-3">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="flex h-16 justify-between">
-                    <div className="flex">
-                        <Link href="/" className="flex items-center">
-                            <span className="text-xl font-bold text-blue-600">İmdatulan.com</span>
-                            <span className="ml-4 hidden text-sm text-gray-500 sm:block italic border-l pl-4">
-                                "Kanka kimseye atma olur mu?"
-                            </span>
-                        </Link>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <Link href="/" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                            Anasayfa
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-12">
+                        <Link href="/" className="flex items-center flex-col leading-none">
+                            <Landmark className="h-8 w-8 text-[#075985]" />
+                            <span className="text-xs font-bold text-[#075985] tracking-widest">NOD</span>
                         </Link>
 
+                        <div className="hidden md:flex items-center space-x-8">
+                            <Link href="/notes" className="text-sm font-medium text-[#075985] hover:text-[#0ea5e9]">
+                                NODlar
+                            </Link>
+                            <Link href="/upload" className="text-sm font-medium text-[#075985] hover:text-[#0ea5e9]">
+                                NOD Yükle
+                            </Link>
+                            <Link href="/top-noder" className="text-sm font-medium text-[#075985] hover:text-[#0ea5e9]">
+                                Top Noder
+                            </Link>
+                            <Link href="/about" className="text-sm font-medium text-[#075985] hover:text-[#0ea5e9]">
+                                Hakkımızda
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
                         {session ? (
-                            <>
-                                <Link href="/upload" className="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">
-                                    Not Yükle
-                                </Link>
-                                <div className="text-gray-700 text-sm hidden md:block">
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-[#075985] font-medium hidden sm:block">
                                     {session.user?.email}
-                                </div>
+                                </span>
                                 <button
                                     onClick={() => signOut()}
-                                    className="text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium"
+                                    className="text-sm font-medium text-red-500 hover:text-red-600"
                                 >
                                     Çıkış
                                 </button>
-                            </>
+                                <div className="h-8 w-8 rounded-full bg-[#e0f2fe] flex items-center justify-center text-[#0ea5e9]">
+                                    <User className="h-5 w-5" />
+                                </div>
+                            </div>
                         ) : (
-                            <>
-                                <Link href="/auth/signin" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                                    Giriş Yap
-                                </Link>
-                                <Link href="/auth/signup" className="text-white bg-green-600 hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium">
-                                    Kaydol
-                                </Link>
-                            </>
+                            <Link href="/auth/signin" className="flex items-center gap-2 group">
+                                <span className="text-sm font-medium text-[#0ea5e9] group-hover:text-[#0284c7]">
+                                    Giriş Yap / Kayıt Ol
+                                </span>
+                                <div className="h-8 w-8 rounded-full border border-[#0ea5e9] flex items-center justify-center text-[#0ea5e9] group-hover:bg-[#0ea5e9] group-hover:text-white transition-colors">
+                                    <User className="h-5 w-5" />
+                                </div>
+                            </Link>
                         )}
                     </div>
                 </div>
@@ -54,3 +64,5 @@ export default function Navbar() {
         </nav>
     )
 }
+
+import { Landmark, User } from "lucide-react";

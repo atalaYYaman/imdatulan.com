@@ -1,128 +1,100 @@
-import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
-import Link from 'next/link'
+'use client';
 
-export const dynamic = 'force-dynamic'
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { Send, FolderOpen, Trophy, User, Landmark } from "lucide-react";
 
-export default async function Home() {
-  const session = await getServerSession(authOptions)
-
-  // Fetch Approved Notes
-  const notes = await prisma.note.findMany({
-    where: { status: 'APPROVED' },
-    orderBy: { createdAt: 'desc' },
-    take: 50 // Limit for MVP
-  })
-
-  // Check Access
-  let hasAccess = false
-  let daysRemaining = 0
-
-  if (session?.user?.email) {
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (user) {
-      if (user.role === 'ADMIN') {
-        hasAccess = true
-        daysRemaining = 999
-      } else if (user.lastApprovedUploadAt) {
-        const now = new Date()
-        const diffTime = Math.abs(now.getTime() - user.lastApprovedUploadAt.getTime())
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-        if (diffDays <= 30) {
-          hasAccess = true
-          daysRemaining = 30 - diffDays
-        }
-      }
-    }
-  }
+export default function Home() {
+  const { data: session } = useSession();
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#01353D] text-white font-sans selection:bg-[#22d3ee] selection:text-[#002A30]">
 
-        {/* Header / Call to Action */}
-        <div className="mb-8 text-center">
-          {!session ? (
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-              <p className="text-yellow-700">
-                Notları görmek için <Link href="/auth/signin" className="font-bold underline">Giriş Yapmalısın</Link>.
-              </p>
-            </div>
-          ) : !hasAccess ? (
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-blue-700 font-bold">Kardeşim notları görmek istiyorsan pamuk eller cebe!</p>
-                  <p className="text-blue-600 text-sm">Son 30 gün içinde onaylanmış bir notun yok. Hemen bir not paylaş, 30 gün boyunca kütüphaneyi sömür.</p>
-                </div>
-                <Link href="/upload" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium whitespace-nowrap ml-4">
-                  Not Yükle (+30 Gün)
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-green-50 border-l-4 border-green-400 p-4">
-              <p className="text-green-700">🎉 Erişim Hakkın Var! (Kalan: {daysRemaining} gün)</p>
-            </div>
-          )}
+      {/* Hero Section */}
+      <div className="flex flex-col items-center justify-center pt-20 pb-12 px-6 text-center animate-in fade-in zoom-in duration-500">
+
+        {/* Logo Circle */}
+        <div className="mb-8 relative">
+          <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+            <Landmark className="h-16 w-16 text-[#002A30]" />
+          </div>
+          <div className="absolute -bottom-2 w-full text-center">
+            <span className="bg-[#002A30] text-[#22d3ee] font-black text-xl px-2 py-0.5 tracking-widest border border-[#22d3ee] rounded">NOD</span>
+          </div>
         </div>
 
-        {/* Filters (Basic for visual, functionality could be query params) */}
-        <div className="mb-6 flex flex-wrap gap-2 justify-center hidden">
-          {/* MVP Note: Filters would go here, implemented as Links updating searchParams */}
-          <span className="px-3 py-1 bg-white border rounded-full text-sm text-gray-600">Üniversite: Tümü</span>
-          <span className="px-3 py-1 bg-white border rounded-full text-sm text-gray-600">Bölüm: Tümü</span>
-        </div>
+        {/* Title */}
+        <h1 className="text-4xl md:text-5xl font-extrabold text-[#22d3ee] mb-8 tracking-tight drop-shadow-lg">
+          Notun Dijital Yüzü
+        </h1>
 
-        {/* Notes Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {notes.length === 0 ? (
-            <div className="col-span-full text-center py-12 text-gray-500 bg-white rounded-lg shadow">
-              Henüz onaylanmış not yok. İlk sen ol!
-            </div>
-          ) : (
-            notes.map((note: any) => (
-              <div key={note.id} className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 truncate" title={note.title}>
-                    {note.title}
-                  </h3>
-                  <div className="mt-2 max-w-xl text-sm text-gray-500">
-                    <p><span className="font-semibold">Üniv:</span> {note.university}</p>
-                    <p><span className="font-semibold">Bölüm:</span> {note.department}</p>
-                    <p><span className="font-semibold">Ders:</span> {note.faculty}</p>
-                  </div>
-                  <div className="mt-5">
-                    {hasAccess ? (
-                      <a
-                        href={note.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      >
-                        İndir / Görüntüle
-                      </a>
-                    ) : (
-                      <button
-                        disabled
-                        className="inline-flex items-center justify-center w-full px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed"
-                      >
-                        Önce Not Yükle
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-4 sm:px-6">
-                  <div className="text-xs text-gray-500 text-right">
-                    {new Date(note.createdAt).toLocaleDateString("tr-TR")}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        {/* Buttons (Only show if not logged in, or redirect if logged in) */}
+        {!session && (
+          <div className="flex gap-4 mb-16 scale-100 hover:scale-105 transition-transform duration-200">
+            <Link
+              href="/auth/signup"
+              className="px-8 py-2.5 bg-[#22d3ee] text-[#002A30] text-sm font-bold rounded-full shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:bg-[#0ea5e9] transition-all"
+            >
+              Kayıt Ol
+            </Link>
+            <Link
+              href="/auth/signin"
+              className="px-8 py-2.5 bg-white text-[#002A30] text-sm font-bold rounded-full hover:bg-gray-200 transition-all border border-gray-200"
+            >
+              Giriş Yap
+            </Link>
+          </div>
+        )}
       </div>
-    </main>
-  )
+
+      {/* Features Section */}
+      <div className="max-w-4xl mx-auto px-6 pb-24 space-y-24">
+
+        {/* Feature 1 */}
+        <div className="flex flex-col md:flex-row items-center gap-8 group">
+          <div className="w-32 h-32 flex-shrink-0 bg-transparent flex items-center justify-center">
+            <Send className="w-full h-full text-[#22d3ee] drop-shadow-[0_0_15px_rgba(34,211,238,0.5)] transform group-hover:-translate-y-2 group-hover:rotate-6 transition-all duration-500" strokeWidth={1} />
+          </div>
+          <div className="text-center md:text-left">
+            <h2 className="text-3xl font-bold text-[#22d3ee] mb-2">Not Paylaş</h2>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              Üniversite hayatın boyunca hazırladığın tüm notları paylaş, bilgiye değer kat.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature 2 (Reverse Layout for variety) */}
+        <div className="flex flex-col md:flex-row-reverse items-center gap-8 group">
+          <div className="w-32 h-32 flex-shrink-0 bg-transparent flex items-center justify-center">
+            <FolderOpen className="w-full h-full text-[#22d3ee] drop-shadow-[0_0_15px_rgba(34,211,238,0.5)] transform group-hover:scale-110 transition-all duration-500" strokeWidth={1} />
+          </div>
+          <div className="text-center md:text-right">
+            <h2 className="text-3xl font-bold text-[#22d3ee] mb-2">Notlara Eriş</h2>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              Kendi notlarını paylaşarak diğer kullanıcıların paylaştıkları hazinelere erişmeye başla.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature 3 */}
+        <div className="flex flex-col md:flex-row items-center gap-8 group">
+          <div className="w-32 h-32 flex-shrink-0 bg-transparent flex items-center justify-center">
+            <Trophy className="w-full h-full text-[#22d3ee] drop-shadow-[0_0_15px_rgba(34,211,238,0.5)] transform group-hover:rotate-12 transition-all duration-500" strokeWidth={1} />
+          </div>
+          <div className="text-center md:text-left">
+            <h2 className="text-3xl font-bold text-[#22d3ee] mb-2">Ödülleri Kazan</h2>
+            <p className="text-gray-300 text-lg leading-relaxed">
+              Not paylaşarak platformun aylık kazancından pay alabilir, bölümünün yıldızı olabilirsin.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Footer / Copyright */}
+      <footer className="text-center py-6 text-gray-500 text-sm border-t border-[#003E44] bg-[#002A30]/50 backdrop-blur-sm">
+        <p>&copy; 2026 NOD Platform. Tüm hakları saklıdır.</p>
+      </footer>
+    </div>
+  );
 }
