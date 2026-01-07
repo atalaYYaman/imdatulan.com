@@ -14,48 +14,47 @@ export default async function ProfilePage() {
         redirect("/auth/signin");
     }
 
-    // Fetch Real User Data
+    // Fetch User Data with Notes and Like Counts in a single query
     const user = await prisma.user.findUnique({
         where: { email: session.user.email },
         include: {
-            notes: true // Fetch user's uploaded notes
+            notes: {
+                include: {
+                    _count: {
+                        select: { likes: true }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            }
         }
     });
 
     if (!user) {
-        // Should not happen if session exists, but safe fallback
         redirect("/auth/signin");
     }
 
     // Calculate Stats
     const totalNotes = user.notes.length;
-
-    // Aggregating views and likes from all notes
-    // 'likes' and 'viewCount' need to be fetched with notes. 
-    // We need to update the query above to include aggregations or fetch necessary fields.
-    // For MVP efficiency, let's update the query below.
-
-    const userStats = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: {
-            notes: {
-                select: {
-                    viewCount: true,
-                    _count: {
-                        select: { likes: true }
-                    }
-                }
-            }
-        }
-    });
-
-    const totalViews = userStats?.notes.reduce((acc, note) => acc + (note.viewCount || 0), 0) || 0;
-    const totalLikes = userStats?.notes.reduce((acc, note) => acc + (note._count.likes || 0), 0) || 0;
+    // Note: viewCount is an Int field on Note model, so it's directly accessible.
+    // _count.likes comes from the include above.
+    const totalViews = user.notes.reduce((acc, note) => acc + (note.viewCount || 0), 0);
+    // @ts-ignore: _count property exists due to include, but basic Note type might not reflect it without generated types update
+    const totalLikes = user.notes.reduce((acc, note) => acc + (note._count?.likes || 0), 0);
 
     const stats = {
         totalLikes,
         totalViews,
         totalNotes
+    };
+
+    // Format data for View
+    const profileUser = {
+        id: user.id,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Kullanıcı',
+        university: user.university || 'Belirtilmemiş',
+        faculty: user.faculty || '',
+        department: user.department || '',
+        role: user.role
     };
 
     return <ProfileView user={profileUser} notes={user.notes} stats={stats} />;
