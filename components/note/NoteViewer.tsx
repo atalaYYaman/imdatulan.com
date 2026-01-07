@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -20,7 +19,7 @@ interface NoteViewerProps {
 
 export default function NoteViewer({ fileUrl, viewerUser }: NoteViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
-    const [scale, setScale] = useState<number>(1.0); // Başlangıç scale'i
+    const [scale, setScale] = useState<number>(1.0);
     const [isLoading, setIsLoading] = useState(true);
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
@@ -28,96 +27,102 @@ export default function NoteViewer({ fileUrl, viewerUser }: NoteViewerProps) {
         setIsLoading(false);
     }
 
-    return (
-        <div className="flex flex-col h-full bg-gray-900 overflow-hidden relative select-none">
+    // Zoom Handlers
+    const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3.0));
+    const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
 
-            {/* Toolbar - Zoom Kontrolleri */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#002A30]/80 backdrop-blur-md p-2 rounded-xl border border-[#22d3ee]/30 shadow-2xl">
+    return (
+        <div className="flex flex-col h-full bg-gray-900 relative">
+
+            {/* Toolbar - Floating Zoom Controls */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-[#002A30]/90 backdrop-blur-md px-6 py-3 rounded-full border border-[#22d3ee]/30 shadow-2xl transition-transform hover:scale-105 select-none">
                 <button
-                    onClick={() => setScale(s => Math.max(0.6, s - 0.2))}
-                    className="p-2 text-white hover:text-[#22d3ee] transition-colors"
+                    onClick={zoomOut}
+                    className="p-1 text-white hover:text-[#22d3ee] transition-colors active:scale-90"
+                    title="Uzaklaştır"
                 >
-                    <ZoomOut className="w-5 h-5" />
+                    <ZoomOut className="w-6 h-6" />
                 </button>
-                <span className="text-xs font-bold text-[#22d3ee] w-12 text-center">
+                <div className="w-px h-6 bg-gray-600/50"></div>
+                <span className="text-sm font-bold text-[#22d3ee] min-w-[3rem] text-center select-none font-mono">
                     {Math.round(scale * 100)}%
                 </span>
+                <div className="w-px h-6 bg-gray-600/50"></div>
                 <button
-                    onClick={() => setScale(s => Math.min(3.0, s + 0.2))}
-                    className="p-2 text-white hover:text-[#22d3ee] transition-colors"
+                    onClick={zoomIn}
+                    className="p-1 text-white hover:text-[#22d3ee] transition-colors active:scale-90"
+                    title="Yakınlaştır"
                 >
-                    <ZoomIn className="w-5 h-5" />
+                    <ZoomIn className="w-6 h-6" />
                 </button>
             </div>
 
-            {/* PDF Alanı (Infinite Scroll + Pan/Zoom) */}
-            <div className="flex-1 w-full h-full overflow-y-auto bg-gray-900/50 touch-pan-y">
+            {/* Main Scrollable Area */}
+            <div className="flex-1 w-full overflow-y-auto bg-gray-900 scroll-smooth">
+                <div className="max-w-max mx-auto px-4 py-20 min-h-full flex flex-col items-center gap-8">
 
-                {isLoading && (
-                    <div className="flex h-full items-center justify-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#22d3ee]"></div>
-                    </div>
-                )}
+                    {isLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center text-[#22d3ee]">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current"></div>
+                                <span className="text-sm font-medium animate-pulse">Not yükleniyor...</span>
+                            </div>
+                        </div>
+                    )}
 
-                <Document
-                    file={fileUrl}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    className="flex flex-col items-center gap-4 py-8 min-h-screen"
-                    loading={null}
-                    error={<div className="text-red-400 mt-20">PDF yüklenemedi.</div>}
-                >
-                    <TransformWrapper
-                        initialScale={1}
-                        minScale={0.5}
-                        maxScale={4}
-                        centerOnInit
-                        wheel={{ disabled: true }} // Mouse scroll zoom yerine kaydırma yapsın
-                        panning={{ disabled: false }} // Her yöne kaydırma açık
+                    <Document
+                        file={fileUrl}
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        loading={null}
+                        className="flex flex-col gap-6"
+                        error={
+                            <div className="mt-20 p-6 bg-red-900/20 border border-red-500/50 rounded-xl text-center">
+                                <p className="text-red-400 font-bold mb-2">PDF görüntülenemedi</p>
+                                <p className="text-xs text-red-300">Dosya bozuk olabilir veya tarayıcı desteği yok.</p>
+                            </div>
+                        }
                     >
-                        <TransformComponent wrapperClass="!w-full !h-full flex justify-center" contentClass="!w-full flex flex-col items-center gap-4">
-                            {/* Tüm Sayfaların Loop'u */}
-                            {Array.from(new Array(numPages), (el, index) => (
-                                <div key={`page_${index + 1}`} className="relative shadow-2xl group">
-                                    {/* Sayfa */}
-                                    <Page
-                                        pageNumber={index + 1}
-                                        scale={scale}
-                                        renderTextLayer={false}
-                                        renderAnnotationLayer={false}
-                                        className="border border-[#003E44] rounded-sm overflow-hidden bg-white"
-                                        loading={<div className="h-[800px] w-[600px] bg-white/5 animate-pulse" />}
-                                    />
+                        {Array.from(new Array(numPages), (el, index) => (
+                            <div key={`page_${index + 1}`} className="relative group shadow-lg transition-transform duration-200">
+                                <Page
+                                    pageNumber={index + 1}
+                                    scale={scale}
+                                    renderTextLayer={false}
+                                    renderAnnotationLayer={false}
+                                    className="border border-[#003E44] rounded-sm bg-white"
+                                    loading={
+                                        <div
+                                            className="bg-white/5 animate-pulse rounded-sm"
+                                            style={{ width: 600 * scale, height: 850 * scale }}
+                                        />
+                                    }
+                                />
 
-                                    {/* KİŞİSEL FİLİGRAN (Her sayfa üzerinde tekrarlayan) */}
-                                    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden flex flex-col justify-center items-center">
-                                        {/* Çapraz tekrar eden metinler */}
-                                        <div className="w-[150%] h-[150%] flex flex-wrap content-center justify-center gap-24 transform -rotate-45 opacity-20">
-                                            {Array.from({ length: 12 }).map((_, i) => (
-                                                <div key={i} className="text-center">
-                                                    <div className="text-3xl font-black text-slate-900/50">OTLAK</div>
-                                                    <div className="text-xl font-bold text-red-500/40">
-                                                        {viewerUser.name}
-                                                    </div>
-                                                    <div className="text-sm font-mono text-slate-800/40">
-                                                        {viewerUser.studentNumber}
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-600/30">
-                                                        {new Date().toLocaleDateString('tr-TR')}
-                                                    </div>
+                                {/* Kişisel Filigran Katmanı */}
+                                <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-10 transition-opacity duration-300">
+                                    <div className="w-full h-full opacity-25 flex flex-wrap content-center justify-center gap-20 transform -rotate-12 scale-110">
+                                        {Array.from({ length: 12 }).map((_, i) => (
+                                            <div key={i} className="text-center p-8 backdrop-blur-[1px] rounded-3xl border border-black/5">
+                                                <div className="text-4xl font-black text-slate-400/80 tracking-tighter">OTLAK</div>
+                                                <div className="text-lg font-bold text-red-500/60 mt-1 uppercase">
+                                                    {viewerUser.name}
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <div className="text-xs font-mono text-slate-500/60 mt-0.5">
+                                                    {viewerUser.studentNumber || 'Misafir'}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            ))}
-                        </TransformComponent>
-                    </TransformWrapper>
-                </Document>
+                            </div>
+                        ))}
+                    </Document>
+                </div>
             </div>
 
-            {/* Sağ Tık Engelleme Katmanı */}
+            {/* Right Click Blocker */}
             <div
-                className="absolute inset-0 z-[60]"
+                className="absolute inset-0 z-[100] pointer-events-none"
                 onContextMenu={(e) => {
                     e.preventDefault();
                     return false;
