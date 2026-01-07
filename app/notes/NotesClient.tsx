@@ -179,7 +179,11 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                             rating: 4.5, // Default/Mock rating for MVP
                         };
 
-                        return <NodCard key={note.id} note={mappedNote} author={author} />;
+                        return (
+                            <Link href={`/notes/${note.id}`} key={note.id} className="block transition-transform hover:scale-105">
+                                <NodCard note={mappedNote} author={author} />
+                            </Link>
+                        );
                     })}
                 </div>
             ) : (

@@ -15,7 +15,7 @@ export default function MobileHeader() {
                 <div className="border border-[#075985] rounded-full p-1">
                     <Landmark className="h-4 w-4 text-[#22d3ee]" />
                 </div>
-                <span className="text-sm font-bold text-[#22d3ee] tracking-widest">NOD</span>
+                <span className="text-sm font-bold text-[#22d3ee] tracking-widest">OTLAK</span>
             </Link>
 
             <button onClick={() => setIsOpen(!isOpen)} className="text-white p-2">

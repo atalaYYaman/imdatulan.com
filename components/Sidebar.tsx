@@ -30,7 +30,7 @@ export default function Sidebar() {
                     </div>
                     {/* Text visible on hover */}
                     <span className="ml-3 text-lg font-bold text-[#22d3ee] tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-                        NOD
+                        OTLAK
                     </span>
                 </Link>
                 {/* Hamburger Icon Suggestion (Visual only as hover does the job) */}

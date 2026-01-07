@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IMDATULAN",
+  title: "OTLAK",
   description: "University Note Sharing Platform",
 };
 
