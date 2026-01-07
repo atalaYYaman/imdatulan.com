@@ -27,15 +27,36 @@ export default async function ProfilePage() {
         redirect("/auth/signin");
     }
 
-    // Format data for View
-    const profileUser = {
-        id: user.id,
-        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Kullanıcı',
-        university: user.university || 'Belirtilmemiş',
-        faculty: user.faculty || '',
-        department: user.department || '',
-        role: user.role
+    // Calculate Stats
+    const totalNotes = user.notes.length;
+
+    // Aggregating views and likes from all notes
+    // 'likes' and 'viewCount' need to be fetched with notes. 
+    // We need to update the query above to include aggregations or fetch necessary fields.
+    // For MVP efficiency, let's update the query below.
+
+    const userStats = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: {
+            notes: {
+                select: {
+                    viewCount: true,
+                    _count: {
+                        select: { likes: true }
+                    }
+                }
+            }
+        }
+    });
+
+    const totalViews = userStats?.notes.reduce((acc, note) => acc + (note.viewCount || 0), 0) || 0;
+    const totalLikes = userStats?.notes.reduce((acc, note) => acc + (note._count.likes || 0), 0) || 0;
+
+    const stats = {
+        totalLikes,
+        totalViews,
+        totalNotes
     };
 
-    return <ProfileView user={profileUser} notes={user.notes} />;
+    return <ProfileView user={profileUser} notes={user.notes} stats={stats} />;
 }

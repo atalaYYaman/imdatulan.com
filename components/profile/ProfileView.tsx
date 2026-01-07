@@ -1,12 +1,10 @@
 'use client';
 
 import Link from "next/link";
-import { User, Settings, CreditCard, Trophy, FileText, Clock, Heart } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { User, Trophy, FileText } from "lucide-react";
 import { NodCard } from "@/components/ui/NodCard";
 import { useState } from "react";
 
-// Define props based on what we will pass from the server
 interface ProfileViewProps {
     user: {
         id: string;
@@ -16,18 +14,16 @@ interface ProfileViewProps {
         department: string;
         role: string;
     };
-    notes: any[]; // Replace with proper Note type later if available
+    notes: any[];
+    stats: {
+        totalLikes: number;
+        totalViews: number;
+        totalNotes: number;
+    };
 }
 
-export default function ProfileView({ user, notes }: ProfileViewProps) {
+export default function ProfileView({ user, notes, stats }: ProfileViewProps) {
     const [activeTab, setActiveTab] = useState<'shared' | 'viewed' | 'favorites'>('shared');
-
-    // Mock stats for now since they are not in DB yet
-    const stats = {
-        followers: 0,
-        following: 0,
-        totalNotes: notes.length
-    };
 
     return (
         <div className="min-h-screen bg-[#01353D] text-white p-4 md:p-8 pb-24 md:pb-8">
@@ -35,7 +31,6 @@ export default function ProfileView({ user, notes }: ProfileViewProps) {
 
                 {/* Header Section */}
                 <div className="bg-[#002A30] border border-[#003E44] rounded-2xl p-6 md:p-10 relative overflow-hidden">
-                    {/* Background Element - Optional/Hidden for clean look or kept if desired */}
                     <div className="absolute top-0 right-0 p-6 opacity-10">
                         <Trophy className="h-48 w-48 text-[#22d3ee] rotate-12" />
                     </div>
@@ -59,29 +54,22 @@ export default function ProfileView({ user, notes }: ProfileViewProps) {
                             <p className="text-gray-400">{user.university} • {user.department}</p>
                             <p className="text-gray-500 text-sm">{user.faculty}</p>
 
-                            {/* Stats - Reduced visibility or kept static */}
+                            {/* Stats */}
                             <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 pt-4">
-                                <div className="text-center md:text-left opacity-50">
-                                    <div className="text-xl font-bold text-white">{stats.followers}</div>
-                                    <div className="text-xs text-gray-500 uppercase">Takipçi</div>
+                                <div className="text-center md:text-left md:border-r border-gray-700 pr-0 md:pr-6">
+                                    <div className="text-2xl font-bold text-[#22d3ee]">{stats.totalLikes}</div>
+                                    <div className="text-xs text-gray-400 uppercase tracking-wide">Toplam Beğeni</div>
                                 </div>
-                                <div className="text-center md:text-left opacity-50">
-                                    <div className="text-xl font-bold text-white">{stats.following}</div>
-                                    <div className="text-xs text-gray-500 uppercase">Takip</div>
+                                <div className="text-center md:text-left md:border-r border-gray-700 pr-0 md:pr-6">
+                                    <div className="text-2xl font-bold text-[#22d3ee]">{stats.totalViews}</div>
+                                    <div className="text-xs text-gray-400 uppercase tracking-wide">Görüntülenme</div>
                                 </div>
                                 <div className="text-center md:text-left">
-                                    <div className="text-xl font-bold text-white">{stats.totalNotes}</div>
-                                    <div className="text-xs text-gray-500 uppercase">Not</div>
+                                    <div className="text-2xl font-bold text-[#22d3ee]">{stats.totalNotes}</div>
+                                    <div className="text-xs text-gray-400 uppercase tracking-wide">Paylaşılan Not</div>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Right Side Actions - Hidden for MVP as requested */}
-                        {/* 
-                        <div className="flex flex-col gap-3 min-w-[200px]">
-                             Wallet & Settings Hidden 
-                        </div> 
-                        */}
                     </div>
                 </div>
 
@@ -95,10 +83,6 @@ export default function ProfileView({ user, notes }: ProfileViewProps) {
                         >
                             <FileText className="h-4 w-4" /> Paylaşılan Notlar
                         </button>
-                        {/* 
-                        <button onClick={() => setActiveTab('viewed')} ... > Son Görüntülenenler (Hidden) </button>
-                        <button onClick={() => setActiveTab('favorites')} ... > Favoriler (Hidden) </button>
-                        */}
                     </div>
 
                     {/* Tab Content */}
@@ -106,8 +90,9 @@ export default function ProfileView({ user, notes }: ProfileViewProps) {
                         {activeTab === 'shared' && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {notes.map(note => (
-                                    // Adapt note structure if needed, passing author manually since note might not have it populated fully in this fetch
-                                    <NodCard key={note.id} note={note} author={{ name: user.name, avatar: '', stats: { rating: 5.0, totalNotes: 0 } } as any} />
+                                    <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-105">
+                                        <NodCard note={note} author={{ name: user.name, avatar: '', stats: { rating: 5.0, totalNotes: 0 } } as any} />
+                                    </Link>
                                 ))}
 
                                 {/* Add New Card Mock */}
@@ -119,7 +104,6 @@ export default function ProfileView({ user, notes }: ProfileViewProps) {
                                 </Link>
                             </div>
                         )}
-                        {/* Other tabs hidden logic */}
                     </div>
                 </div>
 

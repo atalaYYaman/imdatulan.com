@@ -4,53 +4,126 @@ export const universities = [
         name: "Necmettin Erbakan Üniversitesi",
         faculties: [
             {
+                name: "Ahmet Keleşoğlu Eğitim Fakültesi",
+                departments: [
+                    "Bilgisayar ve Öğretim Teknolojileri Eğitimi",
+                    "Eğitim Bilimleri",
+                    "Güzel Sanatlar Eğitimi",
+                    "Matematik ve Fen Bilimleri Eğitimi",
+                    "Özel Eğitim",
+                    "Temel Eğitim",
+                    "Türkçe ve Sosyal Bilimler Eğitimi",
+                    "Yabancı Diller Eğitimi"
+                ]
+            },
+            {
+                name: "Meram Tıp Fakültesi",
+                departments: [
+                    "Cerrahi Tıp Bilimleri",
+                    "Dahili Tıp Bilimleri",
+                    "Temel Tıp Bilimleri"
+                ]
+            },
+            {
                 name: "Mühendislik Fakültesi",
                 departments: [
                     "Bilgisayar Mühendisliği",
+                    "Biyomedikal Mühendisliği",
+                    "Çevre Mühendisliği",
                     "Elektrik-Elektronik Mühendisliği",
                     "Endüstri Mühendisliği",
+                    "Gıda Mühendisliği",
+                    "Harita Mühendisliği",
                     "İnşaat Mühendisliği",
                     "Makine Mühendisliği",
-                    "Harita Mühendisliği",
+                    "Metalurji ve Malzeme Mühendisliği",
                     "Mekatronik Mühendisliği",
-                    "Biyomedikal Mühendisliği",
                     "Yazılım Mühendisliği"
                 ]
             },
             {
-                name: "Tıp Fakültesi",
-                departments: ["Tıp"]
+                name: "İlahiyat Fakültesi",
+                departments: [
+                    "Felsefe ve Din Bilimleri",
+                    "İslam Tarihi ve Sanatları",
+                    "Temel İslam Bilimleri",
+                    "İlköğretim Din Kültürü ve Ahlak Bilgisi Eğitimi"
+                ]
+            },
+            {
+                name: "Sosyal ve Beşeri Bilimler Fakültesi",
+                departments: [
+                    "Felsefe",
+                    "Halkla İlişkiler ve Reklamcılık",
+                    "Psikoloji",
+                    "Sanat Tarihi",
+                    "Sosyoloji",
+                    "Tarih",
+                    "Türk Dili ve Edebiyatı",
+                    "Mütercim-Tercümanlık",
+                    "Kütüphane ve Dokümantasyon"
+                ]
+            },
+            {
+                name: "Siyasal Bilgiler Fakültesi",
+                departments: [
+                    "İktisat",
+                    "İşletme",
+                    "Siyaset Bilimi ve Kamu Yönetimi",
+                    "Uluslararası İlişkiler"
+                ]
+            },
+            {
+                name: "Havacılık ve Uzay Bilimleri Fakültesi",
+                departments: [
+                    "Havacılık Yönetimi",
+                    "Uçak Mühendisliği",
+                    "Uzay ve Uydu Mühendisliği"
+                ]
             },
             {
                 name: "Diş Hekimliği Fakültesi",
-                departments: ["Diş Hekimliği"]
+                departments: [
+                    "Ağız, Diş ve Çene Cerrahisi",
+                    "Ağız, Diş ve Çene Radyolojisi",
+                    "Diş Hastalıkları ve Tedavisi",
+                    "Endodonti",
+                    "Ortodonti",
+                    "Pedodonti",
+                    "Periodontoloji"
+                ]
+            },
+            {
+                name: "Güzel Sanatlar ve Mimarlık Fakültesi",
+                departments: ["Mimarlık", "Şehir ve Bölge Planlama", "İç Mimarlık ve Çevre Tasarımı", "Resim", "Grafik", "Seramik", "Geleneksel Türk Sanatları"]
+            },
+            {
+                name: "Sağlık Bilimleri Fakültesi",
+                departments: ["Hemşirelik", "Fizyoterapi ve Rehabilitasyon", "Beslenme ve Diyetetik", "Sağlık Yönetimi", "Odyoloji"]
+            },
+            {
+                name: "Turizm Fakültesi",
+                departments: ["Turizm İşletmeciliği", "Gastronomi ve Mutfak Sanatları", "Turizm Rehberliği", "Rekreasyon Yönetimi"]
+            },
+            {
+                name: "Uygulamalı Bilimler Fakültesi",
+                departments: ["Bankacılık ve Sigortacılık", "Muhasebe ve Finans Yönetimi", "Yönetim Bilişim Sistemleri"]
             },
             {
                 name: "Hukuk Fakültesi",
                 departments: ["Hukuk"]
             },
             {
-                name: "Eğitim Fakültesi",
-                departments: [
-                    "Sınıf Öğretmenliği",
-                    "İngilizce Öğretmenliği",
-                    "Matematik Öğretmenliği",
-                    "Özel Eğitim Öğretmenliği",
-                    "Rehberlik ve Psikolojik Danışmanlık"
-                ]
+                name: "Fen Fakültesi",
+                departments: ["Matematik", "Moleküler Biyoloji ve Genetik", "Biyoteknoloji", "İstatistik"]
             },
             {
-                name: "İlahiyat Fakültesi",
-                departments: ["İlahiyat"]
+                name: "Seydişehir Ahmet Cengiz Mühendislik Fakültesi",
+                departments: ["Makine Mühendisliği", "Maden Mühendisliği", "Metalurji ve Malzeme Mühendisliği"]
             },
             {
-                name: "Siyasal Bilgiler Fakültesi",
-                departments: [
-                    "Siyaset Bilimi ve Kamu Yönetimi",
-                    "Uluslararası İlişkiler",
-                    "İktisat",
-                    "İşletme"
-                ]
+                name: "Ereğli Eğitim Fakültesi",
+                departments: ["Bilgisayar ve Öğretim Teknolojileri Eğitimi", "Eğitim Bilimleri", "Matematik ve Fen Bilimleri Eğitimi", "Temel Eğitim", "Türkçe ve Sosyal Bilimler Eğitimi"]
             }
         ]
     },
@@ -69,14 +142,6 @@ export const universities = [
             {
                 name: "Tıp Fakültesi",
                 departments: ["Tıp"]
-            },
-            {
-                name: "İletişim Fakültesi",
-                departments: ["Radyo, Televizyon ve Sinema", "Halkla İlişkiler ve Tanıtım", "Gazetecilik"]
-            },
-            {
-                name: "Veteriner Fakültesi",
-                departments: ["Veterinerlik"]
             }
         ]
     },
@@ -99,34 +164,30 @@ export const universities = [
         ]
     },
     {
-        id: "itu",
-        name: "İstanbul Teknik Üniversitesi",
+        id: "ktu",
+        name: "Konya Teknik Üniversitesi",
         faculties: [
             {
-                name: "Bilgisayar ve Bilişim Fakültesi",
-                departments: ["Bilgisayar Mühendisliği", "Yapay Zeka ve Veri Mühendisliği"]
+                name: "Mühendislik ve Doğa Bilimleri Fakültesi",
+                departments: ["Bilgisayar Mühendisliği", "Elektrik-Elektronik Mühendisliği", "Makine Mühendisliği", "Harita Mühendisliği", "İnşaat Mühendisliği"]
             },
             {
-                name: "Elektrik-Elektronik Fakültesi",
-                departments: ["Elektrik Mühendisliği", "Elektronik ve Haberleşme Mühendisliği"]
-            },
-            {
-                name: "Makine Fakültesi",
-                departments: ["Makine Mühendisliği"]
+                name: "Mimarlık ve Tasarım Fakültesi",
+                departments: ["Mimarlık", "Şehir ve Bölge Planlama"]
             }
         ]
     },
     {
-        id: "odtu",
-        name: "Orta Doğu Teknik Üniversitesi",
+        id: "kgtu",
+        name: "Konya Gıda ve Tarım Üniversitesi",
         faculties: [
             {
-                name: "Mühendislik Fakültesi",
-                departments: ["Bilgisayar Mühendisliği", "Elektrik-Elektronik Mühendisliği", "Endüstri Mühendisliği", "Havacılık ve Uzay Mühendisliği"]
+                name: "Mühendislik ve Mimarlık Fakültesi",
+                departments: ["Bilgisayar Mühendisliği", "Gıda Mühendisliği", "Biyomühendislik", "İç Mimarlık"]
             },
             {
-                name: "Fen Edebiyat Fakültesi",
-                departments: ["Fizik", "Matematik", "Psikoloji"]
+                name: "Tarım ve Doğa Bilimleri Fakültesi",
+                departments: ["Bitkisel Üretim ve Teknolojileri"]
             }
         ]
     }
