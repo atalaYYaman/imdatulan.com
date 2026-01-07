@@ -40,7 +40,19 @@ model User {
   comments             Comment[]
   likes                Like[]
   views                View[]
-  credits              Int       @default(3) // Gelecekteki 'Not Yükle Kredi Kazan' sistemi için
+  credits              Int       @default(3) // Süt Bakiyesi (Başlangıç 3 Süt)
+  unlockedNotes        UnlockedNote[]
+}
+
+model UnlockedNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, noteId])
 }
 
 model University {
@@ -87,6 +99,7 @@ model Note {
   comments   Comment[]
   likes      Like[]
   views      View[]
+  unlockedBy UnlockedNote[]
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

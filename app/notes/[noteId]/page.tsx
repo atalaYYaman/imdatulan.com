@@ -20,6 +20,10 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
     // Check if current user liked this note
     const isLiked = await isLikedByUser(noteId);
 
+    // Kilit Kontrolü (Süt Sistemi)
+    const { isNoteUnlocked } = await import("@/app/actions/noteActions");
+    const isUnlocked = await isNoteUnlocked(noteId);
+
     // Get viewer info for watermark
     let viewerUser = {
         name: "Misafir Kullanıcı",
@@ -45,6 +49,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
             note={note}
             initialIsLiked={isLiked}
             viewerUser={viewerUser}
+            isUnlocked={isUnlocked}
         />
     );
 }

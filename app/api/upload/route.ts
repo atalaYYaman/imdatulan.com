@@ -47,6 +47,14 @@ export async function POST(req: Request) {
             }
         })
 
+        // Increment user credits by 3
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                credits: { increment: 3 }
+            }
+        })
+
         return NextResponse.json({ message: "Upload successful", note }, { status: 201 })
 
     } catch (error) {

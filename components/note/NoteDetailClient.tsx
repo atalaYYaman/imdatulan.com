@@ -34,10 +34,31 @@ interface NoteDetailClientProps {
         name: string;
         studentNumber: string;
     };
+    isUnlocked: boolean;
 }
 
-export default function NoteDetailClient({ note, initialIsLiked, viewerUser }: NoteDetailClientProps) {
+export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked }: NoteDetailClientProps) {
     const [isWarningAccepted, setIsWarningAccepted] = useState(false);
+    const [isUnlocked, setIsUnlocked] = useState(initialIsUnlocked);
+    const [isUnlocking, setIsUnlocking] = useState(false);
+
+    const handleUnlockNote = async () => {
+        setIsUnlocking(true);
+        try {
+            const { unlockNote } = await import('@/app/actions/noteActions');
+            const result = await unlockNote(note.id);
+            if (result.success) {
+                setIsUnlocked(true);
+            } else {
+                alert(result.message || "Bir hata oluştu");
+            }
+        } catch (error) {
+            console.error("Unlock error:", error);
+            alert("Beklenmedik bir hata oluştu");
+        } finally {
+            setIsUnlocking(false);
+        }
+    };
 
     return (
         <div className="flex flex-col h-full bg-[#002A30] text-white overflow-y-auto">
@@ -53,6 +74,9 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser }: N
                     <NoteViewer
                         fileUrl={note.fileUrl}
                         viewerUser={viewerUser}
+                        isLocked={!isUnlocked}
+                        onUnlock={handleUnlockNote}
+                        isUnlocking={isUnlocking}
                     />
                 </div>
 

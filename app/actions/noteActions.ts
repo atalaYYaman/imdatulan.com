@@ -156,14 +156,71 @@ export async function addComment(noteId: string, text: string) {
     }
 }
 
-export async function isLikedByUser(noteId: string) {
+return !!like
+}
+
+export async function unlockNote(noteId: string) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) return { success: false, message: "Unauthorized" }
+
+    try {
+        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+        if (!user) return { success: false, message: "Kullanıcı bulunamadı" }
+
+        // Zaten açık mı?
+        const existingUnlock = await prisma.unlockedNote.findUnique({
+            where: {
+                userId_noteId: {
+                    userId: user.id,
+                    noteId: noteId
+                }
+            }
+        })
+
+        if (existingUnlock) return { success: true, message: "Zaten açık" }
+
+        // Kredi yeterli mi?
+        if (user.credits < 1) {
+            return { success: false, message: "Yetersiz Süt Bakiyesi! 🥛" }
+        }
+
+        // Transaction: Kredi düş, Kilidi aç
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: user.id },
+                data: { credits: { decrement: 1 } }
+            }),
+            prisma.unlockedNote.create({
+                data: {
+                    userId: user.id,
+                    noteId: noteId
+                }
+            })
+        ])
+
+        revalidatePath(`/notes/${noteId}`)
+        return { success: true }
+
+    } catch (error) {
+        console.error("Error unlocking note:", error)
+        return { success: false, message: "Bir hata oluştu" }
+    }
+}
+
+// Check if user has unlocked the note
+export async function isNoteUnlocked(noteId: string) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return false
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email } })
     if (!user) return false
 
-    const like = await prisma.like.findUnique({
+    // Kendi notu ise açık
+    const note = await prisma.note.findUnique({ where: { id: noteId }, select: { uploaderId: true } })
+    if (note?.uploaderId === user.id) return true
+
+    // Satın alınmış mı?
+    const unlock = await prisma.unlockedNote.findUnique({
         where: {
             userId_noteId: {
                 userId: user.id,
@@ -172,5 +229,58 @@ export async function isLikedByUser(noteId: string) {
         }
     })
 
-    return !!like
+    return !!unlock
+}
+
+export async function toggleLike(noteId: string) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) return { success: false, message: "Unauthorized" }
+
+    try {
+        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+        if (!user) return { success: false, message: "User not found" }
+
+        const existingLike = await prisma.like.findUnique({
+            where: {
+                userId_noteId: {
+                    userId: user.id,
+                    noteId: noteId
+                }
+            }
+        })
+
+        if (existingLike) {
+            await prisma.like.delete({
+                where: { id: existingLike.id }
+            })
+        } else {
+            await prisma.like.create({
+                data: {
+                    userId: user.id,
+                    noteId: noteId
+                }
+            })
+
+            // ÖDÜL SİSTEMİ: Her 10. beğenide not yükleyicisine 1 Süt ver
+            // 1. Notun güncel beğeni sayısını (transaction dışında ama create sonrası) alalım
+            // Veya daha güvenli: count yapalım.
+            const likeCount = await prisma.like.count({ where: { noteId } })
+
+            if (likeCount % 10 === 0) {
+                const note = await prisma.note.findUnique({ where: { id: noteId } })
+                if (note) {
+                    await prisma.user.update({
+                        where: { id: note.uploaderId },
+                        data: { credits: { increment: 1 } }
+                    })
+                }
+            }
+        }
+
+        revalidatePath(`/notes/${noteId}`)
+        return { success: true }
+    } catch (error) {
+        console.error("Error toggling like:", error)
+        return { success: false, message: "Error" }
+    }
 }
