@@ -64,14 +64,22 @@ export const authOptions: NextAuthOptions = {
                 if (session.name) token.name = session.name;
             }
 
-            // Always fetch fresh credits from DB to stay compassionate with server actions
+            // Always fetch fresh credits and name from DB to stay compassionate with server actions
             if (token.email) {
                 const dbUser = await prisma.user.findUnique({
                     where: { email: token.email as string },
-                    select: { credits: true }
+                    select: {
+                        credits: true,
+                        firstName: true,
+                        lastName: true
+                    }
                 });
                 if (dbUser) {
                     token.credits = dbUser.credits;
+                    const fullName = `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim();
+                    if (fullName) {
+                        token.name = fullName;
+                    }
                 }
             }
 

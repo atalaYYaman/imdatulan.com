@@ -74,9 +74,9 @@ function MobileUserDisplay() {
                     {(session.user?.name || 'K').split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                    <p className="text-white font-bold text-lg">{(session.user as any).name}</p>
+                    <p className="text-white font-bold text-lg">{session.user.name}</p>
                     <p className="text-[#22d3ee] font-medium flex items-center gap-1">
-                        Mevcut Süt: {(session.user as any).credits ?? '-'} 🥛
+                        Mevcut Süt: {session.user.credits ?? '-'} 🥛
                     </p>
                 </div>
             </div>
