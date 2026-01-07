@@ -22,7 +22,7 @@ interface NodCardProps {
 
 export function NodCard({ note, author }: NodCardProps) {
     return (
-        <Link href={`/note/${note.id}`} className="group block">
+        <div className="group block cursor-pointer">
             <div className="bg-[#002A30] border border-[#003E44] rounded-xl overflow-hidden hover:border-[#22d3ee]/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(34,211,238,0.1)] group-hover:-translate-y-1">
                 <div className="p-4 flex gap-4">
                     {/* Icon Section */}
@@ -67,6 +67,6 @@ export function NodCard({ note, author }: NodCardProps) {
                     </div>
                 </div>
             </div>
-        </Link>
+        </div>
     );
 }
