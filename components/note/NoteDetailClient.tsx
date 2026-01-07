@@ -30,9 +30,13 @@ type NoteWithDetails = Note & {
 interface NoteDetailClientProps {
     note: NoteWithDetails;
     initialIsLiked: boolean;
+    viewerUser: {
+        name: string;
+        studentNumber: string;
+    };
 }
 
-export default function NoteDetailClient({ note, initialIsLiked }: NoteDetailClientProps) {
+export default function NoteDetailClient({ note, initialIsLiked, viewerUser }: NoteDetailClientProps) {
     const [isWarningAccepted, setIsWarningAccepted] = useState(false);
 
     return (
@@ -46,7 +50,10 @@ export default function NoteDetailClient({ note, initialIsLiked }: NoteDetailCli
 
                 {/* SOL TARAFLA: PDF / Dosya Görüntüleyici */}
                 <div className="md:w-3/4 h-[80vh] md:h-screen bg-gray-900 relative border-r border-[#003E44]">
-                    <NoteViewer fileUrl={note.fileUrl} uploaderName={note.uploader.firstName || 'Kullanıcı'} />
+                    <NoteViewer
+                        fileUrl={note.fileUrl}
+                        viewerUser={viewerUser}
+                    />
                 </div>
 
                 {/* SAĞ TARAF: Detaylar ve Etkileşim */}
