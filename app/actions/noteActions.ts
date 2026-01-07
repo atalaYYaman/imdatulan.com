@@ -48,15 +48,47 @@ export async function getNoteDetail(noteId: string) {
 }
 
 export async function incrementView(noteId: string) {
+    const session = await getServerSession(authOptions)
+
+    // Eğer kullanıcı giriş yapmamışsa, basitçe artır (veya artırma, tercih meselesi - şimdilik artırıyoruz)
+    // Ama Unique View istiyorsak, giriş yapmamış kişileri takip edemeyiz (Cookie/IP hariç).
+    // MVP için: Sadece giriş yapmış kullanıcıların view'ini "unique" sayalım.
+    if (!session?.user?.email) return;
+
     try {
-        await prisma.note.update({
-            where: { id: noteId },
-            data: {
-                viewCount: {
-                    increment: 1
+        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+        if (!user) return
+
+        // 1. Kullanıcı bu notu daha önce görüntülemiş mi?
+        const existingView = await prisma.view.findUnique({
+            where: {
+                userId_noteId: {
+                    userId: user.id,
+                    noteId: noteId
                 }
             }
         })
+
+        // 2. Eğer görüntülememişse:
+        if (!existingView) {
+            // Transaction ile hem View oluştur hem Count artır
+            await prisma.$transaction([
+                prisma.view.create({
+                    data: {
+                        userId: user.id,
+                        noteId: noteId
+                    }
+                }),
+                prisma.note.update({
+                    where: { id: noteId },
+                    data: {
+                        viewCount: {
+                            increment: 1
+                        }
+                    }
+                })
+            ])
+        }
     } catch (error) {
         console.error("Error incrementing view:", error)
     }

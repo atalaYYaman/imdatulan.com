@@ -39,6 +39,7 @@ model User {
   notes                Note[]
   comments             Comment[]
   likes                Like[]
+  views                View[]
   credits              Int       @default(3) // Gelecekteki 'Not Yükle Kredi Kazan' sistemi için
 }
 
@@ -85,6 +86,7 @@ model Note {
   
   comments   Comment[]
   likes      Like[]
+  views      View[]
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -115,4 +117,18 @@ model Like {
   createdAt DateTime @default(now())
 
   @@unique([userId, noteId]) // Bir kullanıcı bir notu sadece bir kez beğenebilir
+}
+
+model View {
+  id        String   @id @default(cuid())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, noteId]) // Bir kullanıcı bir notu (teorik olarak) bir kez "izledi" sayılır
 }
