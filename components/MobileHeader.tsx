@@ -37,8 +37,57 @@ export default function MobileHeader() {
                         <Link href="/upload" onClick={() => setIsOpen(false)} className="text-[#22d3ee] text-lg font-medium py-2 border-b border-white/10">Not Yükle</Link>
                         <Link href="/profile" onClick={() => setIsOpen(false)} className="text-white text-lg font-medium py-2 border-b border-white/10">Profilim</Link>
                     </nav>
+
+                    {/* Mobil User Info */}
+                    <div className="mt-8 border-t border-white/10 pt-4">
+                        {/* Burada session'a erişmek için useSession gerekiyor, ancak bu bileşende hook yok.
+                             Basitlik için şimdilik hook ekleyelim. */}
+                        <MobileUserDisplay />
+                    </div>
                 </div>
             )}
         </div>
     );
+}
+
+// Sub-component for session access to keep main cleaner/lighter if needed
+import { useSession } from 'next-auth/react';
+import { User, LogOut } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+
+function MobileUserDisplay() {
+    const { data: session } = useSession();
+
+    if (!session) {
+        return (
+            <div className="flex flex-col gap-3">
+                <Link href="/auth/signin" className="w-full text-center py-3 bg-[#075985] text-white rounded-lg font-bold">Giriş Yap</Link>
+                <Link href="/auth/signup" className="w-full text-center py-3 border border-[#22d3ee] text-[#22d3ee] rounded-lg font-bold">Kayıt Ol</Link>
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-[#0ea5e9] flex items-center justify-center text-white font-bold ring-2 ring-[#22d3ee]">
+                    {(session.user?.name || 'K').split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                </div>
+                <div>
+                    <p className="text-white font-bold text-lg">{(session.user as any).name}</p>
+                    <p className="text-[#22d3ee] font-medium flex items-center gap-1">
+                        Mevcut Süt: {(session.user as any).credits ?? '-'} 🥛
+                    </p>
+                </div>
+            </div>
+
+            <button
+                onClick={() => signOut()}
+                className="flex items-center gap-2 text-red-400 hover:text-red-300 mt-2"
+            >
+                <LogOut className="w-5 h-5" />
+                <span>Çıkış Yap</span>
+            </button>
+        </div>
+    )
 }

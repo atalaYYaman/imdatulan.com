@@ -32,15 +32,16 @@ export default function Header() {
                         className="flex items-center gap-3 focus:outline-none group"
                     >
                         <div className="text-right hidden md:block">
-                            <p className="text-sm font-medium text-white group-hover:text-[#22d3ee] transition-colors">
-                                {session.user?.name || 'Kullanıcı'}
+                            <p className="text-sm font-bold text-white group-hover:text-[#22d3ee] transition-colors">
+                                {(session.user as any).name || 'Kullanıcı'}
                             </p>
-                            <p className="text-xs text-gray-400">
-                                {session.user?.email}
+                            <p className="text-xs font-medium text-[#22d3ee] flex items-center justify-end gap-1">
+                                Mevcut Süt: {(session.user as any).credits !== undefined ? (session.user as any).credits : '-'} <span className="text-sm">🥛</span>
                             </p>
                         </div>
-                        <div className="h-10 w-10 rounded-full bg-[#0ea5e9] flex items-center justify-center text-white font-bold ring-2 ring-[#003E44] group-hover:ring-[#22d3ee] transition-all shadow-lg">
-                            {session.user?.name?.[0]?.toUpperCase() || <User className="h-5 w-5" />}
+                        <div className="h-10 w-10 rounded-full bg-[#0ea5e9] flex items-center justify-center text-white font-bold ring-2 ring-[#003E44] group-hover:ring-[#22d3ee] transition-all shadow-lg overflow-hidden">
+                            {/* Initials */}
+                            {(session.user?.name || 'K').split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                     </button>
 
