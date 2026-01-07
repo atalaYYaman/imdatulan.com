@@ -94,44 +94,6 @@ export async function incrementView(noteId: string) {
     }
 }
 
-export async function toggleLike(noteId: string) {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return { success: false, message: "Unauthorized" }
-
-    try {
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-        if (!user) return { success: false, message: "User not found" }
-
-        const existingLike = await prisma.like.findUnique({
-            where: {
-                userId_noteId: {
-                    userId: user.id,
-                    noteId: noteId
-                }
-            }
-        })
-
-        if (existingLike) {
-            await prisma.like.delete({
-                where: { id: existingLike.id }
-            })
-        } else {
-            await prisma.like.create({
-                data: {
-                    userId: user.id,
-                    noteId: noteId
-                }
-            })
-        }
-
-        revalidatePath(`/notes/${noteId}`)
-        return { success: true }
-    } catch (error) {
-        console.error("Error toggling like:", error)
-        return { success: false, message: "Error" }
-    }
-}
-
 export async function addComment(noteId: string, text: string) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return { success: false, message: "Unauthorized" }
@@ -154,9 +116,6 @@ export async function addComment(noteId: string, text: string) {
         console.error("Error adding comment:", error)
         return { success: false, message: "Error" }
     }
-}
-
-return !!like
 }
 
 export async function unlockNote(noteId: string) {
@@ -283,4 +242,23 @@ export async function toggleLike(noteId: string) {
         console.error("Error toggling like:", error)
         return { success: false, message: "Error" }
     }
+}
+
+export async function isLikedByUser(noteId: string) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) return false
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+    if (!user) return false
+
+    const like = await prisma.like.findUnique({
+        where: {
+            userId_noteId: {
+                userId: user.id,
+                noteId: noteId
+            }
+        }
+    })
+
+    return !!like
 }
