@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from "react";
-import { Search, Filter, Layers, BookOpen, Lock } from "lucide-react";
-import { universities } from "@/lib/dummyData";
+import { Search, Filter, Layers, LayoutGrid, Calendar } from "lucide-react";
+import { universities, years } from "@/lib/universityData";
 import { NodCard } from "@/components/ui/NodCard";
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
+import { Lock } from "lucide-react";
 
 interface Note {
     id: string;
@@ -14,6 +15,7 @@ interface Note {
     courseName: string | null;
     university: string;
     department: string;
+    term: string | null; // Added term field usage
     type: string | null;
     fileUrl: string;
     createdAt: Date;
@@ -29,35 +31,43 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [filters, setFilters] = useState({
         university: "",
+        faculty: "",
         department: "",
-        course: "",
-        instructor: "",
+        year: "",
     });
 
+    // Dependent Dropdown Logic
     const selectedUni = universities.find(u => u.name === filters.university);
-    const departments = selectedUni ? selectedUni.departments : [];
+    const faculties = selectedUni ? selectedUni.faculties : [];
+
+    const selectedFaculty = faculties.find(f => f.name === filters.faculty);
+    const departments = selectedFaculty ? selectedFaculty.departments : [];
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
         const { name, value } = e.target;
         setFilters(prev => ({
             ...prev,
             [name]: value,
-            ...(name === 'university' ? { department: '', course: '', instructor: '' } : {}),
-            ...(name === 'department' ? { course: '', instructor: '' } : {}),
+            // Reset child filters on parent change
+            ...(name === 'university' ? { faculty: '', department: '' } : {}),
+            ...(name === 'faculty' ? { department: '' } : {}),
         }));
     };
 
-    // Filter logic adjusted for real data
+    // Filter logic
     const filteredNotes = initialNotes.filter(note => {
         // Map DB fields to search
         const titleMatch = (note.title || "").toLowerCase().includes(searchQuery.toLowerCase());
         const courseMatch = (note.courseName || "").toLowerCase().includes(searchQuery.toLowerCase());
+        const topicMatch = (note.description || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-        const matchesSearch = titleMatch || courseMatch;
+        const matchesSearch = titleMatch || courseMatch || topicMatch;
         const matchesUni = filters.university ? note.university === filters.university : true;
+        const matchesFaculty = filters.faculty ? note.faculty === filters.faculty : true; // Assuming 'faculty' field exists on note or inferred
         const matchesDept = filters.department ? note.department === filters.department : true;
+        const matchesYear = filters.year ? note.term?.includes(filters.year) : true; // Simple inclusion check for year
 
-        return matchesSearch && matchesUni && matchesDept;
+        return matchesSearch && matchesUni && matchesDept && matchesYear;
     });
 
     if (!session) {
@@ -92,7 +102,7 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                     <Search className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Ders adı, hoca veya konu ara..."
+                        placeholder="Ders adı veya konu ara..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-[#002A30] border border-[#003E44] rounded-xl py-3 pl-12 pr-4 text-white text-base focus:ring-2 focus:ring-[#22d3ee] outline-none shadow-lg placeholder-gray-500"
@@ -100,8 +110,10 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                 </div>
             </div>
 
-            {/* Filters (Reusing existing dummy logic for UI) */}
+            {/* Filters: University -> Faculty -> Dept -> Year */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+                {/* 1. University */}
                 <div className="relative">
                     <Filter className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
                     <select
@@ -114,28 +126,48 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                         {universities.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                     </select>
                 </div>
+
+                {/* 2. Faculty (Dependent on Uni) */}
+                <div className="relative">
+                    <LayoutGrid className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
+                    <select
+                        name="faculty"
+                        value={filters.faculty}
+                        onChange={handleFilterChange}
+                        disabled={!filters.university}
+                        className="w-full bg-[#002A30] border border-[#003E44] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-2.5 pl-9 pr-8 text-sm text-gray-300 focus:text-white focus:border-[#22d3ee] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
+                    >
+                        <option value="">Tüm Fakülteler</option>
+                        {faculties.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+                    </select>
+                </div>
+
+                {/* 3. Department (Dependent on Faculty) */}
                 <div className="relative">
                     <Layers className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
                     <select
                         name="department"
                         value={filters.department}
                         onChange={handleFilterChange}
-                        disabled={!filters.university}
+                        disabled={!filters.faculty}
                         className="w-full bg-[#002A30] border border-[#003E44] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-2.5 pl-9 pr-8 text-sm text-gray-300 focus:text-white focus:border-[#22d3ee] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
                     >
                         <option value="">Tüm Bölümler</option>
                         {departments.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                 </div>
-                {/* Course and Instructor filters are kept visual for now */}
+
+                {/* 4. Year / Term */}
                 <div className="relative">
-                    <BookOpen className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
                     <select
-                        name="course"
-                        className="w-full bg-[#002A30] border border-[#003E44] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-2.5 pl-9 pr-8 text-sm text-gray-300 focus:text-white focus:border-[#22d3ee] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
-                        disabled
+                        name="year"
+                        value={filters.year}
+                        onChange={handleFilterChange}
+                        className="w-full bg-[#002A30] border border-[#003E44] rounded-xl py-2.5 pl-9 pr-8 text-sm text-gray-300 focus:text-white focus:border-[#22d3ee] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
                     >
-                        <option value="">Ders Seçiniz</option>
+                        <option value="">Tüm Dönemler</option>
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 </div>
             </div>
@@ -193,7 +225,7 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                     </div>
                     <p>Aradığınız kriterlere uygun not bulunamadı.</p>
                     <button
-                        onClick={() => { setFilters({ university: '', department: '', course: '', instructor: '' }); setSearchQuery(''); }}
+                        onClick={() => { setFilters({ university: '', faculty: '', department: '', year: '' }); setSearchQuery(''); }}
                         className="mt-4 text-[#22d3ee] hover:underline"
                     >
                         Filtreleri Temizle

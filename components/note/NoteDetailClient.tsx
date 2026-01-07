@@ -65,7 +65,12 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser }: N
                         <div className="text-sm text-gray-400 space-y-1">
                             <p>{note.university} - {note.faculty}</p>
                             <p>{note.courseName} ({note.term})</p>
-                            <p className="text-xs mt-2">Yükleyen: {note.uploader.firstName} {note.uploader.lastName}</p>
+                            {note.description && (
+                                <p className="text-gray-300 italic text-xs mt-2 border-l-2 border-[#22d3ee] pl-2 py-1">
+                                    "{note.description}"
+                                </p>
+                            )}
+                            <p className="text-xs mt-2 text-[#22d3ee]/80">Yükleyen: {note.uploader.firstName} {note.uploader.lastName}</p>
                         </div>
                     </div>
 
