@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, User, Trophy, Heart, Upload, Menu, Landmark, FolderOpen } from 'lucide-react';
+import { Home, User, Trophy, Heart, Upload, Menu, Landmark, FolderOpen, ShoppingBag } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 export default function Sidebar() {
@@ -13,7 +13,7 @@ export default function Sidebar() {
         { name: 'Ana Sayfa', href: '/', icon: Home },
         { name: 'Notlar', href: '/notes', icon: FolderOpen },
         ...(session ? [{ name: 'Profilim', href: '/profile', icon: User }] : []),
-        { name: 'Top Noder', href: '/top-noder', icon: Trophy },
+        { name: 'Mağaza', href: '/store', icon: ShoppingBag },
         { name: 'Bağış Yap', href: '/donate', icon: Heart },
     ];
 

@@ -126,6 +126,14 @@ export async function unlockNote(noteId: string) {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
         if (!user) return { success: false, message: "Kullanıcı bulunamadı" }
 
+        // Notu ve fiyatını getir
+        const note = await prisma.note.findUnique({
+            where: { id: noteId },
+            select: { price: true, uploaderId: true }
+        })
+
+        if (!note) return { success: false, message: "Not bulunamadı" }
+
         // Zaten açık mı?
         const existingUnlock = await prisma.unlockedNote.findUnique({
             where: {
@@ -138,16 +146,26 @@ export async function unlockNote(noteId: string) {
 
         if (existingUnlock) return { success: true, message: "Zaten açık" }
 
+        // Kendi notu mu?
+        if (note.uploaderId === user.id) return { success: true, message: "Kendi notunuz" }
+
         // Kredi yeterli mi?
-        if (user.credits < 1) {
-            return { success: false, message: "Yetersiz Süt Bakiyesi! 🥛" }
+        if (user.credits < note.price) {
+            return { success: false, message: `Yetersiz Süt Bakiyesi! Bu not için ${note.price} Süt gerekiyor. 🥛` }
         }
 
-        // Transaction: Kredi düş, Kilidi aç
+        // Transaction: 
+        // 1. İzleyiciden kredi düş
+        // 2. Yükleyiciye kredi ekle
+        // 3. Kilidi aç
         await prisma.$transaction([
             prisma.user.update({
                 where: { id: user.id },
-                data: { credits: { decrement: 1 } }
+                data: { credits: { decrement: note.price } }
+            }),
+            prisma.user.update({
+                where: { id: note.uploaderId },
+                data: { credits: { increment: note.price } }
             }),
             prisma.unlockedNote.create({
                 data: {

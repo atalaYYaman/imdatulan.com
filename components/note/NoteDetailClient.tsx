@@ -77,6 +77,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                         isLocked={!isUnlocked}
                         onUnlock={handleUnlockNote}
                         isUnlocking={isUnlocking}
+                        price={note.price}
                     />
                 </div>
 

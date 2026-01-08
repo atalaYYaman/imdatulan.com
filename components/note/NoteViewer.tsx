@@ -18,9 +18,10 @@ interface NoteViewerProps {
     isLocked: boolean;
     onUnlock?: () => void;
     isUnlocking?: boolean;
+    price?: number;
 }
 
-export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking }: NoteViewerProps) {
+export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking, price = 1 }: NoteViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
     const [scale, setScale] = useState<number>(isLocked ? 0.6 : 1.0); // Kilitliyse biraz daha küçük göster
     const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +60,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                 <span className="animate-pulse">Açılıyor...</span>
                             ) : (
                                 <>
-                                    <span>1 Süt Harca</span>
+                                    <span>{price} Süt Harca</span>
                                     <span className="text-lg">🥛</span>
                                 </>
                             )}

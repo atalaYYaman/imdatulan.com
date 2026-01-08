@@ -42,6 +42,7 @@ model User {
   views                View[]
   credits              Int       @default(3) // Süt Bakiyesi (Başlangıç 3 Süt)
   unlockedNotes        UnlockedNote[]
+  purchases            ProductPurchase[]
 }
 
 model UnlockedNote {
@@ -84,6 +85,7 @@ model Note {
   faculty    String
   department String
   fileUrl    String
+  price      Int    @default(1) // Notun Süt değeri (1-3)
   status     String @default("PENDING") // PENDING, APPROVED, REJECTED
 
   // Metadata
@@ -144,4 +146,30 @@ model View {
   createdAt DateTime @default(now())
 
   @@unique([userId, noteId]) // Bir kullanıcı bir notu (teorik olarak) bir kez "izledi" sayılır
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Int      @default(0) // Süt fiyatı
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  stock       Int?     // null = sınırsız
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchases   ProductPurchase[]
+}
+
+model ProductPurchase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  priceAtTime Int    // Satın alma anındaki fiyat
+
+  createdAt DateTime @default(now())
 }

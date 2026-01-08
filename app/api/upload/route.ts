@@ -17,6 +17,8 @@ export async function POST(req: Request) {
         const term = formData.get("term") as string
         const noteType = formData.get("noteType") as string
         const description = formData.get("description") as string
+        const priceStr = formData.get("price") as string
+        const price = priceStr ? parseInt(priceStr) : 1
 
         if (!file || !courseName) {
             return NextResponse.json({ message: "Missing fields" }, { status: 400 })
@@ -43,6 +45,7 @@ export async function POST(req: Request) {
                 description: description,
                 fileUrl: blob.url, // URL from Vercel Blob
                 uploaderId: user.id,
+                price: price,
                 status: "APPROVED"
             }
         })

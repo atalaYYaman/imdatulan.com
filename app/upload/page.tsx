@@ -15,7 +15,8 @@ export default function UploadPage() {
         courseName: "",
         term: "",
         description: "",
-        noteType: "Ders Notu"
+        noteType: "Ders Notu",
+        price: 1
     });
     const [loading, setLoading] = useState(false);
 
@@ -64,6 +65,7 @@ export default function UploadPage() {
             data.append("term", formData.term);
             data.append("description", formData.description);
             data.append("noteType", formData.noteType);
+            data.append("price", formData.price.toString());
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -234,6 +236,33 @@ export default function UploadPage() {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* Price Selection */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-300 mb-2 block">Not Fiyatı (Süt)</label>
+                            <div className="flex gap-4">
+                                {[1, 2, 3].map((price) => (
+                                    <label key={price} className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all ${formData.price === price
+                                            ? "bg-[#22d3ee] border-[#22d3ee] text-[#002A30]"
+                                            : "bg-[#01353D] border-[#003E44] text-gray-400 hover:border-gray-500"
+                                        }`}>
+                                        <input
+                                            type="radio"
+                                            name="price"
+                                            value={price}
+                                            checked={formData.price === price}
+                                            onChange={() => setFormData(prev => ({ ...prev, price: price }))}
+                                            className="hidden"
+                                        />
+                                        <span className="font-bold text-lg">{price}</span>
+                                        <span className="text-sm font-medium">Süt</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-2">
+                                Notunuzu indiren/görüntüleyen kullanıcılardan bu miktar tahsil edilecek ve size aktarılacaktır.
+                            </p>
                         </div>
 
                         <Button
