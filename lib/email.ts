@@ -1,6 +1,9 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize at module level, but safely
+const resend = process.env.RESEND_API_KEY
+    ? new Resend(process.env.RESEND_API_KEY)
+    : null;
 
 type EmailPayload = {
     to: string;
@@ -9,9 +12,9 @@ type EmailPayload = {
 };
 
 export const sendEmail = async (data: EmailPayload) => {
-    // In development/test without API key, fallback to logging
-    if (!process.env.RESEND_API_KEY) {
-        console.log("Mock Email Sent (No API Key):", data);
+    // If no API key (e.g. during build or local dev without .env), log and return success
+    if (!resend) {
+        console.log("Mock Email Sent (No API Key configured):", data);
         return { success: true };
     }
 
