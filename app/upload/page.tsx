@@ -131,7 +131,7 @@ export default function UploadPage() {
                         >
                             <input
                                 type="file"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 onChange={handleChange}
                                 accept=".pdf,.doc,.docx,.jpg,.png"
                             />
@@ -146,7 +146,7 @@ export default function UploadPage() {
                                     <button
                                         type="button"
                                         onClick={(e) => { e.preventDefault(); setFile(null); }}
-                                        className="mt-3 text-xs text-red-400 hover:text-red-300 z-10 relative"
+                                        className="mt-3 text-xs text-red-400 hover:text-red-300 z-20 relative"
                                     >
                                         Dosyayı Kaldır
                                     </button>

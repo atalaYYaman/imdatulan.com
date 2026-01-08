@@ -272,7 +272,7 @@ export default function SignUpForm() {
                     type="file"
                     accept="image/*"
                     onChange={(e) => e.target.files && handleChange('studentIdCardFile', e.target.files[0])}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
 
                 {formData.studentIdCardFile ? (
