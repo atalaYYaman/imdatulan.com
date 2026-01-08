@@ -19,9 +19,10 @@ interface NoteViewerProps {
     onUnlock?: () => void;
     isUnlocking?: boolean;
     price?: number;
+    errorMessage?: string | null;
 }
 
-export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking, price = 1 }: NoteViewerProps) {
+export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking, price = 1, errorMessage }: NoteViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
     const [scale, setScale] = useState<number>(isLocked ? 0.6 : 1.0); // Kilitliyse biraz daha küçük göster
     const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +51,16 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                             <p className="text-gray-400 text-sm">
                                 Notun tamamını görüntülemek için sütünüzden harcamanız gerekmektedir.
                             </p>
+
+                            {/* Error Message Display */}
+                            {errorMessage && (
+                                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl animate-in fade-in slide-in-from-top-2">
+                                    <p className="text-red-400 text-xs font-bold flex items-center justify-center gap-2">
+                                        <span className="text-lg">⚠️</span>
+                                        {errorMessage}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                         <button
                             onClick={onUnlock}

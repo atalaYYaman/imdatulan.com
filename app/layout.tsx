@@ -5,6 +5,7 @@ import SessionProvider from "@/components/SessionProvider";
 import Sidebar from "@/components/Sidebar";
 import MobileHeader from "@/components/MobileHeader";
 import Header from "@/components/Header";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,7 @@ export default function RootLayout({
 
               <main className="flex-1">
                 {children}
+                <SpeedInsights />
               </main>
             </div>
           </div>

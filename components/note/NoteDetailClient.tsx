@@ -41,20 +41,22 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
     const [isWarningAccepted, setIsWarningAccepted] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(initialIsUnlocked);
     const [isUnlocking, setIsUnlocking] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const handleUnlockNote = async () => {
         setIsUnlocking(true);
+        setErrorMessage(null);
         try {
             const { unlockNote } = await import('@/app/actions/noteActions');
             const result = await unlockNote(note.id);
             if (result.success) {
                 setIsUnlocked(true);
             } else {
-                alert(result.message || "Bir hata oluştu");
+                setErrorMessage(result.message || "Bir hata oluştu");
             }
         } catch (error) {
             console.error("Unlock error:", error);
-            alert("Beklenmedik bir hata oluştu");
+            setErrorMessage("Beklenmedik bir hata oluştu");
         } finally {
             setIsUnlocking(false);
         }
@@ -78,6 +80,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                         onUnlock={handleUnlockNote}
                         isUnlocking={isUnlocking}
                         price={note.price}
+                        errorMessage={errorMessage}
                     />
                 </div>
 

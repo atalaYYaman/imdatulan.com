@@ -19,6 +19,7 @@ interface Note {
     type: string | null;
     fileUrl: string;
     createdAt: Date;
+    price: number;
     uploader: {
         firstName: string | null;
         lastName: string | null;
@@ -202,13 +203,12 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                             instructor: "",
                             views: 0,
                             likes: 0,
-                            price: 0, // Free for MVP
+                            price: note.price || 0,
                             uploaderId: note.uploader.id,
                             previewUrl: "/doc.png", // Generic preview
                             fileUrl: note.fileUrl,
                             description: note.description,
                             type: note.type,
-                            rating: 4.5, // Default/Mock rating for MVP
                         };
 
                         return (

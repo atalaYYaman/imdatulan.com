@@ -11,7 +11,7 @@ interface NodCardProps {
         department: string;
         instructor?: string;
         fileUrl: string;
-        rating: number;
+        price: number;
         type: string;
     };
     author: {
@@ -60,10 +60,10 @@ export function NodCard({ note, author }: NodCardProps) {
                         <span className="text-xs text-gray-300 font-medium truncate max-w-[80px]">{author.name}</span>
                     </div>
 
-                    {/* Rating */}
+                    {/* Price */}
                     <div className="flex items-center gap-1 bg-[#22d3ee]/10 px-2 py-0.5 rounded-full">
-                        <Star className="h-3 w-3 text-[#22d3ee] fill-[#22d3ee]" />
-                        <span className="text-xs font-bold text-[#22d3ee]">{note.rating}</span>
+                        <span className="text-xs font-bold text-[#22d3ee]">{note.price} Süt</span>
+                        <span className="text-xs">🥛</span>
                     </div>
                 </div>
             </div>

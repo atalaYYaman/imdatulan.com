@@ -18,6 +18,7 @@ export default function SignInForm() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -77,14 +78,23 @@ export default function SignInForm() {
                 required
             />
 
-            <CustomInput
-                label="Şifre"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-            />
+            <div className="relative">
+                <CustomInput
+                    label="Şifre"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-[34px] text-gray-400 hover:text-white text-sm"
+                >
+                    {showPassword ? "Gizle" : "Göster"}
+                </button>
+            </div>
 
             <div className="flex items-center justify-between">
                 <CustomCheckbox
