@@ -1,63 +1,37 @@
-import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { redirect } from 'next/navigation'
-import { approveNote, rejectNote } from '@/app/actions'
+import Link from 'next/link'
+import { User, FileText } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
-
-export default async function AdminPage() {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) redirect('/auth/signin')
-
-    const admin = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (admin?.role !== 'ADMIN') redirect('/')
-
-    const pendingNotes = await prisma.note.findMany({
-        where: { status: 'PENDING' },
-        orderBy: { createdAt: 'desc' },
-        include: { uploader: { select: { email: true } } }
-    })
-
+export default function AdminDashboard() {
     return (
-        <div className="min-h-screen bg-gray-100 py-10 px-4">
-            <div className="max-w-6xl mx-auto">
-                <h1 className="text-3xl font-bold mb-8 text-gray-800">Admin Panel - Onay Bekleyenler</h1>
+        <div className="space-y-8">
+            <h1 className="text-3xl font-bold">Admin Paneli</h1>
 
-                <div className="bg-white shadow overflow-hidden rounded-md">
-                    <ul className="divide-y divide-gray-200">
-                        {pendingNotes.length === 0 ? (
-                            <li className="px-6 py-4 text-center text-gray-500">Onay bekleyen not yok. Temiz!</li>
-                        ) : (
-                            pendingNotes.map((note: any) => (
-                                <li key={note.id} className="px-6 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="text-lg font-medium text-gray-900 truncate">{note.title}</h3>
-                                            <div className="mt-1 text-sm text-gray-500">
-                                                <p>Gönderen: {note.uploader.email}</p>
-                                                <p>Üniv: {note.university} | Blm: {note.department} | Ders: {note.faculty}</p>
-                                                <p>Dosya: <a href={note.fileUrl} target="_blank" className="text-blue-600 hover:underline">Görüntüle (Watermarked)</a></p>
-                                            </div>
-                                        </div>
-                                        <div className="flex space-x-2 ml-4">
-                                            <form action={approveNote.bind(null, note.id, note.uploaderId)}>
-                                                <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm font-medium">
-                                                    Onayla
-                                                </button>
-                                            </form>
-                                            <form action={rejectNote.bind(null, note.id)}>
-                                                <button className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm font-medium">
-                                                    Red
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </li>
-                            ))
-                        )}
-                    </ul>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Link
+                    href="/admin/users"
+                    className="bg-gray-800 p-6 rounded-2xl border border-gray-700 hover:border-[#22d3ee] transition-colors group"
+                >
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors">
+                            <User className="w-8 h-8 text-blue-400" />
+                        </div>
+                        <h2 className="text-xl font-semibold">Kullanıcı Onayları</h2>
+                    </div>
+                    <p className="text-gray-400">Yeni kayıt olan kullanıcıların kimlik ve bilgilerini onayla.</p>
+                </Link>
+
+                <Link
+                    href="/admin/notes"
+                    className="bg-gray-800 p-6 rounded-2xl border border-gray-700 hover:border-[#22d3ee] transition-colors group"
+                >
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors">
+                            <FileText className="w-8 h-8 text-purple-400" />
+                        </div>
+                        <h2 className="text-xl font-semibold">Not Onayları</h2>
+                    </div>
+                    <p className="text-gray-400">Yüklenen ders notlarını incele ve onayla.</p>
+                </Link>
             </div>
         </div>
     )

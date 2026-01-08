@@ -21,6 +21,11 @@ export const authOptions: NextAuthOptions = {
                         return null
                     }
 
+                    // Approval Check
+                    if (user.role !== 'ADMIN' && user.approvalStatus !== 'APPROVED') {
+                        throw new Error("Hesabınız henüz onaylanmamıştır. Lütfen onay bekleyiniz.");
+                    }
+
                     if (!user.password) {
                         console.log("Login Failed: User has no password set (OAuth user?)");
                         return null

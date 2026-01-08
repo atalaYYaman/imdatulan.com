@@ -43,6 +43,11 @@ model User {
   credits              Int       @default(3) // Süt Bakiyesi (Başlangıç 3 Süt)
   unlockedNotes        UnlockedNote[]
   purchases            ProductPurchase[]
+
+  // Verification
+  studentIdCardUrl String?
+  approvalStatus   String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  rejectionReason  String?
 }
 
 model UnlockedNote {

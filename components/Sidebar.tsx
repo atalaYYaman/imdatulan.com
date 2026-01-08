@@ -13,6 +13,7 @@ export default function Sidebar() {
         { name: 'Ana Sayfa', href: '/', icon: Home },
         { name: 'Notlar', href: '/notes', icon: FolderOpen },
         ...(session ? [{ name: 'Profilim', href: '/profile', icon: User }] : []),
+        ...((session?.user as any)?.role === 'ADMIN' ? [{ name: 'Admin Paneli', href: '/admin', icon: Landmark }] : []),
         { name: 'Mağaza', href: '/store', icon: ShoppingBag },
         { name: 'Bağış Yap', href: '/donate', icon: Heart },
     ];

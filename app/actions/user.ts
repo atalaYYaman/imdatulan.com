@@ -19,6 +19,7 @@ export type RegistrationDat = {
     password: string
     marketingConsent: boolean
     privacyConsent: boolean
+    studentIdCardUrl: string
 }
 
 export async function registerUser(data: RegistrationDat) {
@@ -39,6 +40,8 @@ export async function registerUser(data: RegistrationDat) {
         }
 
         // 3. Mock Identity Validation (Format only)
+        /* 
+        KPS Validation Disabled for now.
         const isIdentityValid = await validateTCKN(
             data.tcIdentityNo,
             data.firstName,
@@ -49,6 +52,7 @@ export async function registerUser(data: RegistrationDat) {
         if (!isIdentityValid) {
             return { success: false, message: "TC Kimlik No formatı geçersiz." }
         }
+        */
 
         // 4. Duplicate Check
         const existingUserEmail = await prisma.user.findUnique({ where: { email: data.email } })
@@ -112,7 +116,9 @@ export async function registerUser(data: RegistrationDat) {
                 email: data.email.trim(),
                 password: hashedPassword,
                 marketingConsent: data.marketingConsent,
-                role: "USER"
+                role: "USER",
+                studentIdCardUrl: data.studentIdCardUrl,
+                approvalStatus: "PENDING"
             }
         })
 
