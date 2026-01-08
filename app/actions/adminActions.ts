@@ -100,13 +100,20 @@ export async function approveNote(noteId: string) {
         const note = await prisma.note.update({
             where: { id: noteId },
             data: { status: "APPROVED" },
-            include: { uploader: true } // Need uploader for credits
+            include: { uploader: true } // Need uploader for credits and email
         });
 
         // Update User Credits (Award 3 credits on approval as per plan)
         await prisma.user.update({
             where: { id: note.uploaderId },
             data: { credits: { increment: 3 } }
+        });
+
+        // Send Email
+        await sendEmail({
+            to: note.uploader.email,
+            subject: "Notunuz Onaylandı! | Otlak",
+            body: `Tebrikler! "${note.courseName}" dersi için yüklediğiniz not onaylandı ve yayınlandı. Hesabınıza 3 Süt yüklendi.`
         });
 
         revalidatePath('/admin/notes');
@@ -120,12 +127,17 @@ export async function rejectNote(noteId: string, reason: string) {
     if (!await isAdmin()) return { success: false, message: "Unauthorized" };
 
     try {
-        // We might want to store rejection reason for notes too?
-        // Note model doesn't have rejectionReason field yet.
-        // For now, just set status to REJECTED.
-        await prisma.note.update({
+        const note = await prisma.note.update({
             where: { id: noteId },
-            data: { status: "REJECTED" }
+            data: { status: "REJECTED" },
+            include: { uploader: true }
+        });
+
+        // Send Email
+        await sendEmail({
+            to: note.uploader.email,
+            subject: "Notunuz Reddedildi | Otlak",
+            body: `Üzgünüz, "${note.courseName}" dersi için yüklediğiniz not onaylanmadı. Sebep: ${reason}`
         });
 
         revalidatePath('/admin/notes');
