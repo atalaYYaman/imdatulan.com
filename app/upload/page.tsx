@@ -244,8 +244,8 @@ export default function UploadPage() {
                             <div className="flex gap-4">
                                 {[1, 2, 3].map((price) => (
                                     <label key={price} className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all ${formData.price === price
-                                            ? "bg-[#22d3ee] border-[#22d3ee] text-[#002A30]"
-                                            : "bg-[#01353D] border-[#003E44] text-gray-400 hover:border-gray-500"
+                                        ? "bg-[#22d3ee] border-[#22d3ee] text-[#002A30]"
+                                        : "bg-[#01353D] border-[#003E44] text-gray-400 hover:border-gray-500"
                                         }`}>
                                         <input
                                             type="radio"
@@ -266,8 +266,9 @@ export default function UploadPage() {
                         </div>
 
                         <Button
+                            type="submit"
                             className="w-full py-4 text-base shadow-[0_0_20px_rgba(34,211,238,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!file || !formData.courseName || loading}
+                            disabled={loading}
                         >
                             {loading ? "Yükleniyor..." : "Onaya Gönder"}
                         </Button>

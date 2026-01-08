@@ -35,8 +35,6 @@ export default function SignUpForm() {
         // Identity
         firstName: '',
         lastName: '',
-        birthYear: '',
-        tcIdentityNo: '',
 
         // Academic
         university: '',
@@ -105,10 +103,10 @@ export default function SignUpForm() {
 
         // Step 1: Personal & Academic Info Validation
         if (step === 1) {
-            const { firstName, lastName, birthYear, tcIdentityNo, university, department, studentClass, studentNumber } = formData;
+            const { firstName, lastName, university, department, studentClass, studentNumber } = formData;
 
-            if (!firstName || !lastName || !birthYear || !tcIdentityNo) {
-                setError('Lütfen tüm kimlik bilgilerini doldurunuz.');
+            if (!firstName || !lastName) {
+                setError('Lütfen Ad ve Soyad kısımlarını doldurunuz.');
                 return;
             }
 
@@ -211,7 +209,6 @@ export default function SignUpForm() {
 
             const res = await registerUser({
                 ...submitData,
-                birthYear: Number(formData.birthYear),
                 programLevel: "Lisans", // Defaulting as we removed the step
                 studentIdCardUrl: idCardUrl,
                 // KPS Validation is disabled in backend
@@ -237,10 +234,6 @@ export default function SignUpForm() {
             <div className="grid grid-cols-2 gap-4">
                 <CustomInput label="Ad" value={formData.firstName} onChange={(e) => handleChange('firstName', e.target.value)} placeholder="Adınız" />
                 <CustomInput label="Soyad" value={formData.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Soyadınız" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <CustomInput label="Doğum Yılı" type="number" value={formData.birthYear} onChange={(e) => handleChange('birthYear', e.target.value)} placeholder="YYYY" />
-                <CustomInput label="TC Kimlik No" value={formData.tcIdentityNo} onChange={(e) => handleChange('tcIdentityNo', e.target.value)} placeholder="11 Haneli No" maxLength={11} />
             </div>
 
             <hr className="border-gray-800 my-4" />

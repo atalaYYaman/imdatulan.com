@@ -7,8 +7,8 @@ import bcrypt from "bcryptjs"
 export type RegistrationDat = {
     firstName: string
     lastName: string
-    birthYear: number
-    tcIdentityNo: string
+    birthYear?: number
+    tcIdentityNo?: string
     university: string
     programLevel: string
     faculty: string
@@ -60,10 +60,7 @@ export async function registerUser(data: RegistrationDat) {
             return { success: false, message: "Bu email adresi ile kayıtlı bir kullanıcı zaten var." }
         }
 
-        const existingUserTC = await prisma.user.findUnique({ where: { tcIdentityNo: data.tcIdentityNo.trim() } })
-        if (existingUserTC) {
-            return { success: false, message: "Bu TC Kimlik No ile kayıtlı bir kullanıcı zaten var." }
-        }
+        // tcIdentityNo check removed
 
         // Student Number unique check?
         const existingStudentNumber = await prisma.user.findUnique({ where: { studentNumber: data.studentNumber.trim() } })
@@ -79,15 +76,6 @@ export async function registerUser(data: RegistrationDat) {
         const finalLastName = data.lastName.trim().toLocaleUpperCase('tr-TR');
 
         // If uni/faculty were IDs, we might want to fetch names, but we'll store what we got.
-        // For Step 3 dropdowns, we are getting IDs for Uni/Faculty. We should resolve them to names or store IDs.
-        // Prompt says "Universities, Faculties, Departments tables... populate with seed... user table store string".
-        // Let's assume we store the strings. So we need to fetch the names if IDs are sent.
-        // To simplify, let's look up the names if they look like CUIDs, or just trust the client sent names from select? 
-        // Actually, the select component sends values. My fetcher sends IDs as value.
-        // So we need to resolve IDs to names here OR update fetcher to return Name as value.
-        // Let's resolve here to be safe, or update schema to relate. 
-        // Plan said: "Store academic info as Strings".
-
         let uniName = data.university;
         let facName = data.faculty;
 
@@ -105,8 +93,7 @@ export async function registerUser(data: RegistrationDat) {
             data: {
                 firstName: finalFirstName,
                 lastName: finalLastName,
-                birthYear: Number(data.birthYear),
-                tcIdentityNo: data.tcIdentityNo.trim(),
+                // birthYear and tcIdentityNo removed
                 university: uniName,
                 programLevel: data.programLevel,
                 faculty: facName,
