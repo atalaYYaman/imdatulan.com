@@ -98,6 +98,7 @@ model Note {
   type        String? // Ders Notu, İmdat Sorular, etc.
   term        String? // 2025 Güz, etc.
   description String? // User description
+  isAI        Boolean @default(false) // İçerikte AI desteği var mı?
   viewCount   Int     @default(0)
 
   uploaderId String

@@ -16,7 +16,8 @@ export default function UploadPage() {
         term: "",
         description: "",
         noteType: "Ders Notu",
-        price: 1
+        price: 2, // Ders Notu default price
+        isAI: false
     });
     const [loading, setLoading] = useState(false);
 
@@ -66,6 +67,7 @@ export default function UploadPage() {
             data.append("description", formData.description);
             data.append("noteType", formData.noteType);
             data.append("price", formData.price.toString());
+            data.append("isAI", formData.isAI.toString());
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -119,6 +121,17 @@ export default function UploadPage() {
                 </div>
 
                 <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl relative">
+
+                    {/* Header Info Alert */}
+                    <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex gap-3">
+                        <AlertCircle className="h-6 w-6 text-blue-500 shrink-0" />
+                        <div className="space-y-1">
+                            <h3 className="text-sm font-bold text-blue-500">Dikkat</h3>
+                            <p className="text-xs text-muted-foreground">Topluluğun faydalanabilmesi için lütfen tüm bilgileri doğru ve detaylı giriniz.</p>
+                            <p className="text-xs text-muted-foreground">Herhangi bir kötü niyet, yanlış bilgi veya kullanıcı sözleşmesine aykırı durumda içerik kaldırılır.</p>
+                        </div>
+                    </div>
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* File Upload Area */}
                         <div
@@ -201,6 +214,8 @@ export default function UploadPage() {
                             </div>
                         </div>
 
+
+
                         {/* Description */}
                         <div>
                             <div className="flex justify-between mb-1">
@@ -218,6 +233,39 @@ export default function UploadPage() {
                             />
                         </div>
 
+                        {/* AI Content Declaration */}
+                        <div>
+                            <label className="text-xs font-semibold text-muted-foreground mb-2 block">İçerikte Yapay Zeka (AI) desteği var mı?</label>
+                            <div className="flex gap-4">
+                                <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all ${formData.isAI
+                                    ? "bg-primary/10 border-primary text-primary"
+                                    : "bg-background border-border text-muted-foreground hover:bg-accent"
+                                    }`}>
+                                    <input
+                                        type="radio"
+                                        name="isAI"
+                                        className="hidden"
+                                        checked={formData.isAI === true}
+                                        onChange={() => setFormData(prev => ({ ...prev, isAI: true }))}
+                                    />
+                                    <span className="text-sm font-medium">Evet (Yes)</span>
+                                </label>
+                                <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition-all ${!formData.isAI
+                                    ? "bg-primary/10 border-primary text-primary"
+                                    : "bg-background border-border text-muted-foreground hover:bg-accent"
+                                    }`}>
+                                    <input
+                                        type="radio"
+                                        name="isAI"
+                                        className="hidden"
+                                        checked={formData.isAI === false}
+                                        onChange={() => setFormData(prev => ({ ...prev, isAI: false }))}
+                                    />
+                                    <span className="text-sm font-medium">Hayır (No)</span>
+                                </label>
+                            </div>
+                        </div>
+
                         {/* Note Type */}
                         <div>
                             <label className="text-xs font-semibold text-muted-foreground mb-2 block">Not Türü</label>
@@ -226,7 +274,15 @@ export default function UploadPage() {
                                     <button
                                         key={type}
                                         type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, noteType: type }))}
+                                        onClick={() => {
+                                            let newPrice = 1;
+                                            if (type === 'Otlak Sorular') newPrice = 3;
+                                            else if (type === 'Ders Notu') newPrice = 2;
+                                            else if (type === 'Slayt') newPrice = 1;
+                                            // Keep custom logic if needed, but per request auto-set:
+
+                                            setFormData(prev => ({ ...prev, noteType: type, price: newPrice }))
+                                        }}
                                         className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${formData.noteType === type
                                             ? "bg-primary text-primary-foreground border-primary"
                                             : "bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-foreground/50"
@@ -240,7 +296,10 @@ export default function UploadPage() {
 
                         {/* Price Selection */}
                         <div>
-                            <label className="text-xs font-semibold text-muted-foreground mb-2 block">Not Fiyatı (Süt)</label>
+                            <div className="flex items-center gap-2 mb-2">
+                                <label className="text-xs font-semibold text-muted-foreground block">Not Fiyatı (Süt)</label>
+                                <span className="text-[10px] text-gray-400 italic">Tavsiye edilen fiyat</span>
+                            </div>
                             <div className="flex gap-4">
                                 {[1, 2, 3].map((price) => (
                                     <label key={price} className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-all ${formData.price === price
@@ -272,27 +331,32 @@ export default function UploadPage() {
                         >
                             {loading ? "Yükleniyor..." : "Onaya Gönder"}
                         </Button>
+                        <p className="text-center text-xs text-red-400/80">
+                            Topluluk kurallarını ihlal eden, sistem açıklarını kullanan ve manipülasyon yapan kullanıcılar platformdan bir süreliğine ya da süresiz olarak uzaklaştırılacaktır.
+                        </p>
                     </form>
                 </div>
-            </div>
+            </div >
 
             {/* Success Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-card border border-border rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
-                        <div className="h-16 w-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                            <CheckCircle className="h-8 w-8" />
+            {
+                showModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-card border border-border rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+                            <div className="h-16 w-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                                <CheckCircle className="h-8 w-8" />
+                            </div>
+                            <h2 className="text-xl font-bold text-foreground mb-2">Harika! 🎉</h2>
+                            <p className="text-muted-foreground text-sm mb-6">
+                                Notun moderatörlerimiz tarafından incelenmek üzere alındı. <span className="font-semibold text-foreground">24 saat içinde</span> onaylanarak yayına alınacaktır.
+                            </p>
+                            <Link href="/">
+                                <Button className="w-full">Ana Sayfaya Dön</Button>
+                            </Link>
                         </div>
-                        <h2 className="text-xl font-bold text-foreground mb-2">Harika! 🎉</h2>
-                        <p className="text-muted-foreground text-sm mb-6">
-                            Notun moderatörlerimiz tarafından incelenmek üzere alındı. <span className="font-semibold text-foreground">24 saat içinde</span> onaylanarak yayına alınacaktır.
-                        </p>
-                        <Link href="/">
-                            <Button className="w-full">Ana Sayfaya Dön</Button>
-                        </Link>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

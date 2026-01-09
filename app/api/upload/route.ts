@@ -46,7 +46,8 @@ export async function POST(req: Request) {
                 fileUrl: blob.url, // URL from Vercel Blob
                 uploaderId: user.id,
                 price: price,
-                status: "APPROVED"
+                status: "APPROVED",
+                isAI: formData.get("isAI") === "true",
             }
         })
 
