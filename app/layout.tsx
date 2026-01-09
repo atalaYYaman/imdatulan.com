@@ -54,7 +54,7 @@ export default function RootLayout({
                 </div>
 
                 {/* Demo Banner */}
-                <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs text-center py-1 font-medium border-b border-yellow-500/20">
+                <div className="bg-yellow-500/10 text-yellow-800 dark:text-yellow-400 text-xs text-center py-1 font-medium border-b border-yellow-500/20">
                   Otlak (Beta) - Developed by Otlak Team
                 </div>
 

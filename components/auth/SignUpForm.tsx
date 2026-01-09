@@ -228,7 +228,7 @@ export default function SignUpForm() {
 
     const renderStep1 = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-            <h3 className="text-xl font-semibold text-white mb-2">Kişisel ve Akademik Bilgiler</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Kişisel ve Akademik Bilgiler</h3>
 
             {/* Identity Grid */}
             <div className="grid grid-cols-2 gap-4">
@@ -236,10 +236,9 @@ export default function SignUpForm() {
                 <CustomInput label="Soyad" value={formData.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Soyadınız" />
             </div>
 
-            <hr className="border-gray-800 my-4" />
+            <hr className="border-border my-4" />
 
             {/* Academic Grid */}
-            {/* Note: Assuming primarily Lisans flow for now based on available logic, but inputs handle text fallbacks if uni not found logic was added. Here we use selects. */}
             <CustomSelect label="Üniversite" options={universities} value={formData.university} onChange={(e) => handleChange('university', e.target.value)} placeholder="Üniversite Seçiniz" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -253,7 +252,7 @@ export default function SignUpForm() {
             </div>
 
             <div className="flex justify-end mt-6">
-                <button type="button" onClick={nextStep} disabled={isLoading} className="bg-[#00b4d8] hover:bg-[#0096c7] text-white px-8 py-3 rounded-lg font-medium transition-colors w-full md:w-auto">
+                <button type="button" onClick={nextStep} disabled={isLoading} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-medium transition-colors w-full md:w-auto">
                     {isLoading ? 'Kontrol Ediliyor...' : 'Devam Et'}
                 </button>
             </div>
@@ -263,11 +262,11 @@ export default function SignUpForm() {
     const renderStep2 = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-white mb-2">Öğrenci Kimlik Kartı</h3>
-                <p className="text-gray-400 text-sm">Doğrulama için lütfen öğrenci kimlik kartınızın ön yüzünün net bir fotoğrafını yükleyiniz.</p>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Öğrenci Kimlik Kartı</h3>
+                <p className="text-muted-foreground text-sm">Doğrulama için lütfen öğrenci kimlik kartınızın ön yüzünün net bir fotoğrafını yükleyiniz.</p>
             </div>
 
-            <div className="border-2 border-dashed border-gray-700 rounded-2xl p-8 flex flex-col items-center justify-center bg-gray-800/50 hover:bg-gray-800 transition-colors group cursor-pointer relative">
+            <div className="border-2 border-dashed border-border rounded-2xl p-8 flex flex-col items-center justify-center bg-muted/50 hover:bg-muted transition-colors group cursor-pointer relative">
                 <input
                     type="file"
                     accept="image/*"
@@ -277,36 +276,36 @@ export default function SignUpForm() {
 
                 {formData.studentIdCardFile ? (
                     <div className="text-center">
-                        <div className="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                             <Upload className="w-8 h-8" />
                         </div>
-                        <p className="text-green-400 font-medium">{formData.studentIdCardFile.name}</p>
-                        <p className="text-xs text-gray-500 mt-2">Değiştirmek için tıklayın</p>
+                        <p className="text-primary font-medium">{formData.studentIdCardFile.name}</p>
+                        <p className="text-xs text-muted-foreground mt-2">Değiştirmek için tıklayın</p>
                     </div>
                 ) : (
                     <div className="text-center group-hover:scale-105 transition-transform">
-                        <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gray-600">
-                            <Upload className="w-8 h-8 text-gray-400" />
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-muted/80">
+                            <Upload className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <p className="text-gray-300 font-medium">Fotoğraf Yüklemek İçin Tıklayın</p>
-                        <p className="text-xs text-gray-500 mt-2">PNG, JPG, JPEG (Max 5MB)</p>
+                        <p className="text-muted-foreground font-medium">Fotoğraf Yüklemek İçin Tıklayın</p>
+                        <p className="text-xs text-muted-foreground mt-2">PNG, JPG, JPEG (Max 5MB)</p>
                     </div>
                 )}
             </div>
 
             <div className="flex justify-between mt-8">
-                <button type="button" onClick={prevStep} className="text-gray-400 hover:text-white transition-colors">Geri</button>
-                <button type="button" onClick={nextStep} className="bg-[#00b4d8] hover:bg-[#0096c7] text-white px-8 py-3 rounded-lg font-medium transition-colors">Devam Et</button>
+                <button type="button" onClick={prevStep} className="text-muted-foreground hover:text-foreground transition-colors">Geri</button>
+                <button type="button" onClick={nextStep} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-medium transition-colors">Devam Et</button>
             </div>
         </div>
     )
 
     const renderStep3 = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-            <h3 className="text-xl font-semibold text-white mb-2">Hesap Oluştur</h3>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Hesap Oluştur</h3>
 
             {/* Disclaimer for Email */}
-            <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-lg flex gap-3 text-sm text-yellow-500/90 mb-6">
+            <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-lg flex gap-3 text-sm text-yellow-600 dark:text-yellow-500 mb-6">
                 <span className="text-xl">⚠️</span>
                 <p>Doğrulama ve onay bildirimleri için lütfen <strong>aktif olarak kullandığınız ve erişebildiğiniz</strong> bir email adresi giriniz.</p>
             </div>
@@ -315,22 +314,22 @@ export default function SignUpForm() {
 
             <div className="relative">
                 <CustomInput label="Şifre Belirle" type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="En az 6 karakter" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[34px] text-gray-400 hover:text-white text-sm">{showPassword ? "Gizle" : "Göster"}</button>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[34px] text-muted-foreground hover:text-foreground text-sm">{showPassword ? "Gizle" : "Göster"}</button>
             </div>
 
             <div className="relative">
                 <CustomInput label="Şifre Tekrar" type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={(e) => handleChange('confirmPassword', e.target.value)} placeholder="Şifrenizi tekrar giriniz" />
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-[34px] text-gray-400 hover:text-white text-sm">{showConfirmPassword ? "Gizle" : "Göster"}</button>
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-[34px] text-muted-foreground hover:text-foreground text-sm">{showConfirmPassword ? "Gizle" : "Göster"}</button>
             </div>
 
             <div className="space-y-3 mt-4">
                 <CustomCheckbox checked={formData.marketingConsent} onChange={(e) => handleChange('marketingConsent', e.target.checked)} label="Yeniliklerden haberdar olmak istiyorum." />
-                <CustomCheckbox checked={formData.privacyConsent} onChange={(e) => handleChange('privacyConsent', e.target.checked)} label={<span className="text-sm"><Link href="/privacy" className="text-[#00b4d8] hover:underline">KVKK ve Aydınlatma Metni</Link>'ni okudum, onaylıyorum.</span>} />
+                <CustomCheckbox checked={formData.privacyConsent} onChange={(e) => handleChange('privacyConsent', e.target.checked)} label={<span className="text-sm"><Link href="/privacy" className="text-primary hover:underline">KVKK ve Aydınlatma Metni</Link>'ni okudum, onaylıyorum.</span>} />
             </div>
 
             <div className="flex justify-between mt-8">
-                <button type="button" onClick={prevStep} className="text-gray-400 hover:text-white transition-colors">Geri</button>
-                <button type="submit" disabled={isLoading} className="bg-[#00b4d8] hover:bg-[#0096c7] text-white px-8 py-3 rounded-lg font-medium transition-colors disabled:opacity-50">
+                <button type="button" onClick={prevStep} className="text-muted-foreground hover:text-foreground transition-colors">Geri</button>
+                <button type="submit" disabled={isLoading} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-medium transition-colors disabled:opacity-50">
                     {isLoading ? 'Kayıt Yapılıyor...' : 'Kaydı Tamamla'}
                 </button>
             </div>
@@ -339,32 +338,32 @@ export default function SignUpForm() {
 
     const renderSuccess = () => (
         <div className="text-center py-10 animate-in zoom-in duration-500">
-            <div className="w-24 h-24 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-24 h-24 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-5xl">✓</span>
             </div>
-            <h2 className="text-3xl font-bold text-white mb-4">Başvurunuz Alındı!</h2>
-            <p className="text-gray-300 px-6 max-w-lg mx-auto leading-relaxed">
+            <h2 className="text-3xl font-bold text-foreground mb-4">Başvurunuz Alındı!</h2>
+            <p className="text-muted-foreground px-6 max-w-lg mx-auto leading-relaxed">
                 Kayıt başvurunuz başarıyla sistemimize ulaşmıştır.
                 <br /><br />
                 Yöneticilerimiz tarafından yapılan inceleme sonrasında, <strong>yaklaşık 12 saat içerisinde</strong> başvurunuz onaylanacak ve hesabınız aktif edilecektir.
                 <br /><br />
                 Onaylandığında email adresinize bilgilendirme gönderilecektir.
             </p>
-            <Link href="/" className="mt-10 inline-block px-8 py-3 bg-[#00b4d8] text-white rounded-xl font-bold hover:bg-[#0096c7] transition-all">
+            <Link href="/" className="mt-10 inline-block px-8 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all">
                 Ana Sayfaya Dön
             </Link>
         </div>
     )
 
     return (
-        <div className="bg-gray-900 p-8 rounded-2xl shadow-xl border border-gray-800">
+        <div className="bg-card p-8 rounded-2xl shadow-xl border border-border">
             {step < 4 && (
-                <div className="w-full bg-gray-800 h-2 rounded-full mb-8 overflow-hidden">
-                    <div className="bg-[#00b4d8] h-full transition-all duration-300 ease-out" style={{ width: `${(step / 3) * 100}%` }} />
+                <div className="w-full bg-muted h-2 rounded-full mb-8 overflow-hidden">
+                    <div className="bg-primary h-full transition-all duration-300 ease-out" style={{ width: `${(step / 3) * 100}%` }} />
                 </div>
             )}
 
-            {error && <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-lg mb-6 text-sm flex items-center gap-2"><span className="text-lg">⚠️</span>{error}</div>}
+            {error && <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-lg mb-6 text-sm flex items-center gap-2"><span className="text-lg">⚠️</span>{error}</div>}
 
             <form onSubmit={handleSubmit}>
                 {step === 1 && renderStep1()}

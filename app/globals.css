@@ -3,29 +3,34 @@
 :root {
   /* Light Mode - Green/White Theme */
   --background: #ffffff;
-  --foreground: #022c22; /* Emerald 950 */
-  
-  --card: #f8fafc; /* Slate 50 - slightly off white for contrast */
+  --foreground: #022c22;
+  /* Emerald 950 */
+
+  --card: #f8fafc;
+  /* Slate 50 - slightly off white for contrast */
   --card-foreground: #022c22;
-  
+
   --popover: #ffffff;
   --popover-foreground: #022c22;
-  
-  --primary: #10b981; /* Emerald 500 */
+
+  --primary: #10b981;
+  /* Emerald 500 */
   --primary-foreground: #ffffff;
-  
-  --secondary: #d1fae5; /* Emerald 100 */
-  --secondary-foreground: #065f46; /* Emerald 800 */
-  
+
+  --secondary: #d1fae5;
+  /* Emerald 100 */
+  --secondary-foreground: #065f46;
+  /* Emerald 800 */
+
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  
+
   --accent: #d1fae5;
   --accent-foreground: #065f46;
-  
+
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  
+
   --border: #e2e8f0;
   --input: #e2e8f0;
   --ring: #10b981;
@@ -33,34 +38,41 @@
 }
 
 .dark {
-  /* Dark Mode - Deep Green Theme */
-  --background: #022c22; /* Emerald 950 */
-  --foreground: #ecfdf5; /* Emerald 50 */
-  
-  --card: #064e3b; /* Emerald 900 */
-  --card-foreground: #ecfdf5;
-  
-  --popover: #022c22;
-  --popover-foreground: #ecfdf5;
-  
-  --primary: #10b981; /* Emerald 500 */
+  /* Dark Mode - Slate & Green Theme */
+  --background: #020617;
+  /* Slate 950 - Darker, less green */
+  --foreground: #f8fafc;
+  /* Slate 50 - White/Clear text */
+
+  --card: #0f172a;
+  /* Slate 900 */
+  --card-foreground: #f8fafc;
+
+  --popover: #020617;
+  --popover-foreground: #f8fafc;
+
+  --primary: #10b981;
+  /* Emerald 500 */
   --primary-foreground: #ffffff;
-  
-  --secondary: #065f46; /* Emerald 800 */
-  --secondary-foreground: #ffffff;
-  
-  --muted: #0f172a;
+
+  --secondary: #1e293b;
+  /* Slate 800 */
+  --secondary-foreground: #f8fafc;
+
+  --muted: #1e293b;
+  /* Slate 800 */
   --muted-foreground: #94a3b8;
-  
-  --accent: #065f46;
-  --accent-foreground: #ffffff;
-  
+  /* Slate 400 */
+
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+
   --destructive: #7f1d1d;
   --destructive-foreground: #fef2f2;
-  
-  --border: #065f46;
-  --input: #065f46;
-  --ring: #34d399;
+
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #10b981;
 }
 
 @theme {

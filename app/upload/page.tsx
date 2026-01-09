@@ -146,7 +146,7 @@ export default function UploadPage() {
                                     <button
                                         type="button"
                                         onClick={(e) => { e.preventDefault(); setFile(null); }}
-                                        className="mt-3 text-xs text-red-500 hover:text-red-400 z-20 relative"
+                                        className="mt-3 text-xs text-destructive hover:text-destructive/80 z-20 relative"
                                     >
                                         Dosyayı Kaldır
                                     </button>
@@ -280,7 +280,7 @@ export default function UploadPage() {
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-card border border-border rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
-                        <div className="h-16 w-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="h-16 w-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle className="h-8 w-8" />
                         </div>
                         <h2 className="text-xl font-bold text-foreground mb-2">Harika! 🎉</h2>

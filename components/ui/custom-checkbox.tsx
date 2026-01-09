@@ -14,20 +14,20 @@ export const CustomCheckbox = React.forwardRef<HTMLInputElement, CustomCheckboxP
                         <input
                             ref={ref}
                             type="checkbox"
-                            className={`w-4 h-4 text-[#00b4d8] border-gray-600 rounded focus:ring-[#00b4d8] bg-gray-800
-                ${error ? 'border-red-500' : ''}
+                            className={`w-4 h-4 text-primary border-muted-foreground rounded focus:ring-primary bg-input
+                ${error ? 'border-destructive' : ''}
                 ${className}
               `}
                             {...props}
                         />
                     </div>
                     <div className="ml-3 text-sm">
-                        <label className="text-gray-300 select-none cursor-pointer">
+                        <label className="text-muted-foreground select-none cursor-pointer">
                             {label}
                         </label>
                     </div>
                 </div>
-                {error && <p className="mt-1 text-xs text-red-500 ml-7">{error}</p>}
+                {error && <p className="mt-1 text-xs text-destructive ml-7">{error}</p>}
             </div>
         );
     }

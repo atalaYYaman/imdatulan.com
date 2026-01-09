@@ -17,25 +17,25 @@ export const CustomSelect = React.forwardRef<HTMLSelectElement, CustomSelectProp
     ({ label, options, error, placeholder = "Seçiniz...", className, ...props }, ref) => {
         return (
             <div className="w-full mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                     {label}
                 </label>
                 <select
                     ref={ref}
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00b4d8] bg-gray-800 transition-colors text-white placeholder-gray-400
-            ${error ? 'border-red-500' : 'border-gray-700 hover:border-gray-500'}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary bg-input transition-colors text-foreground placeholder-muted-foreground
+            ${error ? 'border-destructive' : 'border-border hover:border-muted-foreground'}
             ${className}
           `}
                     {...props}
                 >
-                    <option value="" disabled className="text-gray-500">{placeholder}</option>
+                    <option value="" disabled className="text-muted-foreground">{placeholder}</option>
                     {options.map((opt) => (
-                        <option key={opt.value} value={opt.value} disabled={opt.disabled} className={opt.disabled ? 'text-gray-500 bg-gray-900' : 'text-white'}>
+                        <option key={opt.value} value={opt.value} disabled={opt.disabled} className={opt.disabled ? 'text-muted-foreground bg-muted' : 'text-foreground'}>
                             {opt.label}
                         </option>
                     ))}
                 </select>
-                {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+                {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
             </div>
         );
     }
