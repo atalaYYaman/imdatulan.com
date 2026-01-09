@@ -40,6 +40,42 @@ export async function getNoteDetail(noteId: string) {
                 }
             }
         })
+
+        // --- Access Control Logic ---
+        if (!note) return null
+
+        // 1. PENDING Notlar: Kimse erişemez (Owner dahil)
+        if (note.status === 'PENDING') {
+            return null
+        }
+
+        // 2. SUSPENDED Notlar: Sadece Owner ve Satın Alanlar
+        if (note.status === 'SUSPENDED') {
+            const session = await getServerSession(authOptions)
+            if (!session?.user?.email) return null
+
+            const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+            if (!user) return null
+
+            // Owner check
+            if (note.uploaderId === user.id) {
+                // Allow
+            } else {
+                // Purchase check
+                const isUnlocked = await prisma.unlockedNote.findUnique({
+                    where: {
+                        userId_noteId: {
+                            userId: user.id,
+                            noteId: noteId
+                        }
+                    }
+                })
+
+                if (!isUnlocked) return null
+            }
+        }
+        // ---------------------------
+
         return note
     } catch (error) {
         console.error("Error fetching note detail:", error)
@@ -289,6 +325,18 @@ export async function createReport(noteId: string, reason: string, details: stri
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
         if (!user) return { success: false, message: "Kullanıcı bulunamadı" }
+
+        // Check for existing report
+        const existingReport = await prisma.report.findFirst({
+            where: {
+                noteId,
+                reporterId: user.id
+            }
+        })
+
+        if (existingReport) {
+            return { success: false, message: "Bu içeriği ile ilgili zaten bir bildiriminiz bulunuyor." }
+        }
 
         await prisma.report.create({
             data: {

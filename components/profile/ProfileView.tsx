@@ -90,8 +90,22 @@ export default function ProfileView({ user, notes, stats }: ProfileViewProps) {
                         {activeTab === 'shared' && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {notes.map(note => (
-                                    <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-105">
+                                    <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-105 relative group">
                                         <NodCard note={note} author={{ name: user.name, avatar: '', stats: { rating: 5.0, totalNotes: 0 } } as any} />
+
+                                        {/* Status Indicators */}
+                                        {note.status === 'PENDING' && (
+                                            <div className="absolute inset-x-0 bottom-0 bg-orange-500/90 text-white text-xs font-bold text-center py-2 backdrop-blur-sm rounded-b-xl z-20">
+                                                Onay Bekliyor ⏳
+                                            </div>
+                                        )}
+                                        {note.status === 'SUSPENDED' && (
+                                            <div className="absolute inset-0 bg-red-500/20 backdrop-blur-sm z-10 rounded-xl flex items-center justify-center">
+                                                <div className="bg-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                                                    🚫 Askıya Alındı
+                                                </div>
+                                            </div>
+                                        )}
                                     </Link>
                                 ))}
 
