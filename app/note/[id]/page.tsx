@@ -16,7 +16,6 @@ export default function NoteDetailPage() {
     }
 
     return (
-    return (
         <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-24 md:pb-8">
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
 
