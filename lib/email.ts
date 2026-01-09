@@ -38,3 +38,30 @@ export const sendEmail = async (data: EmailPayload) => {
         return { success: false, error };
     }
 };
+
+export const sendNoteApprovedEmail = async (to: string, noteTitle: string) => {
+    return sendEmail({
+        to,
+        subject: 'Notunuz Onaylandı! 🎉',
+        body: `Harika haber! "${noteTitle}" başlıklı notunuz moderatörlerimiz tarafından onaylandı ve yayına alındı.
+        
+Hesabınıza 3 Süt (kredi) yüklendi. Artık diğer öğrencilerin paylaşımlarını inceleyebilirsiniz.
+
+Teşekkürler,
+Otlak Ekibi`
+    });
+};
+
+export const sendNoteRejectedEmail = async (to: string, noteTitle: string, reason: string) => {
+    return sendEmail({
+        to,
+        subject: 'Notunuz Hakkında Bilgilendirme',
+        body: `Üzgünüz, "${noteTitle}" başlıklı notunuz aşağıdaki sebep(ler)den dolayı onaylanamadı:
+        
+"${reason}"
+
+Lütfen kurallarımızı gözden geçirip tekrar yüklemeyi deneyin.
+
+Otlak Ekibi`
+    });
+};

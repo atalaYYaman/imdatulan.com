@@ -27,6 +27,7 @@ export async function POST(req: Request) {
         // Vercel Blob Storage
         const blob = await put(file.name, file, {
             access: 'public',
+            addRandomSuffix: true
         });
 
         // DB Record
@@ -46,18 +47,12 @@ export async function POST(req: Request) {
                 fileUrl: blob.url, // URL from Vercel Blob
                 uploaderId: user.id,
                 price: price,
-                status: "APPROVED",
+                status: "PENDING",
                 isAI: formData.get("isAI") === "true",
             }
         })
 
-        // Increment user credits by 3
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                credits: { increment: 3 }
-            }
-        })
+        // Credits are now awarded upon Admin Approval, not upload.
 
         return NextResponse.json({ message: "Upload successful", note }, { status: 201 })
 

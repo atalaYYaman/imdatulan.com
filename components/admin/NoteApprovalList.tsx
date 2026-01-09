@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { approveNote, rejectNote } from '@/app/actions/adminActions';
+// import { approveNote, rejectNote } from '@/app/actions/adminActions'; // Deprecated in favor of API routes
 import { FileText, Download } from 'lucide-react';
 
 type NoteData = {
@@ -29,17 +29,48 @@ export default function NoteApprovalList({ notes }: { notes: NoteData[] }) {
     const handleApprove = async (noteId: string) => {
         if (!confirm('Notu onaylamak istediğinize emin misiniz?')) return;
         setActionLoading(noteId);
-        await approveNote(noteId);
-        setActionLoading(null);
+
+        try {
+            const res = await fetch('/api/admin/notes/approve', {
+                method: 'POST',
+                body: JSON.stringify({ noteId }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!res.ok) throw new Error('Onay işlemi başarısız');
+
+            alert('Not onaylandı ve kullanıcıya 3 Süt yüklendi.');
+            window.location.reload(); // Refresh to update list
+        } catch (error) {
+            console.error(error);
+            alert('Bir hata oluştu.');
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const handleReject = async (noteId: string) => {
-        const reason = prompt('Reddetme sebebi?'); // Currently backend ignores reason for Notes but good to have flow
+        const reason = prompt('Reddetme sebebi?');
         if (!reason) return;
 
         setActionLoading(noteId);
-        await rejectNote(noteId, reason);
-        setActionLoading(null);
+        try {
+            const res = await fetch('/api/admin/notes/reject', {
+                method: 'POST',
+                body: JSON.stringify({ noteId, reason }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!res.ok) throw new Error('Reddetme işlemi başarısız');
+
+            alert('Not reddedildi ve kullanıcı bilgilendirildi.');
+            window.location.reload();
+        } catch (error) {
+            console.error(error);
+            alert('Bir hata oluştu.');
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     if (notes.length === 0) {
