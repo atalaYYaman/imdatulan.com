@@ -1,29 +1,103 @@
 @import "tailwindcss";
 
+:root {
+  /* Light Mode - Green/White Theme */
+  --background: #ffffff;
+  --foreground: #022c22; /* Emerald 950 */
+  
+  --card: #f8fafc; /* Slate 50 - slightly off white for contrast */
+  --card-foreground: #022c22;
+  
+  --popover: #ffffff;
+  --popover-foreground: #022c22;
+  
+  --primary: #10b981; /* Emerald 500 */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #d1fae5; /* Emerald 100 */
+  --secondary-foreground: #065f46; /* Emerald 800 */
+  
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  
+  --accent: #d1fae5;
+  --accent-foreground: #065f46;
+  
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #10b981;
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Dark Mode - Deep Green Theme */
+  --background: #022c22; /* Emerald 950 */
+  --foreground: #ecfdf5; /* Emerald 50 */
+  
+  --card: #064e3b; /* Emerald 900 */
+  --card-foreground: #ecfdf5;
+  
+  --popover: #022c22;
+  --popover-foreground: #ecfdf5;
+  
+  --primary: #10b981; /* Emerald 500 */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #065f46; /* Emerald 800 */
+  --secondary-foreground: #ffffff;
+  
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
+  
+  --accent: #065f46;
+  --accent-foreground: #ffffff;
+  
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fef2f2;
+  
+  --border: #065f46;
+  --input: #065f46;
+  --ring: #34d399;
+}
+
 @theme {
-  --color-background: #01353D;
-  /* Deep Teal from image */
-  --color-foreground: #FFFFFF;
-
-  --color-primary: #22d3ee;
-  /* Cyan 400 */
-  --color-primary-foreground: #01353D;
-
-  --color-card: #002A30;
-  /* Slightly darker/lighter for cards */
-  --color-card-foreground: #FFFFFF;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
 }
 
 @layer base {
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    @apply antialiased;
+    @apply antialiased transition-colors duration-300;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/10 backdrop-blur-md border border-white/20;
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md border border-white/20 dark:border-white/5;
   }
 }

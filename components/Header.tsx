@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { LogOut, User, Settings } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Header() {
     const { data: session } = useSession();
@@ -24,7 +25,8 @@ export default function Header() {
     }, []);
 
     return (
-        <header className="flex items-center justify-end p-4 h-20">
+        <header className="flex items-center justify-end p-4 h-20 gap-4">
+            <ThemeToggle />
             {session ? (
                 <div className="relative" ref={dropdownRef}>
                     <button
@@ -32,14 +34,14 @@ export default function Header() {
                         className="flex items-center gap-3 focus:outline-none group"
                     >
                         <div className="text-right hidden md:block">
-                            <p className="text-sm font-bold text-white group-hover:text-[#22d3ee] transition-colors">
+                            <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
                                 {session.user.name || 'Kullanıcı'}
                             </p>
-                            <p className="text-xs font-medium text-[#22d3ee] flex items-center justify-end gap-1">
+                            <p className="text-xs font-medium text-primary flex items-center justify-end gap-1">
                                 Mevcut Süt: {session.user.credits !== undefined ? session.user.credits : '-'} <span className="text-sm">🥛</span>
                             </p>
                         </div>
-                        <div className="h-10 w-10 rounded-full bg-[#0ea5e9] flex items-center justify-center text-white font-bold ring-2 ring-[#003E44] group-hover:ring-[#22d3ee] transition-all shadow-lg overflow-hidden">
+                        <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold ring-2 ring-border group-hover:ring-primary transition-all shadow-lg overflow-hidden">
                             {/* Initials */}
                             {(session.user.name || 'K').split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
@@ -47,12 +49,12 @@ export default function Header() {
 
                     {/* Dropdown Menu */}
                     {isOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-[#002A30] border border-[#003E44] rounded-xl shadow-2xl overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="px-4 py-3 border-b border-[#003E44] md:hidden">
-                                <p className="text-sm font-medium text-white truncate">
+                        <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-2xl overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="px-4 py-3 border-b border-border md:hidden">
+                                <p className="text-sm font-medium text-foreground truncate">
                                     {session.user?.name || 'Kullanıcı'}
                                 </p>
-                                <p className="text-xs text-gray-400 truncate">
+                                <p className="text-xs text-muted-foreground truncate">
                                     {session.user?.email}
                                 </p>
                             </div>
@@ -60,7 +62,7 @@ export default function Header() {
                             <Link
                                 href="/profile"
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center px-4 py-3 text-sm text-gray-200 hover:bg-white/5 hover:text-[#22d3ee] transition-colors"
+                                className="flex items-center px-4 py-3 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                             >
                                 <User className="w-4 h-4 mr-3" />
                                 Profilim
@@ -68,7 +70,7 @@ export default function Header() {
 
                             <button
                                 onClick={() => signOut()}
-                                className="flex w-full items-center px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors border-t border-[#003E44]"
+                                className="flex w-full items-center px-4 py-3 text-sm text-red-500 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors border-t border-border"
                             >
                                 <LogOut className="w-4 h-4 mr-3" />
                                 Çıkış Yap
@@ -80,13 +82,13 @@ export default function Header() {
                 <div className="flex items-center gap-3">
                     <Link
                         href="/auth/signin"
-                        className="px-4 py-2 text-sm font-medium text-white bg-[#075985] rounded-lg hover:bg-[#0369a1] transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
                     >
                         Giriş Yap
                     </Link>
                     <Link
                         href="/auth/signup"
-                        className="px-4 py-2 text-sm font-medium text-[#22d3ee] border border-[#22d3ee]/30 rounded-lg hover:bg-[#22d3ee]/10 transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors"
                     >
                         Kayıt Ol
                     </Link>

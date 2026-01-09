@@ -73,20 +73,20 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
 
     if (!session) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 text-white bg-[#01353D]">
-                <div className="bg-[#002A30] p-8 rounded-3xl border border-[#003E44] shadow-2xl max-w-lg w-full">
-                    <div className="h-20 w-20 bg-[#22d3ee]/10 text-[#22d3ee] rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 text-foreground bg-background">
+                <div className="bg-card p-8 rounded-3xl border border-border shadow-2xl max-w-lg w-full">
+                    <div className="h-20 w-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
                         <Lock className="h-10 w-10" />
                     </div>
                     <h1 className="text-2xl font-bold mb-4">Notlara Erişmek İçin Giriş Yap</h1>
-                    <p className="text-gray-400 mb-8">
+                    <p className="text-muted-foreground mb-8">
                         Binlerce ders notuna, çıkmış sorulara ve ödev kaynaklarına erişmek için hemen topluluğumuza katıl.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link href="/auth/signin" className="px-8 py-3 bg-[#22d3ee] text-[#002A30] font-bold rounded-xl hover:bg-[#0ea5e9] transition-colors">
+                        <Link href="/auth/signin" className="px-8 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors">
                             Giriş Yap
                         </Link>
-                        <Link href="/auth/signup" className="px-8 py-3 border border-[#22d3ee]/30 text-[#22d3ee] font-bold rounded-xl hover:bg-[#22d3ee]/10 transition-colors">
+                        <Link href="/auth/signup" className="px-8 py-3 border border-primary/30 text-primary font-bold rounded-xl hover:bg-primary/10 transition-colors">
                             Kayıt Ol
                         </Link>
                     </div>
@@ -96,17 +96,17 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#01353D] p-6 text-white pb-24 md:pb-6">
+        <div className="flex flex-col min-h-screen bg-background p-6 text-foreground pb-24 md:pb-6">
             <div className="mb-8 space-y-4">
-                <h1 className="text-3xl font-bold tracking-tight text-[#22d3ee]">Notlar</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-primary">Notlar</h1>
                 <div className="relative">
-                    <Search className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+                    <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
                     <input
                         type="text"
                         placeholder="Ders adı veya konu ara..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-[#002A30] border border-[#003E44] rounded-xl py-3 pl-12 pr-4 text-white text-base focus:ring-2 focus:ring-[#22d3ee] outline-none shadow-lg placeholder-gray-500"
+                        className="w-full bg-card border border-border rounded-xl py-3 pl-12 pr-4 text-foreground text-base focus:ring-2 focus:ring-primary outline-none shadow-lg placeholder-muted-foreground"
                     />
                 </div>
             </div>
@@ -116,12 +116,12 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
 
                 {/* 1. University */}
                 <div className="relative">
-                    <Filter className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
+                    <Filter className="absolute left-3 top-3 h-4 w-4 text-primary" />
                     <select
                         name="university"
                         value={filters.university}
                         onChange={handleFilterChange}
-                        className="w-full bg-[#002A30] border border-[#003E44] rounded-xl py-2.5 pl-9 pr-8 text-sm text-gray-300 focus:text-white focus:border-[#22d3ee] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
+                        className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary appearance-none cursor-pointer hover:bg-accent transition-colors"
                     >
                         <option value="">Tüm Üniversiteler</option>
                         {universities.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
@@ -130,13 +130,13 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
 
                 {/* 2. Faculty (Dependent on Uni) */}
                 <div className="relative">
-                    <LayoutGrid className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
+                    <LayoutGrid className="absolute left-3 top-3 h-4 w-4 text-primary" />
                     <select
                         name="faculty"
                         value={filters.faculty}
                         onChange={handleFilterChange}
                         disabled={!filters.university}
-                        className="w-full bg-[#002A30] border border-[#003E44] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-2.5 pl-9 pr-8 text-sm text-gray-300 focus:text-white focus:border-[#22d3ee] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
+                        className="w-full bg-card border border-border disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary appearance-none cursor-pointer hover:bg-accent transition-colors"
                     >
                         <option value="">Tüm Fakülteler</option>
                         {faculties.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
@@ -145,13 +145,13 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
 
                 {/* 3. Department (Dependent on Faculty) */}
                 <div className="relative">
-                    <Layers className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
+                    <Layers className="absolute left-3 top-3 h-4 w-4 text-primary" />
                     <select
                         name="department"
                         value={filters.department}
                         onChange={handleFilterChange}
                         disabled={!filters.faculty}
-                        className="w-full bg-[#002A30] border border-[#003E44] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-2.5 pl-9 pr-8 text-sm text-gray-300 focus:text-white focus:border-[#22d3ee] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
+                        className="w-full bg-card border border-border disabled:opacity-50 disabled:cursor-not-allowed rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary appearance-none cursor-pointer hover:bg-accent transition-colors"
                     >
                         <option value="">Tüm Bölümler</option>
                         {departments.map(d => <option key={d} value={d}>{d}</option>)}
@@ -160,12 +160,12 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
 
                 {/* 4. Year / Term */}
                 <div className="relative">
-                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-[#22d3ee]" />
+                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-primary" />
                     <select
                         name="year"
                         value={filters.year}
                         onChange={handleFilterChange}
-                        className="w-full bg-[#002A30] border border-[#003E44] rounded-xl py-2.5 pl-9 pr-8 text-sm text-gray-300 focus:text-white focus:border-[#22d3ee] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
+                        className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary appearance-none cursor-pointer hover:bg-accent transition-colors"
                     >
                         <option value="">Tüm Dönemler</option>
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
@@ -173,9 +173,9 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                 </div>
             </div>
 
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 Son Eklenenler
-                <span className="text-xs bg-[#22d3ee]/20 text-[#22d3ee] px-2 py-0.5 rounded-full">{filteredNotes.length}</span>
+                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">{filteredNotes.length}</span>
             </h2>
 
             {filteredNotes.length > 0 ? (
@@ -219,14 +219,14 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                     })}
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                    <div className="bg-[#002A30] p-6 rounded-full border border-[#003E44] mb-4">
-                        <Filter className="h-10 w-10 text-gray-600" />
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                    <div className="bg-card p-6 rounded-full border border-border mb-4">
+                        <Filter className="h-10 w-10 text-muted-foreground" />
                     </div>
                     <p>Aradığınız kriterlere uygun not bulunamadı.</p>
                     <button
                         onClick={() => { setFilters({ university: '', faculty: '', department: '', year: '' }); setSearchQuery(''); }}
-                        className="mt-4 text-[#22d3ee] hover:underline"
+                        className="mt-4 text-primary hover:underline"
                     >
                         Filtreleri Temizle
                     </button>

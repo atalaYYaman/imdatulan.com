@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import MobileHeader from "@/components/MobileHeader";
 import Header from "@/components/Header";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,28 +31,40 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#01353D] text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <SessionProvider>
-          <div className="flex min-h-screen">
-            {/* Sidebar for Desktop */}
-            <Sidebar />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="flex min-h-screen">
+              {/* Sidebar for Desktop */}
+              <Sidebar />
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col md:ml-20 w-full transition-all duration-300">
-              <MobileHeader />
+              {/* Main Content Area */}
+              <div className="flex-1 flex flex-col md:ml-20 w-full transition-all duration-300">
+                <MobileHeader />
 
-              {/* Desktop Header for Profiles/Auth */}
-              <div className="hidden md:block">
-                <Header />
+                {/* Desktop Header for Profiles/Auth */}
+                <div className="hidden md:block">
+                  <Header />
+                </div>
+
+                {/* Demo Banner */}
+                <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs text-center py-1 font-medium border-b border-yellow-500/20">
+                  Otlak (Beta) - Developed by Otlak Team
+                </div>
+
+                <main className="flex-1">
+                  {children}
+                  <SpeedInsights />
+                </main>
               </div>
-
-              <main className="flex-1">
-                {children}
-                <SpeedInsights />
-              </main>
             </div>
-          </div>
+          </ThemeProvider>
         </SessionProvider>
       </body>
     </html>

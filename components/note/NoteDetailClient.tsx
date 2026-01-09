@@ -63,7 +63,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#002A30] text-white overflow-y-auto">
+        <div className="flex flex-col h-full bg-background text-foreground overflow-y-auto">
             {/* Yasal Uyarı Modal - Kabul edilmedikçe ekranı kilitler */}
             {!isWarningAccepted && (
                 <LegalWarningModal onAccept={() => setIsWarningAccepted(true)} />
@@ -72,7 +72,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
             <div className={`flex-1 flex flex-col md:flex-row transition-opacity duration-500 ${!isWarningAccepted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
 
                 {/* SOL TARAFLA: PDF / Dosya Görüntüleyici */}
-                <div className="md:w-3/4 h-[80vh] md:h-screen bg-gray-900 relative border-r border-[#003E44]">
+                <div className="md:w-3/4 h-[80vh] md:h-screen bg-muted/20 relative border-r border-border">
                     <NoteViewer
                         fileUrl={note.fileUrl}
                         viewerUser={viewerUser}
@@ -85,25 +85,25 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                 </div>
 
                 {/* SAĞ TARAF: Detaylar ve Etkileşim */}
-                <div className="md:w-1/4 flex flex-col h-screen bg-[#002A30] border-l border-[#003E44]">
+                <div className="md:w-1/4 flex flex-col h-screen bg-card border-l border-border">
 
                     {/* Üst Bilgi */}
-                    <div className="p-6 border-b border-[#003E44]">
-                        <h1 className="text-xl font-bold text-[#22d3ee] mb-2">{note.title}</h1>
-                        <div className="text-sm text-gray-400 space-y-1">
+                    <div className="p-6 border-b border-border">
+                        <h1 className="text-xl font-bold text-primary mb-2">{note.title}</h1>
+                        <div className="text-sm text-muted-foreground space-y-1">
                             <p>{note.university} - {note.faculty}</p>
                             <p>{note.courseName} ({note.term})</p>
                             {note.description && (
-                                <p className="text-gray-300 italic text-xs mt-2 border-l-2 border-[#22d3ee] pl-2 py-1">
+                                <p className="text-foreground/80 italic text-xs mt-2 border-l-2 border-primary pl-2 py-1">
                                     "{note.description}"
                                 </p>
                             )}
-                            <p className="text-xs mt-2 text-[#22d3ee]/80">Yükleyen: {note.uploader.firstName} {note.uploader.lastName}</p>
+                            <p className="text-xs mt-2 text-primary/80">Yükleyen: {note.uploader.firstName} {note.uploader.lastName}</p>
                         </div>
                     </div>
 
                     {/* Etkileşim Butonları */}
-                    <div className="p-4 border-b border-[#003E44]">
+                    <div className="p-4 border-b border-border">
                         <InteractionBar
                             noteId={note.id}
                             initialLikeCount={note._count.likes}

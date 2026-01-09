@@ -10,38 +10,36 @@ export default function MobileHeader() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="md:hidden flex items-center justify-between px-4 h-16 bg-[#002A30] border-b border-[#003E44] sticky top-0 z-40">
+        <div className="md:hidden flex items-center justify-between px-4 h-16 bg-card border-b border-border sticky top-0 z-40">
             <Link href="/" className="flex items-center gap-2">
-                <div className="border border-[#075985] rounded-full p-1">
-                    <Landmark className="h-4 w-4 text-[#22d3ee]" />
+                <div className="border border-primary rounded-full p-1">
+                    <Landmark className="h-4 w-4 text-primary" />
                 </div>
-                <span className="text-sm font-bold text-[#22d3ee] tracking-widest">OTLAK</span>
+                <span className="text-sm font-bold text-primary tracking-widest">OTLAK</span>
             </Link>
 
-            <button onClick={() => setIsOpen(!isOpen)} className="text-white p-2">
+            <button onClick={() => setIsOpen(!isOpen)} className="text-foreground p-2">
                 <Menu className="h-6 w-6" />
             </button>
 
             {/* Mobile Menu Overlay */}
             {isOpen && (
-                <div className="fixed inset-0 z-50 bg-[#002A30] p-4 animate-in slide-in-from-right">
+                <div className="fixed inset-0 z-50 bg-background p-4 animate-in slide-in-from-right">
                     <div className="flex justify-between items-center mb-8">
-                        <span className="text-xl font-bold text-white">Menü</span>
-                        <button onClick={() => setIsOpen(false)} className="text-white p-2 bg-white/10 rounded-full">
+                        <span className="text-xl font-bold text-foreground">Menü</span>
+                        <button onClick={() => setIsOpen(false)} className="text-foreground p-2 bg-primary/10 rounded-full">
                             X
                         </button>
                     </div>
                     <nav className="flex flex-col space-y-4">
-                        <Link href="/" onClick={() => setIsOpen(false)} className="text-white text-lg font-medium py-2 border-b border-white/10">Ana Sayfa</Link>
-                        <Link href="/top-noder" onClick={() => setIsOpen(false)} className="text-white text-lg font-medium py-2 border-b border-white/10">Top Noder</Link>
-                        <Link href="/upload" onClick={() => setIsOpen(false)} className="text-[#22d3ee] text-lg font-medium py-2 border-b border-white/10">Not Yükle</Link>
-                        <Link href="/profile" onClick={() => setIsOpen(false)} className="text-white text-lg font-medium py-2 border-b border-white/10">Profilim</Link>
+                        <Link href="/" onClick={() => setIsOpen(false)} className="text-foreground text-lg font-medium py-2 border-b border-border">Ana Sayfa</Link>
+                        <Link href="/top-noder" onClick={() => setIsOpen(false)} className="text-foreground text-lg font-medium py-2 border-b border-border">Top Noder</Link>
+                        <Link href="/upload" onClick={() => setIsOpen(false)} className="text-primary text-lg font-bold py-2 border-b border-border">Ot Yükle</Link>
+                        <Link href="/profile" onClick={() => setIsOpen(false)} className="text-foreground text-lg font-medium py-2 border-b border-border">Profilim</Link>
                     </nav>
 
                     {/* Mobil User Info */}
-                    <div className="mt-8 border-t border-white/10 pt-4">
-                        {/* Burada session'a erişmek için useSession gerekiyor, ancak bu bileşende hook yok.
-                             Basitlik için şimdilik hook ekleyelim. */}
+                    <div className="mt-8 border-t border-border pt-4">
                         <MobileUserDisplay />
                     </div>
                 </div>
@@ -50,7 +48,7 @@ export default function MobileHeader() {
     );
 }
 
-// Sub-component for session access to keep main cleaner/lighter if needed
+// Sub-component for session access
 import { useSession } from 'next-auth/react';
 import { User, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
@@ -61,8 +59,8 @@ function MobileUserDisplay() {
     if (!session) {
         return (
             <div className="flex flex-col gap-3">
-                <Link href="/auth/signin" className="w-full text-center py-3 bg-[#075985] text-white rounded-lg font-bold">Giriş Yap</Link>
-                <Link href="/auth/signup" className="w-full text-center py-3 border border-[#22d3ee] text-[#22d3ee] rounded-lg font-bold">Kayıt Ol</Link>
+                <Link href="/auth/signin" className="w-full text-center py-3 bg-primary text-primary-foreground rounded-lg font-bold">Giriş Yap</Link>
+                <Link href="/auth/signup" className="w-full text-center py-3 border border-primary text-primary rounded-lg font-bold">Kayıt Ol</Link>
             </div>
         )
     }
@@ -70,12 +68,12 @@ function MobileUserDisplay() {
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-[#0ea5e9] flex items-center justify-center text-white font-bold ring-2 ring-[#22d3ee]">
+                <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold ring-2 ring-border">
                     {(session.user?.name || 'K').split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                 </div>
                 <div>
-                    <p className="text-white font-bold text-lg">{session.user.name}</p>
-                    <p className="text-[#22d3ee] font-medium flex items-center gap-1">
+                    <p className="text-foreground font-bold text-lg">{session.user.name}</p>
+                    <p className="text-primary font-medium flex items-center gap-1">
                         Mevcut Süt: {session.user.credits ?? '-'} 🥛
                     </p>
                 </div>
@@ -83,7 +81,7 @@ function MobileUserDisplay() {
 
             <button
                 onClick={() => signOut()}
-                className="flex items-center gap-2 text-red-400 hover:text-red-300 mt-2"
+                className="flex items-center gap-2 text-red-500 hover:text-red-400 mt-2"
             >
                 <LogOut className="w-5 h-5" />
                 <span>Çıkış Yap</span>
