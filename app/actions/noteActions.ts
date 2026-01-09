@@ -280,3 +280,57 @@ export async function isLikedByUser(noteId: string) {
 
     return !!like
 }
+
+// REPORT ACTIONS
+export async function createReport(noteId: string, reason: string, details: string) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) return { success: false, message: "Şikayet etmek için giriş yapmalısınız." }
+
+    try {
+        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+        if (!user) return { success: false, message: "Kullanıcı bulunamadı" }
+
+        await prisma.report.create({
+            data: {
+                noteId,
+                reporterId: user.id,
+                reason,
+                details,
+                status: "PENDING"
+            }
+        })
+
+        return { success: true }
+    } catch (error) {
+        console.error("Report error:", error)
+        return { success: false, message: "Şikayet oluşturulurken bir hata oluştu." }
+    }
+}
+
+// DELETE ACTION
+export async function deleteNote(noteId: string) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) return { success: false, message: "Yetkisiz işlem." }
+
+    try {
+        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+        if (!user) return { success: false, message: "Kullanıcı bulunamadı" }
+
+        const note = await prisma.note.findUnique({ where: { id: noteId } })
+        if (!note) return { success: false, message: "Not bulunamadı." }
+
+        // Sadece yükleyen silebilir (Admin logic ayrı eklenebilir)
+        if (note.uploaderId !== user.id && user.role !== 'ADMIN') {
+            return { success: false, message: "Bu notu silme yetkiniz yok." }
+        }
+
+        // Hard Delete (Cascades will handle related records like Likes, Comments, Views if configured in schema, 
+        // but let's trust Prisma cascade or do manual cleanup if needed. Schema says onDelete: Cascade for relations)
+        await prisma.note.delete({ where: { id: noteId } })
+
+        return { success: true }
+    } catch (error) {
+        console.error("Delete error:", error)
+        return { success: false, message: "Not silinirken bir hata oluştu." }
+    }
+}

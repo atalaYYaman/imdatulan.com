@@ -29,11 +29,12 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
         name: "Misafir Kullanıcı",
         studentNumber: ""
     };
+    let currentUserId: string | undefined = undefined;
 
     if (session?.user?.email) {
         const user = await prisma.user.findUnique({
             where: { email: session.user.email },
-            select: { firstName: true, lastName: true, studentNumber: true }
+            select: { id: true, firstName: true, lastName: true, studentNumber: true }
         });
 
         if (user) {
@@ -41,6 +42,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
                 name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || session.user.name || "Kullanıcı",
                 studentNumber: user.studentNumber || ""
             };
+            currentUserId = user.id;
         }
     }
 
@@ -50,6 +52,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
             initialIsLiked={isLiked}
             viewerUser={viewerUser}
             isUnlocked={isUnlocked}
+            currentUserId={currentUserId}
         />
     );
 }

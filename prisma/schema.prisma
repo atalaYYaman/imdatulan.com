@@ -43,6 +43,7 @@ model User {
   credits              Int       @default(3) // Süt Bakiyesi (Başlangıç 3 Süt)
   unlockedNotes        UnlockedNote[]
   purchases            ProductPurchase[]
+  reports              Report[]
 
   // Verification
   studentIdCardUrl String?
@@ -91,7 +92,8 @@ model Note {
   department String
   fileUrl    String
   price      Int    @default(1) // Notun Süt değeri (1-3)
-  status     String @default("PENDING") // PENDING, APPROVED, REJECTED
+  status     String @default("PENDING") // PENDING, APPROVED, REJECTED, SUSPENDED
+  rejectionReason String? // Red veya askıya alma sebebi
 
   // Metadata
   courseName  String?
@@ -107,10 +109,27 @@ model Note {
   comments   Comment[]
   likes      Like[]
   views      View[]
+  reports    Report[]
   unlockedBy UnlockedNote[]
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  reason    String   // Şikayet nedeni (seçilen kutucuk)
+  details   String?  // Detaylı açıklama
+  status    String   @default("PENDING") // PENDING, RESOLVED, REJECTED
+
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Comment {

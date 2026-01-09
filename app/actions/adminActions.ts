@@ -146,3 +146,113 @@ export async function rejectNote(noteId: string, reason: string) {
         return { success: false, message: "Error rejecting note" };
     }
 }
+
+// --- Reports ---
+
+export async function getReports() {
+    if (!await isAdmin()) return { success: false, message: "Unauthorized" };
+
+    try {
+        const reports = await prisma.report.findMany({
+            where: { status: "PENDING" },
+            include: {
+                note: {
+                    select: { title: true, uploader: { select: { email: true, firstName: true } } }
+                },
+                reporter: {
+                    select: { email: true, firstName: true, lastName: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        return { success: true, data: reports };
+    } catch (error) {
+        return { success: false, message: "Error fetching reports" };
+    }
+}
+
+export async function resolveReport(reportId: string, action: 'SUSPEND' | 'REJECT', noteId: string, reason?: string) {
+    if (!await isAdmin()) return { success: false, message: "Unauthorized" };
+
+    try {
+        if (action === 'SUSPEND') {
+            // Askıya Al - Notun durumunu güncelle
+            const note = await prisma.note.update({
+                where: { id: noteId },
+                data: {
+                    status: 'SUSPENDED',
+                    rejectionReason: reason
+                },
+                include: { uploader: true } // For email
+            });
+
+            // Raporu çözüldü olarak işaretle
+            await prisma.report.update({
+                where: { id: reportId },
+                data: { status: 'RESOLVED' }
+            });
+
+            // Email gönder
+            await sendEmail({
+                to: note.uploader.email,
+                subject: "İçeriğiniz Askıya Alındı | Otlak",
+                body: `Merhaba ${note.uploader.firstName}, "${note.title}" başlıklı notunuz yapılan bir şikayet üzerine incelenmiş ve aşağıdaki nedenle askıya alınmıştır:
+                
+                Sebep: ${reason}
+                
+                Askıya alınan içerikler sadece sizin ve önceden satın almış kullanıcıların erişimine açıktır.`
+            });
+
+            revalidatePath('/admin/reports');
+            return { success: true, message: "Content suspended" };
+
+        } else if (action === 'REJECT') {
+            // Şikayeti Reddet - Yani şikayet geçersiz, sil gitsin (veya REJECTED yap)
+            // Kullanıcı isteğine göre: "Reddedilen veriler database ve tüm sayfalardan içerik dosyalarıyla birlikte kaldırılacak."
+            // Bu kısım "Reddedilen Notlar" için geçerliydi. Şikayet reddediliyorsa, şikayet kaydı silinir.
+
+            await prisma.report.delete({
+                where: { id: reportId }
+            });
+
+            revalidatePath('/admin/reports');
+            return { success: true, message: "Report rejected and deleted" };
+        }
+    } catch (error) {
+        console.error(error);
+        return { success: false, message: "Error processing report" };
+    }
+}
+
+// --- Stats ---
+
+export async function getAdminStats() {
+    if (!await isAdmin()) return { success: false, message: "Unauthorized" };
+
+    try {
+        const totalUsers = await prisma.user.count();
+        const pendingUsers = await prisma.user.count({ where: { approvalStatus: "PENDING" } });
+
+        const totalNotes = await prisma.note.count();
+        const pendingNotes = await prisma.note.count({ where: { status: "PENDING" } });
+        const suspendedNotes = await prisma.note.count({ where: { status: "SUSPENDED" } });
+        const rejectedNotes = await prisma.note.count({ where: { status: "REJECTED" } }); // Bu genelde 0 olabilir eğer siliniyorsa.
+
+        const pendingReports = await prisma.report.count({ where: { status: "PENDING" } });
+
+        return {
+            success: true,
+            data: {
+                totalUsers,
+                pendingUsers,
+                totalNotes,
+                pendingNotes,
+                suspendedNotes,
+                rejectedNotes,
+                pendingReports
+            }
+        };
+    } catch (error) {
+        return { success: false, message: "Error fetching stats" };
+    }
+}

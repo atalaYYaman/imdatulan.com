@@ -15,6 +15,8 @@ type NoteWithDetails = Note & {
         university: string | null;
         department: string | null;
     };
+    rejectionReason: string | null;
+    status: string;
     _count: {
         likes: number;
         comments: number;
@@ -27,6 +29,9 @@ type NoteWithDetails = Note & {
     })[];
 };
 
+import Link from "next/link";
+import ReportModal from "./ReportModal";
+
 interface NoteDetailClientProps {
     note: NoteWithDetails;
     initialIsLiked: boolean;
@@ -35,13 +40,17 @@ interface NoteDetailClientProps {
         studentNumber: string;
     };
     isUnlocked: boolean;
+    currentUserId?: string; // New Prop
 }
 
-export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked }: NoteDetailClientProps) {
+export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked, currentUserId }: NoteDetailClientProps) {
     const [isWarningAccepted, setIsWarningAccepted] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(initialIsUnlocked);
     const [isUnlocking, setIsUnlocking] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false); // Modal State
+
+    const isOwner = currentUserId === note.uploaderId;
 
     const handleUnlockNote = async () => {
         setIsUnlocking(true);
@@ -63,7 +72,21 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] bg-background text-foreground overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] bg-background text-foreground overflow-hidden relative">
+            {/* Report Modal */}
+            {isReportModalOpen && (
+                <ReportModal noteId={note.id} onClose={() => setIsReportModalOpen(false)} />
+            )}
+
+            {/* Suspended Banner */}
+            {note.status === 'SUSPENDED' && (
+                <div className="bg-red-500/10 border-b border-red-500/20 text-red-500 px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
+                    <span className="text-lg">⚠️</span>
+                    Bu içerik şu anda askıya alınmıştır. Sadece siz ve önceden satın alanlar görüntüleyebilir.
+                    {note.rejectionReason && <span className="text-foreground/60 font-normal ml-1">({note.rejectionReason})</span>}
+                </div>
+            )}
+
             {/* Yasal Uyarı Modal - Kabul edilmedikçe ekranı kilitler */}
             {!isWarningAccepted && (
                 <LegalWarningModal onAccept={() => setIsWarningAccepted(true)} />
@@ -109,6 +132,8 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                             initialLikeCount={note._count.likes}
                             initialIsLiked={initialIsLiked}
                             viewCount={note.viewCount}
+                            isOwner={isOwner}
+                            onReport={() => setIsReportModalOpen(true)}
                         />
                     </div>
 

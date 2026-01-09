@@ -32,6 +32,32 @@ export default function AdminDashboard() {
                     </div>
                     <p className="text-muted-foreground">Yüklenen ders notlarını incele ve onayla.</p>
                 </Link>
+
+                <Link
+                    href="/admin/reports"
+                    className="bg-card p-6 rounded-2xl border border-border hover:border-red-500 transition-colors group"
+                >
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-red-500/20 rounded-xl group-hover:bg-red-500/30 transition-colors">
+                            <div className="w-8 h-8 flex items-center justify-center text-red-500 font-bold text-xl">!</div>
+                        </div>
+                        <h2 className="text-xl font-semibold">Şikayet Yönetimi</h2>
+                    </div>
+                    <p className="text-muted-foreground">İçerik şikayetlerini incele ve işlem yap.</p>
+                </Link>
+
+                <Link
+                    href="/admin/stats"
+                    className="bg-card p-6 rounded-2xl border border-border hover:border-green-500 transition-colors group"
+                >
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors">
+                            <div className="w-8 h-8 flex items-center justify-center text-green-500 font-bold text-xl">📊</div>
+                        </div>
+                        <h2 className="text-xl font-semibold">Sistem Özeti</h2>
+                    </div>
+                    <p className="text-muted-foreground">Kullanıcı ve not istatistiklerini görüntüle.</p>
+                </Link>
             </div>
         </div>
     )
