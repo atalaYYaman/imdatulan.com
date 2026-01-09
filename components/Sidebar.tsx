@@ -42,13 +42,9 @@ export default function Sidebar() {
                             OTLAK
                         </span>
                         <div className="relative -top-3 -right-1 transform -rotate-12 hover:scale-110 transition-transform">
-                            <Image
-                                src="/beta-tag.png"
-                                alt="BETA"
-                                width={40}
-                                height={20}
-                                className="object-contain drop-shadow-md"
-                            />
+                            <span className="text-yellow-400 font-[family-name:var(--font-press-start)] text-[10px] drop-shadow-[1px_1px_0_rgba(0,0,0,1)]">
+                                BETA
+                            </span>
                         </div>
                     </div>
                 </Link>
