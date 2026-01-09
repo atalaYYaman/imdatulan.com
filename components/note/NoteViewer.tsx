@@ -103,7 +103,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
 
             {/* Toolbar - Floating Zoom Controls */}
             {!isLocked && (
-                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-card/90 backdrop-blur-md px-6 py-3 rounded-full border border-primary/30 shadow-2xl transition-transform hover:scale-105 select-none">
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 bg-card/90 backdrop-blur-md px-6 py-3 rounded-full border border-primary/30 shadow-2xl transition-transform hover:scale-105 select-none">
                     <button onClick={zoomOut} className="p-1 hover:text-primary transition-colors"><ZoomOut className="w-6 h-6" /></button>
                     <div className="w-px h-6 bg-border"></div>
                     <span className="text-sm font-bold text-primary min-w-[3rem] text-center font-mono">{Math.round(scale * 100)}%</span>
