@@ -1,39 +1,52 @@
-import { getProducts } from "@/app/actions/storeActions";
-import StoreClient from "@/components/store/StoreClient";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+'use client';
+
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
+import Image from "next/image";
 
-export default async function StorePage() {
-    const session = await getServerSession(authOptions);
+export default function StorePage() {
+    return (
+        <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
 
-    if (!session?.user?.email) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6 text-foreground bg-background">
-                <div className="bg-card p-8 rounded-3xl border border-border shadow-2xl max-w-lg w-full">
-                    <div className="h-20 w-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                        <ShoppingBag className="h-10 w-10" />
-                    </div>
-                    <h1 className="text-2xl font-bold mb-4">Mağazayı Görüntülemek İçin Giriş Yap</h1>
-                    <p className="text-muted-foreground mb-8">
-                        Kazandığın sütleri harcamak için giriş yapmalısın.
-                    </p>
-                    <Link href="/auth/signin" className="px-8 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors inline-block w-full">
-                        Giriş Yap
-                    </Link>
-                </div>
+            {/* Background Glow */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
             </div>
-        )
-    }
 
-    const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { credits: true }
-    });
+            <div className="relative z-10 max-w-md w-full space-y-8">
 
-    const products = await getProducts();
+                {/* Cow Animation/Image Area */}
+                <div className="relative w-64 h-64 mx-auto animate-pulse-slow">
+                    {/* Bizim oluşturduğumuz OTLAK ineği */}
+                    <div className="relative w-full h-full rounded-3xl overflow-hidden border-4 border-border bg-card shadow-2xl">
+                        <img
+                            src="/cow_eating_grass.png"
+                            alt="Otlak İneği"
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                </div>
 
-    return <StoreClient products={products} userCredits={user?.credits ?? 0} />;
+                <div className="space-y-4">
+                    <h1 className="text-4xl font-black text-primary tracking-tight">
+                        OTLANIYORUZ...
+                    </h1>
+                    <p className="text-muted-foreground text-lg">
+                        "Şu anda bu sayfa üzerinde otlanıyoruz, hazır olduğunda size haber vereceğiz."
+                    </p>
+                    <div className="text-xs text-primary/60 font-mono bg-card py-2 px-4 rounded-full inline-block border border-border">
+                        Status: Grazing in progress... 🐄 🌿
+                    </div>
+                </div>
+
+                <Link
+                    href="/"
+                    className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mt-8 group"
+                >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    Ana Sayfaya Dön
+                </Link>
+            </div>
+        </div>
+    );
 }

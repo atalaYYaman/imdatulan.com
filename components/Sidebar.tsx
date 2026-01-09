@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { Home, User, Trophy, Heart, Upload, Menu, Landmark, FolderOpen, ShoppingBag } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
@@ -26,13 +27,30 @@ export default function Sidebar() {
             <div className="flex items-center h-20 border-b border-border px-4 relative">
                 {/* Icon always visible */}
                 <Link href="/" className="flex items-center min-w-[3rem]">
-                    <div className="border-2 border-primary rounded-full p-1.5 flex-shrink-0">
-                        <Landmark className="h-6 w-6 text-primary" />
+                    <div className="flex-shrink-0">
+                        <Image
+                            src="/otlak-logo.png"
+                            alt="Otlak"
+                            width={40}
+                            height={40}
+                            className="rounded-full border-2 border-primary/20 p-0.5 object-cover"
+                        />
                     </div>
                     {/* Text visible on hover */}
-                    <span className="ml-3 text-lg font-bold text-primary tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-                        OTLAK
-                    </span>
+                    <div className="ml-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+                        <span className="text-xl font-bold text-primary tracking-widest">
+                            OTLAK
+                        </span>
+                        <div className="relative -top-3 -right-1 transform -rotate-12 hover:scale-110 transition-transform">
+                            <Image
+                                src="/beta-tag.png"
+                                alt="BETA"
+                                width={40}
+                                height={20}
+                                className="object-contain drop-shadow-md"
+                            />
+                        </div>
+                    </div>
                 </Link>
                 {/* Hamburger Icon Suggestion (Visual only as hover does the job) */}
                 <Menu className="h-6 w-6 text-muted-foreground absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

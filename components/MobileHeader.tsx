@@ -3,6 +3,7 @@
 import { Menu, Landmark } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 // I will build a custom simple mobile drawer to avoid dependency hell if shadcn isn't fully set up.
 // Actually, I can just use a simple state to show/hide a fixed overlay.
 
@@ -12,10 +13,27 @@ export default function MobileHeader() {
     return (
         <div className="md:hidden flex items-center justify-between px-4 h-16 bg-card border-b border-border sticky top-0 z-40">
             <Link href="/" className="flex items-center gap-2">
-                <div className="border border-primary rounded-full p-1">
-                    <Landmark className="h-4 w-4 text-primary" />
+                <div className="flex-shrink-0">
+                    <Image
+                        src="/otlak-logo.png"
+                        alt="Otlak"
+                        width={32}
+                        height={32}
+                        className="rounded-full border border-primary/20 p-0.5 object-cover"
+                    />
                 </div>
-                <span className="text-sm font-bold text-primary tracking-widest">OTLAK</span>
+                <div className="flex items-center gap-1">
+                    <span className="text-sm font-bold text-primary tracking-widest">OTLAK</span>
+                    <div className="relative -top-2 transform -rotate-12">
+                        <Image
+                            src="/beta-tag.png"
+                            alt="BETA"
+                            width={30}
+                            height={15}
+                            className="object-contain drop-shadow-sm"
+                        />
+                    </div>
+                </div>
             </Link>
 
             <button onClick={() => setIsOpen(!isOpen)} className="text-foreground p-2">
