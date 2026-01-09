@@ -63,16 +63,16 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
     };
 
     return (
-        <div className="flex flex-col h-full bg-background text-foreground overflow-y-auto">
+        <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] bg-background text-foreground overflow-hidden">
             {/* Yasal Uyarı Modal - Kabul edilmedikçe ekranı kilitler */}
             {!isWarningAccepted && (
                 <LegalWarningModal onAccept={() => setIsWarningAccepted(true)} />
             )}
 
-            <div className={`flex-1 flex flex-col md:flex-row transition-opacity duration-500 ${!isWarningAccepted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`flex-1 flex flex-col md:flex-row h-full transition-opacity duration-500 ${!isWarningAccepted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
 
                 {/* SOL TARAFLA: PDF / Dosya Görüntüleyici */}
-                <div className="md:w-3/4 h-[80vh] md:h-screen bg-muted/20 relative border-r border-border">
+                <div className="md:w-3/4 h-full bg-muted/20 relative border-r border-border">
                     <NoteViewer
                         fileUrl={note.fileUrl}
                         viewerUser={viewerUser}
@@ -85,7 +85,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                 </div>
 
                 {/* SAĞ TARAF: Detaylar ve Etkileşim */}
-                <div className="md:w-1/4 flex flex-col h-screen bg-card border-l border-border">
+                <div className="md:w-1/4 flex flex-col h-full bg-card border-l border-border">
 
                     {/* Üst Bilgi */}
                     <div className="p-6 border-b border-border">
