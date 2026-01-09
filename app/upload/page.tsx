@@ -146,7 +146,7 @@ export default function UploadPage() {
                                 type="file"
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 onChange={handleChange}
-                                accept=".pdf,.doc,.docx,.jpg,.png"
+                                accept=".pdf,.png,.jpg,.jpeg"
                             />
 
                             {file ? (
@@ -170,7 +170,7 @@ export default function UploadPage() {
                                         <UploadCloud className="h-6 w-6" />
                                     </div>
                                     <p className="text-sm font-medium text-foreground mb-1">Dosyayı sürükle veya seç</p>
-                                    <p className="text-xs text-muted-foreground">PDF, JPG, DOC (Max 10MB)</p>
+                                    <p className="text-xs text-muted-foreground">PDF, JPG, PNG (Max 10MB)</p>
                                 </div>
                             )}
                         </div>
