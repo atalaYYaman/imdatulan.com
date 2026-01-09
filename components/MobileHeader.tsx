@@ -22,14 +22,7 @@ export default function MobileHeader() {
                         className="rounded-full border border-primary/20 p-0.5 object-cover"
                     />
                 </div>
-                <div className="flex items-center gap-1">
-                    <span className="text-sm font-bold text-primary tracking-widest">OTLAK</span>
-                    <div className="relative -top-3 transform -rotate-12">
-                        <span className="text-yellow-400 font-[family-name:var(--font-press-start)] text-[8px] drop-shadow-[1px_1px_0_rgba(0,0,0,1)]">
-                            BETA
-                        </span>
-                    </div>
-                </div>
+                <span className="text-sm font-bold text-primary tracking-widest">OTLAK</span>
             </Link>
 
             <button onClick={() => setIsOpen(!isOpen)} className="text-foreground p-2">

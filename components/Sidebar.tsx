@@ -37,16 +37,9 @@ export default function Sidebar() {
                         />
                     </div>
                     {/* Text visible on hover */}
-                    <div className="ml-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-                        <span className="text-xl font-bold text-primary tracking-widest">
-                            OTLAK
-                        </span>
-                        <div className="relative -top-3 -right-1 transform -rotate-12 hover:scale-110 transition-transform">
-                            <span className="text-yellow-400 font-[family-name:var(--font-press-start)] text-[10px] drop-shadow-[1px_1px_0_rgba(0,0,0,1)]">
-                                BETA
-                            </span>
-                        </div>
-                    </div>
+                    <span className="ml-3 text-xl font-bold text-primary tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+                        OTLAK
+                    </span>
                 </Link>
                 {/* Hamburger Icon Suggestion (Visual only as hover does the job) */}
                 <Menu className="h-6 w-6 text-muted-foreground absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

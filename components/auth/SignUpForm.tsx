@@ -8,7 +8,7 @@ import { CustomSelect } from '@/components/ui/custom-select'
 import { CustomCheckbox } from '@/components/ui/custom-checkbox'
 import { registerUser, checkStudentNumber } from '@/app/actions/user'
 import { getUniversities, getFaculties, getDepartments } from '@/app/actions/academic'
-import { Upload } from 'lucide-react'
+import { Upload, Camera } from 'lucide-react'
 
 const CLASSES = [
     { label: "Hazırlık", value: "Hazırlık" },
@@ -259,38 +259,96 @@ export default function SignUpForm() {
         </div>
     )
 
+    const [uploadError, setUploadError] = useState('')
+
+    const handleFileSelect = (file: File) => {
+        setUploadError('')
+        // Basic client-side validation
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadError('Dosya boyutu 5MB\'dan küçük olmalıdır.')
+            return
+        }
+        if (!file.type.startsWith('image/')) {
+            setUploadError('Lütfen geçerli bir resim dosyası yükleyiniz.')
+            return
+        }
+        handleChange('studentIdCardFile', file)
+    }
+
     const renderStep2 = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="text-center mb-6">
                 <h3 className="text-xl font-semibold text-foreground mb-2">Öğrenci Kimlik Kartı</h3>
-                <p className="text-muted-foreground text-sm">Doğrulama için lütfen öğrenci kimlik kartınızın ön yüzünün net bir fotoğrafını yükleyiniz.</p>
+                <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg text-sm text-blue-600 dark:text-blue-400 text-left space-y-2">
+                    <p className="font-semibold flex items-center gap-2">
+                        <span className="text-lg">ℹ️</span> Fotoğraf Gereksinimleri:
+                    </p>
+                    <ul className="list-disc list-inside pl-1 space-y-1 opacity-90">
+                        <li>Öğrenci kimlik kartınızın ön yüzü olmalıdır.</li>
+                        <li>Yazılar ve fotoğraf net bir şekilde okunabilmelidir.</li>
+                        <li>Kartın tamamı görünmelidir.</li>
+                    </ul>
+                </div>
             </div>
 
-            <div className="border-2 border-dashed border-border rounded-2xl p-8 flex flex-col items-center justify-center bg-muted/50 hover:bg-muted transition-colors group cursor-pointer relative">
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => e.target.files && handleChange('studentIdCardFile', e.target.files[0])}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
+            {uploadError && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive p-3 rounded-lg text-sm font-medium text-center animate-shake">
+                    {uploadError}
+                </div>
+            )}
+
+            <div className="border-2 border-dashed border-border rounded-2xl p-8 flex flex-col items-center justify-center bg-muted/50 hover:bg-muted transition-colors group relative min-h-[200px]">
 
                 {formData.studentIdCardFile ? (
-                    <div className="text-center">
+                    <div className="text-center z-10 pointer-events-none">
                         <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                             <Upload className="w-8 h-8" />
                         </div>
-                        <p className="text-primary font-medium">{formData.studentIdCardFile.name}</p>
-                        <p className="text-xs text-muted-foreground mt-2">Değiştirmek için tıklayın</p>
+                        <p className="text-primary font-medium truncate max-w-[200px]">{formData.studentIdCardFile.name}</p>
+                        <p className="text-xs text-muted-foreground mt-2">Değiştirmek için aşağıdan seçim yapın</p>
                     </div>
                 ) : (
-                    <div className="text-center group-hover:scale-105 transition-transform">
+                    <div className="text-center group-hover:scale-105 transition-transform z-10 pointer-events-none">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-muted/80">
                             <Upload className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <p className="text-muted-foreground font-medium">Fotoğraf Yüklemek İçin Tıklayın</p>
+                        <p className="text-muted-foreground font-medium">Fotoğraf Yüklemek İçin Seçin</p>
                         <p className="text-xs text-muted-foreground mt-2">PNG, JPG, JPEG (Max 5MB)</p>
                     </div>
                 )}
+
+                {/* Mobile Camera Button Overlay - Visible on small screens */}
+                <div className="md:hidden w-full mt-4 flex gap-2 z-20">
+                    <label className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-transform shadow-lg">
+                        <Camera className="w-5 h-5" />
+                        <span>Fotoğraf Çek</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                            className="hidden"
+                        />
+                    </label>
+                    <label className="flex-1 bg-secondary text-secondary-foreground py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-transform shadow-sm">
+                        <Upload className="w-5 h-5" />
+                        <span>Dosya Seç</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                            className="hidden"
+                        />
+                    </label>
+                </div>
+
+                {/* Desktop File Input - Covers area */}
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                    className="hidden md:block absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
             </div>
 
             <div className="flex justify-between mt-8">
