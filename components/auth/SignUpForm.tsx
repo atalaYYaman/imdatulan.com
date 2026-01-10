@@ -159,7 +159,7 @@ export default function SignUpForm() {
             // Upload Logic
             setIsLoading(true);
             try {
-                const uploadRes = await fetch(`/api/upload-blob?filename=${formData.studentIdCardFile.name}`, {
+                const uploadRes = await fetch(`/api/upload-blob?filename=${encodeURIComponent(formData.studentIdCardFile.name)}`, {
                     method: 'POST',
                     body: formData.studentIdCardFile,
                 });
