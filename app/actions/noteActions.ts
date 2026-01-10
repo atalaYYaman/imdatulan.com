@@ -42,10 +42,10 @@ export async function getNoteDetail(noteId: string) {
             }
         })
 
-        if (note.deletedAt) return null; // Soft Delete Check
-
         // --- Access Control Logic ---
         if (!note) return null
+
+        if (note.deletedAt) return null; // Soft Delete Check
 
         // 1. PENDING Notlar: Kimse erişemez (Owner dahil)
         if (note.status === 'PENDING') {
