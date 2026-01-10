@@ -163,6 +163,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                     draggable={false}
                                     onContextMenu={(e) => e.preventDefault()}
                                     alt="Not içeriği"
+                                    onLoad={() => setIsLoading(false)}
                                 />
                                 <Watermark />
                             </div>
