@@ -107,7 +107,7 @@ export default function SignInForm() {
                 />
 
                 <div className="text-sm">
-                    <Link href="/auth/forgot-password" className="font-medium text-teal-600 hover:text-teal-500">
+                    <Link href="/auth/forgot-password" className="font-medium text-teal-600 hover:text-teal-500 dark:text-emerald-400 dark:hover:text-emerald-300">
                         Şifremi unuttum?
                     </Link>
                 </div>

@@ -14,7 +14,7 @@ export const CustomCheckbox = React.forwardRef<HTMLInputElement, CustomCheckboxP
                         <input
                             ref={ref}
                             type="checkbox"
-                            className={`w-4 h-4 text-primary border-muted-foreground rounded focus:ring-primary bg-input
+                            className={`w-4 h-4 text-primary border-muted-foreground rounded focus:ring-primary bg-input dark:bg-gray-700 dark:border-gray-600
                 ${error ? 'border-destructive' : ''}
                 ${className}
               `}
@@ -22,7 +22,7 @@ export const CustomCheckbox = React.forwardRef<HTMLInputElement, CustomCheckboxP
                         />
                     </div>
                     <div className="ml-3 text-sm">
-                        <label className="text-muted-foreground select-none cursor-pointer">
+                        <label className="text-muted-foreground dark:text-gray-300 select-none cursor-pointer">
                             {label}
                         </label>
                     </div>
