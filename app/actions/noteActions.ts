@@ -314,22 +314,27 @@ export async function toggleLike(noteId: string) {
 }
 
 export async function isLikedByUser(noteId: string) {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return false
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.email) return false
 
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (!user) return false
+        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+        if (!user) return false
 
-    const like = await prisma.like.findUnique({
-        where: {
-            userId_noteId: {
-                userId: user.id,
-                noteId: noteId
+        const like = await prisma.like.findUnique({
+            where: {
+                userId_noteId: {
+                    userId: user.id,
+                    noteId: noteId
+                }
             }
-        }
-    })
+        })
 
-    return !!like
+        return !!like
+    } catch (error) {
+        console.error("isLikedByUser error:", error);
+        return false;
+    }
 }
 
 // REPORT ACTIONS
