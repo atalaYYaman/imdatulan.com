@@ -232,27 +232,32 @@ export async function unlockNote(noteId: string) {
 
 // Check if user has unlocked the note
 export async function isNoteUnlocked(noteId: string) {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return false
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.email) return false
 
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (!user) return false
+        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+        if (!user) return false
 
-    // Kendi notu ise açık
-    const note = await prisma.note.findUnique({ where: { id: noteId }, select: { uploaderId: true } })
-    if (note?.uploaderId === user.id) return true
+        // Kendi notu ise açık
+        const note = await prisma.note.findUnique({ where: { id: noteId }, select: { uploaderId: true } })
+        if (note?.uploaderId === user.id) return true
 
-    // Satın alınmış mı?
-    const unlock = await prisma.unlockedNote.findUnique({
-        where: {
-            userId_noteId: {
-                userId: user.id,
-                noteId: noteId
+        // Satın alınmış mı?
+        const unlock = await prisma.unlockedNote.findUnique({
+            where: {
+                userId_noteId: {
+                    userId: user.id,
+                    noteId: noteId
+                }
             }
-        }
-    })
+        })
 
-    return !!unlock
+        return !!unlock
+    } catch (error) {
+        console.error("isNoteUnlocked error:", error);
+        return false;
+    }
 }
 
 export async function toggleLike(noteId: string) {

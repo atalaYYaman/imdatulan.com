@@ -13,6 +13,15 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: "Too many uploads. Wait a bit." }, { status: 429 });
     }
 
+    // --- SIZE CHECK ---
+    const contentLength = request.headers.get("content-length");
+    const MAX_SIZE = 4.4 * 1024 * 1024; // ~4.4MB (Vercel Limit is 4.5MB)
+    if (contentLength && parseInt(contentLength) > MAX_SIZE) {
+        return NextResponse.json({
+            message: "Dosya çok büyük. Maksimum 4MB yükleyebilirsiniz. (Serverless Limit)"
+        }, { status: 413 });
+    }
+
     const { searchParams } = new URL(request.url);
     const filename = searchParams.get('filename');
 
