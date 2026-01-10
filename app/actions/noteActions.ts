@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
-import DOMPurify from 'isomorphic-dompurify';
+import xss from 'xss';
 
 export async function getNoteDetail(noteId: string) {
     try {
@@ -98,6 +98,7 @@ export async function incrementView(noteId: string) {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
         if (!user) return
 
+
         // 1. Kullanıcı bu notu daha önce görüntülemiş mi?
         const existingView = await prisma.view.findUnique({
             where: {
@@ -141,7 +142,7 @@ export async function addComment(noteId: string, text: string) {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
         if (!user) return { success: false, message: "User not found" }
 
-        const cleanText = DOMPurify.sanitize(text);
+        const cleanText = xss(text);
 
         await prisma.comment.create({
             data: {
