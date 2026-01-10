@@ -47,8 +47,9 @@ model User {
 
   // Verification
   studentIdCardUrl String?
-  approvalStatus   String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvalStatus   String    @default("PENDING") // PENDING, APPROVED, REJECTED, BANNED
   rejectionReason  String?
+  rejectionCount   Int       @default(0)
 }
 
 model UnlockedNote {

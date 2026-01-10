@@ -39,47 +39,17 @@ export async function registerUser(data: RegistrationDat) {
             return { success: false, message: passwordCheck.message }
         }
 
-        // 3. Mock Identity Validation (Format only)
-        /* 
-        KPS Validation Disabled for now.
-        const isIdentityValid = await validateTCKN(
-            data.tcIdentityNo,
-            data.firstName,
-            data.lastName,
-            data.birthYear
-        );
+        // 3. User Existence Check
+        const existingUser = await prisma.user.findUnique({ where: { email: data.email } })
 
-        if (!isIdentityValid) {
-            return { success: false, message: "TC Kimlik No formatı geçersiz." }
-        }
-        */
-
-        // 4. Duplicate Check
-        const existingUserEmail = await prisma.user.findUnique({ where: { email: data.email } })
-        if (existingUserEmail) {
-            return { success: false, message: "Bu email adresi ile kayıtlı bir kullanıcı zaten var." }
-        }
-
-        // tcIdentityNo check removed
-
-        // Student Number unique check?
-        const existingStudentNumber = await prisma.user.findUnique({ where: { studentNumber: data.studentNumber.trim() } })
-        if (existingStudentNumber) {
-            return { success: false, message: "Bu öğrenci numarası ile kayıtlı bir kullanıcı zaten var." }
-        }
-
-        // 5. Create User
         const hashedPassword = await bcrypt.hash(data.password, 10)
 
-        // Ensure Uppercase for Identity (Mocking what NVI would have enforced)
+        // Prepare Data (Common)
         const finalFirstName = data.firstName.trim().toLocaleUpperCase('tr-TR');
         const finalLastName = data.lastName.trim().toLocaleUpperCase('tr-TR');
 
-        // If uni/faculty were IDs, we might want to fetch names, but we'll store what we got.
         let uniName = data.university;
         let facName = data.faculty;
-
-        // Simple heuristic: if it looks like CUID (25 chars alphanumeric), resolve it.
         if (uniName.length === 25) {
             const u = await prisma.university.findUnique({ where: { id: uniName } });
             if (u) uniName = u.name;
@@ -89,23 +59,60 @@ export async function registerUser(data: RegistrationDat) {
             if (f) facName = f.name;
         }
 
+        const userDataPayload = {
+            firstName: finalFirstName,
+            lastName: finalLastName,
+            university: uniName,
+            programLevel: data.programLevel,
+            faculty: facName,
+            department: data.department,
+            studentClass: data.studentClass,
+            studentNumber: data.studentNumber,
+            password: hashedPassword,
+            marketingConsent: data.marketingConsent,
+            studentIdCardUrl: data.studentIdCardUrl,
+            approvalStatus: "PENDING"
+        };
+
+        // 4. Duplicate / Re-registration Logic
+        if (existingUser) {
+            if (existingUser.approvalStatus === "BANNED") {
+                return { success: false, message: "Bu email adresi yasaklanmıştır." };
+            }
+
+            if (existingUser.approvalStatus === "REJECTED") {
+                // RE-REGISTER: Update existing user
+
+                // Check if new student number is taken (by someone else)
+                const studentNumCheck = await prisma.user.findUnique({ where: { studentNumber: data.studentNumber.trim() } });
+                if (studentNumCheck && studentNumCheck.id !== existingUser.id) {
+                    return { success: false, message: "Bu öğrenci numarası başkası tarafından kullanılıyor." };
+                }
+
+                await prisma.user.update({
+                    where: { id: existingUser.id },
+                    data: userDataPayload
+                });
+
+                return { success: true, message: "Başvurunuz güncellendi ve tekrar onaya gönderildi.", userId: existingUser.id };
+            }
+
+            // If APPROVED or PENDING
+            return { success: false, message: "Bu email adresi ile kayıtlı bir kullanıcı zaten var." };
+        }
+
+        // 5. New Registration Logic
+        // Student Number unique check
+        const existingStudentNumber = await prisma.user.findUnique({ where: { studentNumber: data.studentNumber.trim() } })
+        if (existingStudentNumber) {
+            return { success: false, message: "Bu öğrenci numarası ile kayıtlı bir kullanıcı zaten var." }
+        }
+
         const newUser = await prisma.user.create({
             data: {
-                firstName: finalFirstName,
-                lastName: finalLastName,
-                // birthYear and tcIdentityNo removed
-                university: uniName,
-                programLevel: data.programLevel,
-                faculty: facName,
-                department: data.department,
-                studentClass: data.studentClass,
-                studentNumber: data.studentNumber,
+                ...userDataPayload,
                 email: data.email.trim(),
-                password: hashedPassword,
-                marketingConsent: data.marketingConsent,
-                role: "USER",
-                studentIdCardUrl: data.studentIdCardUrl,
-                approvalStatus: "PENDING"
+                role: "USER"
             }
         })
 

@@ -58,20 +58,56 @@ export async function rejectUser(userId: string, reason: string) {
     if (!await isAdmin()) return { success: false, message: "Unauthorized" };
 
     try {
-        const user = await prisma.user.update({
-            where: { id: userId },
-            data: { approvalStatus: "REJECTED", rejectionReason: reason }
-        });
+        const currentUser = await prisma.user.findUnique({ where: { id: userId } });
+        if (!currentUser) return { success: false, message: "User not found" };
 
-        await sendEmail({
-            to: user.email,
-            subject: "Üyelik Başvurunuz Reddedildi | Otlak",
-            body: `Merhaba ${user.firstName}, Otlak üyelik başvurunuz maalesef reddedilmiştir. Sebep: ${reason}`
-        });
+        const newCount = (currentUser.rejectionCount || 0) + 1;
 
-        revalidatePath('/admin/users');
-        return { success: true, message: "User rejected" };
+        if (newCount >= 2) {
+            // BAN USER
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    approvalStatus: "BANNED",
+                    rejectionReason: reason,
+                    rejectionCount: newCount
+                }
+            });
+
+            await sendEmail({
+                to: currentUser.email,
+                subject: "Hesabınız Yasaklandı | Otlak",
+                body: `Merhaba ${currentUser.firstName}, Otlak üyelik başvurunuz 2. kez reddedildiği için hesabınız kalıcı olarak (yasaklanmış) askıya alınmıştır. Sebep: ${reason}`
+            });
+
+            revalidatePath('/admin/users');
+            return { success: true, message: "User banned (2nd rejection)" };
+        } else {
+            // REJECT AND RESET (Allow retry)
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    approvalStatus: "REJECTED",
+                    rejectionReason: reason,
+                    rejectionCount: newCount,
+                    // Release unique fields
+                    studentNumber: null,
+                    tcIdentityNo: null
+                }
+            });
+
+            await sendEmail({
+                to: currentUser.email,
+                subject: "Üyelik Başvurunuz Reddedildi | Otlak",
+                body: `Merhaba ${currentUser.firstName}, Otlak üyelik başvurunuz reddedilmiştir. Ancak, bilgilerinizi düzelterek tekrar başvuru yapabilirsiniz. Sebep: ${reason}`
+            });
+
+            revalidatePath('/admin/users');
+            return { success: true, message: "User rejected and reset for retry" };
+        }
+
     } catch (error) {
+        console.error("Reject User Error:", error);
         return { success: false, message: "Error rejecting user" };
     }
 }
