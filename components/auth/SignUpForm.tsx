@@ -45,6 +45,7 @@ export default function SignUpForm() {
 
         // ID Card
         studentIdCardFile: null as File | null,
+        studentIdCardUrl: '', // New field for uploaded URL
 
         // Account
         email: '',
@@ -141,13 +142,40 @@ export default function SignUpForm() {
 
             setStep(2);
         }
-        // Step 2: File Upload Validation
+        // Step 2: File Upload Validation & Execution
         else if (step === 2) {
             if (!formData.studentIdCardFile) {
                 setError('Lütfen öğrenci kimlik kartınızın fotoğrafını yükleyiniz.');
                 return;
             }
-            setStep(3);
+
+            // Eğer dosya zaten yüklendiyse (URL varsa) direkt geç
+            // Sadece dosya değiştiğinde URL'i sıfırlıyoruz (handleFileSelect'te)
+            if (formData.studentIdCardUrl) {
+                setStep(3);
+                return;
+            }
+
+            // Upload Logic
+            setIsLoading(true);
+            try {
+                const uploadRes = await fetch(`/api/upload-blob?filename=${formData.studentIdCardFile.name}`, {
+                    method: 'POST',
+                    body: formData.studentIdCardFile,
+                });
+
+                if (!uploadRes.ok) throw new Error('Kimlik yüklenirken hata oluştu. Lütfen tekrar deneyiniz.');
+                const blob = await uploadRes.json();
+
+                // Save URL
+                setFormData(prev => ({ ...prev, studentIdCardUrl: blob.url }));
+                setStep(3);
+            } catch (err: any) {
+                console.error(err);
+                setError('Fotoğraf yüklenirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+            } finally {
+                setIsLoading(false);
+            }
         }
         // Step 3 is final submit
     }
@@ -188,30 +216,22 @@ export default function SignUpForm() {
             return
         }
 
+        // Final Safety Check for URL
+        if (!formData.studentIdCardUrl) {
+            setError("Kimlik kartı yüklenmemiş. Lütfen geri dönüp tekrar yükleyiniz.");
+            return;
+        }
+
         setIsLoading(true)
 
         try {
-            // 1. Upload ID Card
-            let idCardUrl = '';
-            if (formData.studentIdCardFile) {
-                const uploadRes = await fetch(`/api/upload-blob?filename=${formData.studentIdCardFile.name}`, {
-                    method: 'POST',
-                    body: formData.studentIdCardFile,
-                });
-
-                if (!uploadRes.ok) throw new Error('Kimlik yüklenirken hata oluştu.');
-                const blob = await uploadRes.json();
-                idCardUrl = blob.url;
-            }
-
-            // 2. Register User
-            const { confirmPassword, studentIdCardFile, ...submitData } = formData;
+            // 2. Register User (Upload is already done)
+            const { confirmPassword, studentIdCardFile, studentIdCardUrl, ...submitData } = formData;
 
             const res = await registerUser({
                 ...submitData,
-                programLevel: "Lisans", // Defaulting as we removed the step
-                studentIdCardUrl: idCardUrl,
-                // KPS Validation is disabled in backend
+                programLevel: "Lisans",
+                studentIdCardUrl: studentIdCardUrl, // Use the uploaded URL
             })
 
             if (res.success) {
@@ -272,7 +292,8 @@ export default function SignUpForm() {
             setUploadError('Lütfen geçerli bir resim dosyası yükleyiniz.')
             return
         }
-        handleChange('studentIdCardFile', file)
+        // New file selected, reset URL to force re-upload
+        setFormData(prev => ({ ...prev, studentIdCardFile: file, studentIdCardUrl: '' }))
     }
 
     const renderStep2 = () => (
