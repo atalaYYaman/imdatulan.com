@@ -114,3 +114,32 @@ export const verifyTwoFactor = async (token: string, email: string) => {
         return { success: false, message: "Bir hata oluştu." };
     }
 }
+
+export const sendTwoFactorEmail = async (email: string) => {
+    try {
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return { success: false, message: "Kullanıcı bulunamadı." };
+
+        if (user.role !== 'ADMIN') {
+            return { success: false, message: "Yetkisiz işlem." };
+        }
+
+        // Rate Limit: 3 requests per 5 mins
+        const limitParams = await rateLimit(`2fa-req:${email}`, 3, 5 * 60 * 1000);
+        if (!limitParams.success) {
+            return { success: false, message: "Çok fazla istek. Lütfen bekleyin." };
+        }
+
+        const twoFactorToken = await generateTwoFactorToken(email);
+
+        await sendEmail({
+            to: email,
+            subject: "Güvenlik Kodunuz (2FA) | Otlak",
+            body: `Admin paneli giriş kodunuz: <b>${twoFactorToken.token}</b> <br> Bu kod 2 dakika geçerlidir.`
+        });
+
+        return { success: true, message: "Kod gönderildi." };
+    } catch (error) {
+        return { success: false, message: "Hata oluştu." };
+    }
+};

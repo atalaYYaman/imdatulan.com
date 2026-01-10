@@ -47,26 +47,12 @@ export const authOptions: NextAuthOptions = {
 
                     // 2FA Trigger for Admin
                     if (user.role === 'ADMIN') {
-                        // Rate Limit: 5 login attempts per 15 mins (2FA trigger)
-                        const limitParams = await rateLimit(`2fa:${user.email}`, 5, 15 * 60 * 1000);
-                        if (!limitParams.success) {
-                            throw new Error("Çok fazla giriş denemesi. Lütfen 15 dakika bekleyin.");
-                        }
-
-                        const twoFactorToken = await generateTwoFactorToken(user.email);
-                        await sendEmail({
-                            to: user.email,
-                            subject: "Güvenlik Kodunuz (2FA) | Otlak",
-                            body: `Admin paneli giriş kodunuz: <b>${twoFactorToken.token}</b> <br> Bu kod 2 dakika geçerlidir.`
-                        });
-
-                        // We do not block login here. We let them in, but Middleware will catch them.
-                        // We also need to ensure TwoFactorConfirmation is cleared if it exists from a previous session?
-                        // Actually, confirmation is tied to User ID. If we want per-session, that's harder without DB session token.
-                        // But since we use JWT, we can just delete it here to force re-verify.
+                        // We no longer send email here automatically.
+                        // We just ensure previous confirmation is cleared to force re-verify.
                         await prisma.twoFactorConfirmation.deleteMany({
                             where: { userId: user.id }
                         });
+                        // Middleware will catch the unverified session and redirect to verify-email page.
                     }
 
                     return {
