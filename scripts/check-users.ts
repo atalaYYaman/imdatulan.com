@@ -1,5 +1,5 @@
+import { PrismaClient } from '@prisma/client';
 
-const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function checkUsers() {
@@ -15,7 +15,7 @@ async function checkUsers() {
                 email: true,
                 approvalStatus: true,
                 role: true,
-                password: true // checking if hash exists, don't print full hash if not needed, but for debug it's fine to see it's a string
+                password: true
             }
         });
         console.log(JSON.stringify(users, null, 2));
