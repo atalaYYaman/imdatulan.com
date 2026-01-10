@@ -55,48 +55,48 @@ function NewPasswordForm() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-4 bg-gray-50">
-            <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-xl shadow-sm border">
+        <div className="flex min-h-screen items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+            <div className="w-full max-w-md space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border dark:border-gray-700">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold tracking-tight text-gray-900">Yeni Şifre Belirle</h2>
-                    <p className="mt-2 text-sm text-gray-600">
+                    <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Yeni Şifre Belirle</h2>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                         Emailinize gelen 6 haneli kodu ve yeni şifrenizi girin.
                     </p>
                 </div>
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Doğrulama Kodu</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Doğrulama Kodu</label>
                         <input
                             type="text"
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             placeholder="6 haneli kod"
                             required
-                            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Yeni Şifre</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Yeni Şifre</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             minLength={6}
-                            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
                         />
                     </div>
 
