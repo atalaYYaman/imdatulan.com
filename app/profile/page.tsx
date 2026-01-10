@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ProfileView from "@/components/profile/ProfileView";
 
+import { maskStudentNumber } from "@/lib/masking";
+
 // Server Component
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +21,7 @@ export default async function ProfilePage() {
         where: { email: session.user.email },
         include: {
             notes: {
+                where: { deletedAt: null }, // Soft Delete Filter
                 include: {
                     _count: {
                         select: { likes: true }
@@ -54,7 +57,8 @@ export default async function ProfilePage() {
         university: user.university || 'Belirtilmemiş',
         faculty: user.faculty || '',
         department: user.department || '',
-        role: user.role
+        role: user.role,
+        studentNumber: maskStudentNumber(user.studentNumber) // MASKED
     };
 
     return <ProfileView user={profileUser} notes={user.notes} stats={stats} />;

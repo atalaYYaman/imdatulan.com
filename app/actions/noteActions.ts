@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import DOMPurify from 'isomorphic-dompurify';
 
 export async function getNoteDetail(noteId: string) {
     try {
@@ -40,6 +41,8 @@ export async function getNoteDetail(noteId: string) {
                 }
             }
         })
+
+        if (note.deletedAt) return null; // Soft Delete Check
 
         // --- Access Control Logic ---
         if (!note) return null
@@ -138,9 +141,11 @@ export async function addComment(noteId: string, text: string) {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
         if (!user) return { success: false, message: "User not found" }
 
+        const cleanText = DOMPurify.sanitize(text);
+
         await prisma.comment.create({
             data: {
-                text,
+                text: cleanText,
                 noteId,
                 userId: user.id
             }
@@ -183,7 +188,12 @@ export async function unlockNote(noteId: string) {
         if (existingUnlock) return { success: true, message: "Zaten açık" }
 
         // Kendi notu mu?
-        if (note.uploaderId === user.id) return { success: true, message: "Kendi notunuz" }
+        if (note.uploaderId === user.id) {
+            // Anti-Self Dealing: Kendi notunu satın almasına gerek yok, zaten açık.
+            // Ama eğer satın almaya çalışıyorsa (Unlock butonu çıkmışsa):
+            // Frontend gizlemeli. Backend'de engelliyoruz.
+            return { success: false, message: "Kendi notunuzu satın alamazsınız." }
+        }
 
         // Kredi yeterli mi?
         if (user.credits < note.price) {
@@ -374,7 +384,11 @@ export async function deleteNote(noteId: string) {
 
         // Hard Delete (Cascades will handle related records like Likes, Comments, Views if configured in schema, 
         // but let's trust Prisma cascade or do manual cleanup if needed. Schema says onDelete: Cascade for relations)
-        await prisma.note.delete({ where: { id: noteId } })
+        // SOFT DELETE
+        await prisma.note.update({
+            where: { id: noteId },
+            data: { deletedAt: new Date() }
+        })
 
         return { success: true }
     } catch (error) {
