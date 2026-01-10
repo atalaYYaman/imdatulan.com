@@ -5,6 +5,7 @@ import { generateVerificationToken, generateTwoFactorToken } from "@/lib/tokens"
 import { sendEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { validatePassword } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const resetPassword = async (token: string, email: string, newPassword: string) => {
     try {
@@ -44,13 +45,15 @@ export const resetPassword = async (token: string, email: string, newPassword: s
     }
 };
 
-import { rateLimit } from "@/lib/rate-limit";
+
+// ... existing imports ...
+
 
 // ... existing imports ...
 
 export const sendPasswordResetEmail = async (email: string) => {
-    // Rate Limit: 3 requests per 10 minutes
-    const limitParams = await rateLimit(`reset:${email}`, 3, 10 * 60 * 1000);
+    // Rate Limit: 3 requests per 10 minutes (600 seconds)
+    const limitParams = await checkRateLimit(`reset:${email}`, 3, 600);
     if (!limitParams.success) {
         return { success: false, message: "Çok fazla istek gönderdiniz. Lütfen biraz bekleyin." };
     }
@@ -124,8 +127,8 @@ export const sendTwoFactorEmail = async (email: string) => {
             return { success: false, message: "Yetkisiz işlem." };
         }
 
-        // Rate Limit: 3 requests per 5 mins
-        const limitParams = await rateLimit(`2fa-req:${email}`, 3, 5 * 60 * 1000);
+        // Rate Limit: 3 requests per 5 mins (300 seconds)
+        const limitParams = await checkRateLimit(`2fa-req:${email}`, 3, 300);
         if (!limitParams.success) {
             return { success: false, message: "Çok fazla istek. Lütfen bekleyin." };
         }
