@@ -20,7 +20,7 @@ export const sendEmail = async (data: EmailPayload) => {
 
     try {
         await resend.emails.send({
-            from: 'Otlak <noreply@otlak.com.tr>', // Updated to real domain
+            from: 'Otlak <info@otlak.com.tr>', // Updated to real domain
             to: data.to,
             subject: data.subject,
             html: `
