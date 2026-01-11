@@ -20,10 +20,11 @@ interface NoteViewerProps {
     onUnlock?: () => void;
     isUnlocking?: boolean;
     price?: number;
+    fileExtension?: string;
     errorMessage?: string | null;
 }
 
-export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking, price = 1, errorMessage }: NoteViewerProps) {
+export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking, price = 1, errorMessage, fileExtension }: NoteViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
     const [scale, setScale] = useState<number>(isLocked ? 0.6 : 1.0); // Kilitliyse biraz daha küçük göster
     const [isLoading, setIsLoading] = useState(true);
@@ -38,8 +39,11 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     }
 
     // Dosya uzantısı kontrolü
-    const isPdf = fileUrl.toLowerCase().endsWith('.pdf');
-    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl);
+    const getExtension = (url: string) => url.split('.').pop()?.toLowerCase() || '';
+    const ext = fileExtension ? fileExtension.toLowerCase() : getExtension(fileUrl);
+
+    const isPdf = ext === 'pdf' || (!fileExtension && fileUrl.toLowerCase().endsWith('.pdf'));
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || (!fileExtension && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl));
 
     // Zoom Handlers - Kilitliyse devre dışı
     const zoomIn = () => !isLocked && setScale(prev => Math.min(prev + 0.2, 3.0));
@@ -48,6 +52,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     /**
      * Shared Watermark Drawing Function
      * Draws the watermark directly onto the provided canvas context.
+     * USED ONLY FOR IMAGES NOW (Server handles PDF watermark)
      */
     const drawWatermark = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
         if (!ctx) return;
@@ -106,32 +111,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
             }
         }
     }, [viewerUser]);
-
-    /**
-     * Handle PDF Page Render Success
-     * Locates the canvas within the specific page container and draws the watermark.
-     */
-    const handlePageRenderSuccess = useCallback((page: any) => {
-        // react-pdf renders a canvas. We can access it via the page element reference or standard DOM query within the specific page div.
-        // However, 'page' object passed here might contain reference to the canvas? 
-        // Based on react-pdf docs, onRenderSuccess passes generic page info.
-        // Best reliable way: Query selector looking for canvas inside the container for this specific page.
-        // But we have multiple pages.
-        // Alternative: The <Page> component renders a canvas as a direct child or wrapper.
-        // We will try to find the canvas in the DOM for this specific page index.
-
-        const pageNumber = page.pageNumber; // 1-based
-        const pageElement = document.querySelector(`[data-page-number="${pageNumber}"]`);
-        if (pageElement) {
-            const canvas = pageElement.querySelector('canvas');
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    drawWatermark(ctx, canvas.width, canvas.height);
-                }
-            }
-        }
-    }, [drawWatermark]);
 
     /**
      * Handle Image Rendering on Canvas
@@ -261,7 +240,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                                 scale={scale}
                                                 renderTextLayer={false}
                                                 renderAnnotationLayer={false}
-                                                onRenderSuccess={handlePageRenderSuccess}
                                                 loading={<div className="bg-muted animate-pulse" style={{ width: 600 * scale, height: 800 * scale }} />}
                                                 className="nod-pdf-page"
                                             />

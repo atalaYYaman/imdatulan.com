@@ -55,13 +55,20 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
             }
         }
 
+        // Orijinal dosya uzantısını al
+        const originalExtension = note.fileUrl.split('.').pop()?.toLowerCase();
+
+        // Proxy URL'i oluştur
+        const secureNote = { ...note, fileUrl: `/api/notes/${note.id}/file` };
+
         return (
             <NoteDetailClient
-                note={note}
+                note={secureNote}
                 initialIsLiked={isLiked}
                 viewerUser={viewerUser}
                 isUnlocked={isUnlocked}
                 currentUserId={currentUserId}
+                fileExtension={originalExtension}
             />
         );
     } catch (error: any) {

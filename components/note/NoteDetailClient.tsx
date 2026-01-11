@@ -41,9 +41,10 @@ interface NoteDetailClientProps {
     };
     isUnlocked: boolean;
     currentUserId?: string; // New Prop
+    fileExtension?: string;
 }
 
-export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked, currentUserId }: NoteDetailClientProps) {
+export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked, currentUserId, fileExtension }: NoteDetailClientProps) {
     const [isWarningAccepted, setIsWarningAccepted] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(initialIsUnlocked);
     const [isUnlocking, setIsUnlocking] = useState(false);
@@ -157,6 +158,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                         isUnlocking={isUnlocking}
                         price={note.price}
                         errorMessage={errorMessage}
+                        fileExtension={fileExtension}
                     />
                 </div>
 
