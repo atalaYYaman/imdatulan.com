@@ -100,7 +100,20 @@ export default function FeedbackPage() {
                                 <input
                                     type="file"
                                     accept="image/*"
-                                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                                    onChange={(e) => {
+                                        const selected = e.target.files?.[0];
+                                        if (selected) {
+                                            if (selected.size > 4 * 1024 * 1024) {
+                                                alert("Dosya boyutu 4MB'dan büyük olamaz.");
+                                                e.target.value = ""; // Reset input
+                                                setFile(null);
+                                            } else {
+                                                setFile(selected);
+                                            }
+                                        } else {
+                                            setFile(null);
+                                        }
+                                    }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 />
                                 {file ? (
