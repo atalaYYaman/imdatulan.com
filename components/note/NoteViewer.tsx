@@ -169,23 +169,23 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         >
             {/* Kilitli Durum Overlay */}
             {isLocked && !isLoading && (
-                <div className="absolute inset-0 z-[60] backdrop-blur-xl bg-background/50 flex items-center justify-center pointer-events-auto p-4">
-                    <div className="relative overflow-hidden bg-card/80 backdrop-blur-2xl border border-white/10 dark:border-white/5 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col items-center gap-6 max-w-sm text-center transform hover:scale-[1.02] transition-transform duration-300 animate-in fade-in zoom-in group">
+                <div className="absolute inset-0 z-[60] bg-background/95 backdrop-blur-3xl flex items-center justify-center pointer-events-auto p-4 select-none">
+                    <div className="relative overflow-hidden bg-card border border-border/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-sm text-center animate-in fade-in zoom-in duration-300">
 
                         {/* Animated Glow */}
-                        <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 rotate-45 pointer-events-none" />
+                        <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50 rotate-45 pointer-events-none" />
 
-                        <div className="relative w-24 h-24 bg-gradient-to-br from-primary/10 to-primary/5 rounded-full flex items-center justify-center animate-bounce-slow ring-8 ring-primary/5">
-                            <span className="text-5xl drop-shadow-md">🔒</span>
+                        <div className="relative w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center shadow-inner">
+                            <span className="text-5xl drop-shadow-sm">🔒</span>
                         </div>
                         <div>
-                            <h2 className="text-3xl font-black text-foreground mb-3 tracking-tight">Bu Not Kilitli</h2>
+                            <h2 className="text-3xl font-black text-foreground mb-3 tracking-tight">Kilitli İçerik</h2>
                             <p className="text-muted-foreground text-sm leading-relaxed px-4">
-                                Notun tamamını görüntülemek için sadece <span className='font-bold text-primary'>{price} Süt</span> harcamanız yeterli.
+                                Bu notun tamamını ve yüksek kaliteli halini görüntülemek için <span className='font-bold text-primary'>{price} Süt</span> harcayın.
                             </p>
                             {errorMessage && (
-                                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl animate-in fade-in slide-in-from-top-2">
-                                    <p className="text-red-500 text-xs font-bold flex items-center justify-center gap-2">
+                                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-xl animate-in fade-in slide-in-from-top-2">
+                                    <p className="text-destructive text-xs font-bold flex items-center justify-center gap-2">
                                         <span className="text-lg">⚠️</span>
                                         {errorMessage}
                                     </p>
@@ -195,9 +195,8 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                         <button
                             onClick={onUnlock}
                             disabled={isUnlocking}
-                            className="w-full relative overflow-hidden py-4 bg-primary hover:bg-primary/90 disabled:opacity-70 text-primary-foreground font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/25 transition-all active:scale-95 flex items-center justify-center gap-2 group/btn"
+                            className="w-full relative overflow-hidden py-4 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90 disabled:opacity-70 text-white font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/25 transition-all active:scale-95 flex items-center justify-center gap-2 group/btn"
                         >
-                            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover/btn:translate-x-[150%] transition-transform duration-700 ease-in-out" />
                             {isUnlocking ? (
                                 <span className="flex items-center gap-2 animate-pulse">
                                     <span className="w-2 h-2 rounded-full bg-white animate-bounce" />
@@ -218,12 +217,12 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
 
             {/* Toolbar - Floating Zoom Controls */}
             {!isLocked && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 bg-card/90 backdrop-blur-md px-6 py-3 rounded-full border border-primary/30 shadow-2xl transition-transform hover:scale-105 select-none">
-                    <button onClick={zoomOut} className="p-1 hover:text-primary transition-colors"><ZoomOut className="w-6 h-6" /></button>
-                    <div className="w-px h-6 bg-border"></div>
-                    <span className="text-sm font-bold text-primary min-w-[3rem] text-center font-mono">{Math.round(scale * 100)}%</span>
-                    <div className="w-px h-6 bg-border"></div>
-                    <button onClick={zoomIn} className="p-1 hover:text-primary transition-colors"><ZoomIn className="w-6 h-6" /></button>
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-6 bg-card/80 backdrop-blur-md px-8 py-4 rounded-full border border-primary/20 shadow-2xl transition-transform hover:scale-105 select-none ring-1 ring-black/5">
+                    <button onClick={zoomOut} className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90"><ZoomOut className="w-6 h-6" /></button>
+                    <div className="w-px h-8 bg-border"></div>
+                    <span className="text-base font-bold text-primary min-w-[3.5rem] text-center font-mono">{Math.round(scale * 100)}%</span>
+                    <div className="w-px h-8 bg-border"></div>
+                    <button onClick={zoomIn} className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90"><ZoomIn className="w-6 h-6" /></button>
                 </div>
             )}
 

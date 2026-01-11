@@ -52,6 +52,8 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
 
     const isOwner = currentUserId === note.uploaderId;
 
+    const [mobileTab, setMobileTab] = useState<'note' | 'details'>('note');
+
     const handleUnlockNote = async () => {
         setIsUnlocking(true);
         setErrorMessage(null);
@@ -72,7 +74,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] bg-background text-foreground overflow-hidden relative">
+        <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] bg-background text-foreground overflow-hidden relative">
             {/* Report Modal */}
             {isReportModalOpen && (
                 <ReportModal noteId={note.id} onClose={() => setIsReportModalOpen(false)} />
@@ -124,10 +126,29 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                 <LegalWarningModal onAccept={() => setIsWarningAccepted(true)} />
             )}
 
-            <div className={`flex-1 flex flex-col md:flex-row h-full transition-opacity duration-500 ${!isWarningAccepted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            {/* Mobile Tab Switcher */}
+            <div className={`md:hidden flex border-b border-border/50 bg-background/95 backdrop-blur z-20 transition-opacity duration-500 ${!isWarningAccepted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                <button
+                    onClick={() => setMobileTab('note')}
+                    className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors relative ${mobileTab === 'note' ? 'text-primary' : 'text-muted-foreground hover:bg-muted/20'}`}
+                >
+                    Not Görüntüle
+                    {mobileTab === 'note' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary animate-in fade-in zoom-in" />}
+                </button>
+                <button
+                    onClick={() => setMobileTab('details')}
+                    className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors relative ${mobileTab === 'details' ? 'text-primary' : 'text-muted-foreground hover:bg-muted/20'}`}
+                >
+                    Detaylar & Yorumlar
+                    {mobileTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary animate-in fade-in zoom-in" />}
+                </button>
+            </div>
+
+            <div className={`flex-1 flex flex-col md:flex-row h-full transition-opacity duration-500 overflow-hidden ${!isWarningAccepted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
 
                 {/* SOL TARAFLA: PDF / Dosya Görüntüleyici */}
-                <div className="md:w-3/4 h-[50vh] md:h-full bg-muted/20 relative border-b md:border-b-0 md:border-r border-border/50">
+                {/* Mobile: Show only if tab is 'note'. Desktop: Always show. */}
+                <div className={`flex-1 md:w-3/4 h-full bg-muted/20 relative md:border-r border-border/50 ${mobileTab !== 'note' ? 'hidden md:block' : 'block'}`}>
                     <NoteViewer
                         fileUrl={note.fileUrl}
                         viewerUser={viewerUser}
@@ -140,7 +161,8 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                 </div>
 
                 {/* SAĞ TARAF: Detaylar ve Etkileşim */}
-                <div className="md:w-1/4 flex flex-col h-[50vh] md:h-full bg-card/80 backdrop-blur-md border-l border-border/50 shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
+                {/* Mobile: Show only if tab is 'details'. Desktop: Always show. */}
+                <div className={`flex-1 md:w-1/4 flex flex-col h-full bg-card/80 backdrop-blur-md border-l border-border/50 shadow-[-10px_0_30px_rgba(0,0,0,0.02)] ${mobileTab !== 'details' ? 'hidden md:flex' : 'flex'}`}>
 
                     {/* Üst Bilgi */}
                     <div className="p-6 border-b border-border/50">
@@ -196,7 +218,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                     </div>
 
                     {/* Yorumlar (Kaydırılabilir Alan) */}
-                    <div className="flex-1 overflow-y-auto bg-muted/10">
+                    <div className="flex-1 overflow-y-auto bg-muted/10 h-full">
                         <CommentSection
                             noteId={note.id}
                             initialComments={note.comments}

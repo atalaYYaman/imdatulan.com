@@ -1,6 +1,6 @@
 import { getNoteDetail, incrementView, isLikedByUser } from "@/app/actions/noteActions";
 import NoteDetailClient from "@/components/note/NoteDetailClient";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +10,10 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
         const { noteId } = await params;
         const note = await getNoteDetail(noteId);
         const session = await getServerSession(authOptions);
+
+        if (!session) {
+            redirect('/');
+        }
 
         if (!note) {
             notFound();

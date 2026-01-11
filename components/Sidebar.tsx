@@ -67,7 +67,7 @@ export default function Sidebar() {
 
                 {/* CTA Button */}
                 {session && (
-                    <div className="mt-auto pt-6 px-1">
+                    <div className="mt-4 px-1">
                         <Link
                             href="/upload"
                             className="flex items-center px-3 py-3.5 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90 shadow-[0_4px_20px_rgba(16,185,129,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden whitespace-nowrap relative group/btn"

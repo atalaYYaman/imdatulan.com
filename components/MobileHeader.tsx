@@ -143,7 +143,7 @@ export default function MobileHeader() {
                             <Link
                                 href="/upload"
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-4 px-4 py-3.5 text-primary font-bold bg-primary/5 rounded-xl transition-all mt-4 border border-primary/20"
+                                className="flex items-center gap-4 px-4 py-3.5 text-primary font-bold bg-primary/5 rounded-xl transition-all mt-2 border border-primary/20"
                             >
                                 <Upload className="h-5 w-5" />
                                 Ot Yükle
