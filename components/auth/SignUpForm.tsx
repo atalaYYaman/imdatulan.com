@@ -9,6 +9,8 @@ import { CustomCheckbox } from '@/components/ui/custom-checkbox'
 import { registerUser, checkStudentNumber } from '@/app/actions/user'
 import { getUniversities, getFaculties, getDepartments } from '@/app/actions/academic'
 import { Upload, Camera } from 'lucide-react'
+import { Modal } from '@/components/ui/modal'
+import { LEGAL_CONTENTS } from '@/components/legal/legal-contents'
 
 const CLASSES = [
     { label: "Hazırlık", value: "Hazırlık" },
@@ -25,6 +27,9 @@ export default function SignUpForm() {
     const [step, setStep] = useState(1)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
+
+    // Modal State
+    const [activeLegalDoc, setActiveLegalDoc] = useState<'USER_AGREEMENT' | 'KVKK' | 'PRIVACY_POLICY' | null>(null);
 
     // Password Visibility
     const [showPassword, setShowPassword] = useState(false)
@@ -201,8 +206,13 @@ export default function SignUpForm() {
             return;
         }
 
-        if (!formData.password || formData.password.length < 6) {
-            setError('Şifre en az 6 karakter olmalıdır.');
+        if (!formData.password || formData.password.length < 8) {
+            setError('Şifre en az 8 karakter olmalıdır.');
+            return;
+        }
+
+        if (!/[A-Za-z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+            setError('Şifre hem harf hem de rakam içermelidir.');
             return;
         }
 
@@ -212,7 +222,7 @@ export default function SignUpForm() {
         }
 
         if (!formData.privacyConsent) {
-            setError('KVKK metnini onaylamanız zorunludur.')
+            setError('Hesap oluşturmak için sözleşmeleri okuyup onaylamanız zorunludur.')
             return
         }
 
@@ -392,7 +402,7 @@ export default function SignUpForm() {
             <CustomInput label="Email Adresi" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="ornek@email.com" />
 
             <div className="relative">
-                <CustomInput label="Şifre Belirle" type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="En az 6 karakter" />
+                <CustomInput label="Şifre Belirle" type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="En az 8 karakter (Harf ve Rakam)" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[34px] text-muted-foreground hover:text-foreground text-sm">{showPassword ? "Gizle" : "Göster"}</button>
             </div>
 
@@ -403,7 +413,19 @@ export default function SignUpForm() {
 
             <div className="space-y-3 mt-4">
                 <CustomCheckbox checked={formData.marketingConsent} onChange={(e) => handleChange('marketingConsent', e.target.checked)} label="Yeniliklerden haberdar olmak istiyorum." />
-                <CustomCheckbox checked={formData.privacyConsent} onChange={(e) => handleChange('privacyConsent', e.target.checked)} label={<span className="text-sm"><Link href="/privacy" className="text-primary hover:underline">KVKK ve Aydınlatma Metni</Link>'ni okudum, onaylıyorum.</span>} />
+                <CustomCheckbox
+                    checked={formData.privacyConsent}
+                    onChange={(e) => handleChange('privacyConsent', e.target.checked)}
+                    label={
+                        <span className="text-sm">
+                            <span className="text-primary hover:underline cursor-pointer" onClick={(e) => { e.preventDefault(); setActiveLegalDoc('USER_AGREEMENT'); }}>
+                                Kullanıcı Sözleşmesi
+                            </span>'ni ve <span className="text-primary hover:underline cursor-pointer" onClick={(e) => { e.preventDefault(); setActiveLegalDoc('KVKK'); }}>
+                                KVKK Aydınlatma Metni
+                            </span>'ni okudum, onaylıyorum.
+                        </span>
+                    }
+                />
             </div>
 
             <div className="flex justify-between mt-8">
@@ -450,6 +472,14 @@ export default function SignUpForm() {
                 {step === 3 && renderStep3()}
                 {step === 4 && renderSuccess()}
             </form>
+
+            <Modal
+                isOpen={!!activeLegalDoc}
+                onClose={() => setActiveLegalDoc(null)}
+                title={activeLegalDoc ? LEGAL_CONTENTS[activeLegalDoc].title : ''}
+            >
+                {activeLegalDoc ? LEGAL_CONTENTS[activeLegalDoc].content : ''}
+            </Modal>
         </div>
     )
 }
