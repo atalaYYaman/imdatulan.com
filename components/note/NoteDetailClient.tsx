@@ -78,12 +78,44 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                 <ReportModal noteId={note.id} onClose={() => setIsReportModalOpen(false)} />
             )}
 
-            {/* Suspended Banner */}
+            {/* Status Banners */}
+            {/* 1. PENDING */}
+            {note.status === 'PENDING' && (
+                <div className="bg-orange-500/10 border-b border-orange-500/20 text-orange-500 px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2 animate-in slide-in-from-top-2">
+                    <span className="text-lg">⏳</span>
+                    Bu not onay beklemektedir. Şu an sadece siz ve yöneticiler görebilir.
+                </div>
+            )}
+
+            {/* 2. REJECTED */}
+            {note.status === 'REJECTED' && (
+                <div className="bg-red-500/10 border-b border-red-500/20 text-red-500 px-4 py-2 text-center text-sm font-medium flex flex-col md:flex-row items-center justify-center gap-2 animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-lg">❌</span>
+                        <span>Bu içerik reddedilmiştir.</span>
+                    </div>
+                    {note.rejectionReason && (
+                        <span className="bg-red-500/10 px-2 py-0.5 rounded text-xs border border-red-500/20">
+                            Sebep: {note.rejectionReason}
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {/* 3. SUSPENDED */}
             {note.status === 'SUSPENDED' && (
-                <div className="bg-red-500/10 border-b border-red-500/20 text-red-500 px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
+                <div className="bg-red-500/10 border-b border-red-500/20 text-red-500 px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2 animate-in slide-in-from-top-2">
                     <span className="text-lg">⚠️</span>
                     Bu içerik şu anda askıya alınmıştır. Sadece siz ve önceden satın alanlar görüntüleyebilir.
                     {note.rejectionReason && <span className="text-foreground/60 font-normal ml-1">({note.rejectionReason})</span>}
+                </div>
+            )}
+
+            {/* 4. PURCHASED (Unlocked & Not Owner) */}
+            {isUnlocked && !isOwner && note.status === 'APPROVED' && (
+                <div className="bg-emerald-500/10 border-b border-emerald-500/20 text-emerald-500 px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2 animate-in slide-in-from-top-2">
+                    <span className="text-lg">✅</span>
+                    Bu notu satın aldınız.
                 </div>
             )}
 

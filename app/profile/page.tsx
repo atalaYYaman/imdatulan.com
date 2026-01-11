@@ -28,6 +28,24 @@ export default async function ProfilePage() {
                     }
                 },
                 orderBy: { createdAt: 'desc' }
+            },
+            unlockedNotes: {
+                include: {
+                    note: {
+                        include: {
+                            uploader: {
+                                select: {
+                                    firstName: true,
+                                    lastName: true
+                                }
+                            },
+                            _count: {
+                                select: { likes: true }
+                            }
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
             }
         }
     });
@@ -61,5 +79,12 @@ export default async function ProfilePage() {
         studentNumber: maskStudentNumber(user.studentNumber) // MASKED
     };
 
-    return <ProfileView user={profileUser} notes={user.notes} stats={stats} />;
+    // Extract purchased notes from the relation
+    // We need to shape them like the 'notes' array for the view
+    const purchasedNotes = user.unlockedNotes.map(unlocked => ({
+        ...unlocked.note,
+        uploader: unlocked.note.uploader
+    }));
+
+    return <ProfileView user={profileUser} notes={user.notes} purchasedNotes={purchasedNotes} stats={stats} />;
 }

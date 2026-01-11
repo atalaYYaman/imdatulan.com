@@ -15,6 +15,7 @@ interface ProfileViewProps {
         role: string;
     };
     notes: any[];
+    purchasedNotes?: any[];
     stats: {
         totalLikes: number;
         totalViews: number;
@@ -22,7 +23,7 @@ interface ProfileViewProps {
     };
 }
 
-export default function ProfileView({ user, notes, stats }: ProfileViewProps) {
+export default function ProfileView({ user, notes, purchasedNotes = [], stats }: ProfileViewProps) {
     const [activeTab, setActiveTab] = useState<'shared' | 'viewed' | 'favorites'>('shared');
 
     return (
@@ -75,7 +76,7 @@ export default function ProfileView({ user, notes, stats }: ProfileViewProps) {
 
                 {/* Content Tabs */}
                 <div>
-                    <div className="flex border-b border-border mb-6 overflow-x-auto">
+                    <div className="flex border-b border-border mb-6 overflow-x-auto gap-4">
                         <button
                             onClick={() => setActiveTab('shared')}
                             className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'shared' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -83,10 +84,18 @@ export default function ProfileView({ user, notes, stats }: ProfileViewProps) {
                         >
                             <FileText className="h-4 w-4" /> Paylaşılan Notlar
                         </button>
+                        <button
+                            onClick={() => setActiveTab('viewed')}
+                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'viewed' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <Trophy className="h-4 w-4" /> Satın Aldıklarım
+                        </button>
                     </div>
 
                     {/* Tab Content */}
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        {/* SHARED NOTES */}
                         {activeTab === 'shared' && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {notes.map(note => (
@@ -97,6 +106,11 @@ export default function ProfileView({ user, notes, stats }: ProfileViewProps) {
                                         {note.status === 'PENDING' && (
                                             <div className="absolute inset-x-0 bottom-0 bg-orange-500/90 text-white text-xs font-bold text-center py-2 backdrop-blur-sm rounded-b-xl z-20">
                                                 Onay Bekliyor ⏳
+                                            </div>
+                                        )}
+                                        {note.status === 'REJECTED' && (
+                                            <div className="absolute inset-x-0 bottom-0 bg-red-500/90 text-white text-xs font-bold text-center py-2 backdrop-blur-sm rounded-b-xl z-20">
+                                                Reddedildi ❌
                                             </div>
                                         )}
                                         {note.status === 'SUSPENDED' && (
@@ -116,6 +130,32 @@ export default function ProfileView({ user, notes, stats }: ProfileViewProps) {
                                     </div>
                                     <span className="font-medium">Yeni Ot Yükle</span>
                                 </Link>
+                            </div>
+                        )}
+
+                        {/* PURCHASED NOTES */}
+                        {activeTab === 'viewed' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {notes.length === 0 && purchasedNotes.length === 0 /* Just a check, actually purchasedNotes logic below */}
+
+                                {purchasedNotes.length > 0 ? (
+                                    purchasedNotes.map((note: any) => {
+                                        const authorName = note.uploader ? `${note.uploader.firstName || ''} ${note.uploader.lastName || ''}`.trim() : 'Bilinmiyor';
+                                        return (
+                                            <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-105 relative group">
+                                                <NodCard note={note} author={{ name: authorName, avatar: '', stats: { rating: 5.0, totalNotes: 0 } } as any} />
+                                                <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                                                    SATIN ALINDI
+                                                </div>
+                                            </Link>
+                                        )
+                                    })
+                                ) : (
+                                    <div className="col-span-full py-12 text-center text-muted-foreground bg-muted/20 rounded-xl">
+                                        Henüz hiç not satın almamışsınız. 🐄
+                                        <Link href="/" className="block mt-2 text-primary hover:underline">Markete Git</Link>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
