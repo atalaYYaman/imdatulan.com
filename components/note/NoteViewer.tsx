@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/polyfills'; // Import polyfills first
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { ZoomIn, ZoomOut } from 'lucide-react';

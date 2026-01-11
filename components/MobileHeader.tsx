@@ -25,7 +25,6 @@ export default function MobileHeader() {
     const navigation = [
         { name: 'Ana Sayfa', href: '/', icon: Home },
         { name: 'Notlar', href: '/notes', icon: FolderOpen },
-        { name: 'Top Noder', href: '/top-noder', icon: FolderOpen }, // Re-using icon for now
         { name: 'Mağaza', href: '/store', icon: ShoppingBag },
         { name: 'Bize Yazın', href: '/feedback', icon: MessageSquare },
     ];
@@ -107,14 +106,14 @@ export default function MobileHeader() {
                     ) : (
                         <div className="grid grid-cols-2 gap-3">
                             <Link
-                                href="/auth/login"
+                                href="/auth/signin"
                                 onClick={() => setIsOpen(false)}
                                 className="flex items-center justify-center py-3 px-4 rounded-xl border border-border font-medium hover:bg-muted transition-colors"
                             >
                                 Giriş Yap
                             </Link>
                             <Link
-                                href="/auth/register"
+                                href="/auth/signup"
                                 onClick={() => setIsOpen(false)}
                                 className="flex items-center justify-center py-3 px-4 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20 transition-transform active:scale-95"
                             >
