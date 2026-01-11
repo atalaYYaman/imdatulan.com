@@ -402,12 +402,12 @@ export default function SignUpForm() {
             <CustomInput label="Email Adresi" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="ornek@email.com" />
 
             <div className="relative">
-                <CustomInput label="Şifre Belirle" type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="En az 8 karakter (Harf ve Rakam)" />
+                <CustomInput label="Şifre Belirle" type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="En az 8 karakter (Harf ve Rakam)" className="pr-16" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-[34px] text-muted-foreground hover:text-foreground text-sm">{showPassword ? "Gizle" : "Göster"}</button>
             </div>
 
             <div className="relative">
-                <CustomInput label="Şifre Tekrar" type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={(e) => handleChange('confirmPassword', e.target.value)} placeholder="Şifrenizi tekrar giriniz" />
+                <CustomInput label="Şifre Tekrar" type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={(e) => handleChange('confirmPassword', e.target.value)} placeholder="Şifrenizi tekrar giriniz" className="pr-16" />
                 <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-[34px] text-muted-foreground hover:text-foreground text-sm">{showConfirmPassword ? "Gizle" : "Göster"}</button>
             </div>
 
