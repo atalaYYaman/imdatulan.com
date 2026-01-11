@@ -11,3 +11,14 @@ if (typeof Promise.withResolvers === 'undefined') {
 }
 
 export { };
+
+// URL.parse Polyfill
+if (typeof URL.parse === 'undefined') {
+    URL.parse = function (url: string, base?: string) {
+        try {
+            return new URL(url, base);
+        } catch (e) {
+            return null;
+        }
+    };
+}
