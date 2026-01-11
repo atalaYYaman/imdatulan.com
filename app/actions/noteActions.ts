@@ -176,6 +176,13 @@ export async function unlockNote(noteId: string) {
 
         if (!note) return { success: false, message: "Not bulunamadı" }
 
+        // Sadece ONAYLI notlar satın alınabilir
+        // (Suspended notlar satın alınamaz, sadece önceden alanlar görebilir logic'i geçerli)
+        const noteDetail = await prisma.note.findUnique({ where: { id: noteId } });
+        if (noteDetail?.status !== 'APPROVED') {
+            return { success: false, message: "Bu not şu an erişime kapalıdır." }
+        }
+
         // Zaten açık mı?
         const existingUnlock = await prisma.unlockedNote.findUnique({
             where: {
