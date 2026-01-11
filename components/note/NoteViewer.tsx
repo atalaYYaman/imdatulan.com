@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -26,6 +26,10 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const [numPages, setNumPages] = useState<number>(0);
     const [scale, setScale] = useState<number>(isLocked ? 0.6 : 1.0); // Kilitliyse biraz daha küçük göster
     const [isLoading, setIsLoading] = useState(true);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Canvas Refs for Images
+    const imageCanvasRef = useRef<HTMLCanvasElement>(null);
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages);
@@ -40,27 +44,127 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const zoomIn = () => !isLocked && setScale(prev => Math.min(prev + 0.2, 3.0));
     const zoomOut = () => !isLocked && setScale(prev => Math.max(prev - 0.2, 0.5));
 
-    // Watermark Component
-    const Watermark = () => (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-30 flex flex-wrap content-center justify-center gap-20">
-            {Array.from({ length: 20 }).map((_, i) => (
-                <div key={i} className="transform -rotate-12 scale-110 opacity-40 p-10 select-none">
-                    <div className="text-5xl font-black text-slate-300/50 tracking-tighter whitespace-nowrap">OTLAK.COM.TR</div>
-                    <div className="text-xl font-bold text-red-500/40 mt-1 uppercase text-center">
-                        {viewerUser.name}
-                    </div>
-                    <div className="text-sm font-mono text-slate-400/50 text-center">
-                        {viewerUser.studentNumber}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
+    /**
+     * Shared Watermark Drawing Function
+     * Draws the watermark directly onto the provided canvas context.
+     */
+    const drawWatermark = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+        if (!ctx) return;
+
+        // Save context state
+        ctx.save();
+
+        // Watermark Configuration
+        const text = "OTLAK.COM.TR";
+        const subText = viewerUser.name.toUpperCase();
+        const studentNumber = viewerUser.studentNumber;
+
+        // Calculate spacing
+        const cols = 4; // Number of columns
+        const rows = 6; // Number of rows
+        const xSpacing = width / cols;
+        const ySpacing = height / rows;
+
+        ctx.rotate(-12 * Math.PI / 180); // Rotate entire context slightly or individually? 
+        // Better to rotate individually or rotate context once?
+        // Let's rotate individual blocks to match previous design: transform -rotate-12
+        ctx.restore(); // Restore to remove global rotation if we want local rotation
+
+        // Loop to fill the canvas
+        // We actually want a grid of watermarks.
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+                ctx.save();
+
+                // Position logic
+                // Add some offset for "brick" pattern if desired, or simple grid
+                const x = i * xSpacing + (j % 2 === 0 ? 0 : xSpacing / 2);
+                const y = j * ySpacing;
+
+                // Move to position
+                ctx.translate(x, y);
+                ctx.rotate(-12 * Math.PI / 180);
+
+                // Draw Branding
+                ctx.font = "900 40px Inter, Roboto, sans-serif"; // Tailwind text-5xl approx
+                ctx.fillStyle = "rgba(203, 213, 225, 0.3)"; // slate-300/50 approx
+                ctx.textAlign = "center";
+                ctx.fillText(text, 0, 0);
+
+                // Draw Name
+                ctx.font = "bold 20px Inter, Roboto, sans-serif"; // text-xl approx
+                ctx.fillStyle = "rgba(239, 68, 68, 0.2)"; // red-500/40 approx
+                ctx.fillText(subText, 0, 30);
+
+                // Draw Student Number
+                ctx.font = "monospace 14px monospace"; // text-sm font-mono
+                ctx.fillStyle = "rgba(148, 163, 184, 0.3)"; // slate-400/50 approx
+                ctx.fillText(studentNumber, 0, 50);
+
+                ctx.restore();
+            }
+        }
+    }, [viewerUser]);
+
+    /**
+     * Handle PDF Page Render Success
+     * Locates the canvas within the specific page container and draws the watermark.
+     */
+    const handlePageRenderSuccess = useCallback((page: any) => {
+        // react-pdf renders a canvas. We can access it via the page element reference or standard DOM query within the specific page div.
+        // However, 'page' object passed here might contain reference to the canvas? 
+        // Based on react-pdf docs, onRenderSuccess passes generic page info.
+        // Best reliable way: Query selector looking for canvas inside the container for this specific page.
+        // But we have multiple pages.
+        // Alternative: The <Page> component renders a canvas as a direct child or wrapper.
+        // We will try to find the canvas in the DOM for this specific page index.
+
+        const pageNumber = page.pageNumber; // 1-based
+        const pageElement = document.querySelector(`[data-page-number="${pageNumber}"]`);
+        if (pageElement) {
+            const canvas = pageElement.querySelector('canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    drawWatermark(ctx, canvas.width, canvas.height);
+                }
+            }
+        }
+    }, [drawWatermark]);
+
+    /**
+     * Handle Image Rendering on Canvas
+     */
+    useEffect(() => {
+        if (isImage && fileUrl && imageCanvasRef.current && !isLoading) {
+            const canvas = imageCanvasRef.current;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            const img = new Image();
+            img.crossOrigin = "anonymous"; // Needed if images are on different domain (Blob storage)
+            img.src = fileUrl;
+            img.onload = () => {
+                // Set canvas size to match image
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+
+                // Draw image
+                ctx.drawImage(img, 0, 0);
+
+                // Draw Watermark
+                drawWatermark(ctx, canvas.width, canvas.height);
+            };
+        }
+    }, [isImage, fileUrl, isLoading, drawWatermark, scale]);
+    // Re-run if scale changes? No, canvas internal resolution should be high quality (natural size).
+    // CSS handle scaling.
 
     return (
         <div
             className="flex flex-col h-full bg-muted/20 relative select-none"
             onContextMenu={(e) => e.preventDefault()}
+            ref={containerRef}
         >
             {/* Kilitli Durum Overlay */}
             {isLocked && !isLoading && (
@@ -141,31 +245,49 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                 {Array.from(new Array(numPages), (_, index) => {
                                     if (isLocked && index > 0) return null;
                                     return (
-                                        <div key={`page_${index + 1}`} className="relative bg-white">
+                                        <div key={`page_${index + 1}`} className="relative bg-white shadow-md">
                                             <Page
                                                 pageNumber={index + 1}
                                                 scale={scale}
                                                 renderTextLayer={false}
                                                 renderAnnotationLayer={false}
+                                                onRenderSuccess={handlePageRenderSuccess}
                                                 loading={<div className="bg-muted animate-pulse" style={{ width: 600 * scale, height: 800 * scale }} />}
+                                                className="nod-pdf-page"
                                             />
-                                            <Watermark />
                                         </div>
                                     );
                                 })}
                             </Document>
                         ) : isImage ? (
-                            <div className={`relative bg-white p-2 ${isLocked ? 'blur-md grayscale opacity-50' : ''}`}>
+                            <div className={`relative bg-white p-2 shadow-md ${isLocked ? 'blur-md grayscale opacity-50' : ''}`}>
+                                <canvas
+                                    ref={imageCanvasRef}
+                                    className="max-w-[90vw] object-contain pointer-events-none"
+                                    style={{
+                                        transform: `scale(${scale})`,
+                                        transformOrigin: 'top center',
+                                        width: 'auto',
+                                        height: 'auto',
+                                        maxWidth: '90vw'
+                                    }}
+                                    onContextMenu={(e) => e.preventDefault()}
+                                />
+                                {isLoading && (
+                                    <div className="absolute inset-0 flex items-center justify-center text-primary z-40 bg-white/80">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current"></div>
+                                            <span className="text-sm font-medium animate-pulse">Resim işleniyor...</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {/* Trigger loading completion for images */}
                                 <img
                                     src={fileUrl}
-                                    className="max-w-[90vw] object-contain pointer-events-none"
-                                    style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
-                                    draggable={false}
-                                    onContextMenu={(e) => e.preventDefault()}
-                                    alt="Not içeriği"
+                                    className="hidden"
                                     onLoad={() => setIsLoading(false)}
+                                    alt="Hidden loader"
                                 />
-                                <Watermark />
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
