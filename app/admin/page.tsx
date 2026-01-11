@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { User, FileText } from 'lucide-react'
+import { User, FileText, MessageSquare } from 'lucide-react'
 
 export default function AdminDashboard() {
     return (
@@ -57,6 +57,19 @@ export default function AdminDashboard() {
                         <h2 className="text-xl font-semibold">Sistem Özeti</h2>
                     </div>
                     <p className="text-muted-foreground">Kullanıcı ve not istatistiklerini görüntüle.</p>
+                </Link>
+
+                <Link
+                    href="/admin/feedback"
+                    className="bg-card p-6 rounded-2xl border border-border hover:border-yellow-500 transition-colors group"
+                >
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-yellow-500/20 rounded-xl group-hover:bg-yellow-500/30 transition-colors">
+                            <MessageSquare className="w-8 h-8 text-yellow-500" />
+                        </div>
+                        <h2 className="text-xl font-semibold">Geri Bildirimler</h2>
+                    </div>
+                    <p className="text-muted-foreground">Kullanıcı öneri ve şikayetlerini incele.</p>
                 </Link>
             </div>
         </div>

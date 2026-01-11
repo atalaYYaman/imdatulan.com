@@ -43,6 +43,7 @@ export default function MobileHeader() {
                         <Link href="/top-noder" onClick={() => setIsOpen(false)} className="text-foreground text-lg font-medium py-2 border-b border-border">Top Noder</Link>
                         <Link href="/upload" onClick={() => setIsOpen(false)} className="text-primary text-lg font-bold py-2 border-b border-border">Ot Yükle</Link>
                         <Link href="/profile" onClick={() => setIsOpen(false)} className="text-foreground text-lg font-medium py-2 border-b border-border">Profilim</Link>
+                        <Link href="/feedback" onClick={() => setIsOpen(false)} className="text-foreground text-lg font-medium py-2 border-b border-border">Bize Yazın</Link>
                     </nav>
 
                     {/* Mobil User Info */}
