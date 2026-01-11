@@ -28,10 +28,32 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const [numPages, setNumPages] = useState<number>(0);
     const [scale, setScale] = useState<number>(isLocked ? 0.6 : 1.0); // Kilitliyse biraz daha küçük göster
     const [isLoading, setIsLoading] = useState(true);
+    const [pageWidth, setPageWidth] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Canvas Refs for Images
     const imageCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    // Handle Resize Logic
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                // Use contentRect or contentBoxSize
+                const width = entry.contentRect.width;
+                if (width) {
+                    setPageWidth(width);
+                }
+            }
+        });
+
+        resizeObserver.observe(containerRef.current);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, []);
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages);
@@ -237,7 +259,14 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                         <div key={`page_${index + 1}`} className="relative bg-white shadow-md">
                                             <Page
                                                 pageNumber={index + 1}
-                                                scale={scale}
+                                                // Responsive width logic:
+                                                // Fit to container width (safe margin) * scale
+                                                width={pageWidth ? (Math.min(pageWidth - 48, 800) * scale) : undefined}
+                                                // If width is undefined (initial load), react-pdf uses original width.
+                                                // 'scale' prop is ignored if width is provided in some versions, or acts as multiplier? 
+                                                // To be safe, we rely on 'width' for Zooming.
+                                                // If pageWidth is null, we can pass scale prop for initial render (though it might flicker).
+                                                scale={pageWidth ? 1 : scale}
                                                 renderTextLayer={false}
                                                 renderAnnotationLayer={false}
                                                 loading={<div className="bg-muted animate-pulse" style={{ width: 600 * scale, height: 800 * scale }} />}
