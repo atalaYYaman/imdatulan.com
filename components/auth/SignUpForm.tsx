@@ -104,6 +104,8 @@ export default function SignUpForm() {
         setError('')
     }
 
+    const [uploadProgress, setUploadProgress] = useState(0);
+
     const nextStep = async () => {
         setError('')
 
@@ -163,14 +165,46 @@ export default function SignUpForm() {
 
             // Upload Logic
             setIsLoading(true);
+            setUploadProgress(0); // Reset progress
+
             try {
-                const uploadRes = await fetch(`/api/upload-blob?filename=${encodeURIComponent(formData.studentIdCardFile.name)}`, {
-                    method: 'POST',
-                    body: formData.studentIdCardFile,
+                // Use XMLHttpRequest for progress tracking
+                const filename = encodeURIComponent(formData.studentIdCardFile.name);
+                const url = `/api/upload-blob?filename=${filename}`;
+
+                const xhr = new XMLHttpRequest();
+
+                const uploadPromise = new Promise<any>((resolve, reject) => {
+                    xhr.open('POST', url);
+
+                    // Track upload progress
+                    xhr.upload.onprogress = (event) => {
+                        if (event.lengthComputable) {
+                            const percentComplete = Math.round((event.loaded / event.total) * 100);
+                            setUploadProgress(percentComplete);
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                resolve(response);
+                            } catch (e) {
+                                reject(new Error('Invalid JSON response'));
+                            }
+                        } else {
+                            reject(new Error(`Upload failed with status ${xhr.status}`));
+                        }
+                    };
+
+                    xhr.onerror = () => reject(new Error('Network error during upload'));
+
+                    // The API expects the binary body
+                    xhr.send(formData.studentIdCardFile);
                 });
 
-                if (!uploadRes.ok) throw new Error('Kimlik yüklenirken hata oluştu. Lütfen tekrar deneyiniz.');
-                const blob = await uploadRes.json();
+                const blob = await uploadPromise;
 
                 // Save URL
                 setFormData(prev => ({ ...prev, studentIdCardUrl: blob.url }));
@@ -180,6 +214,7 @@ export default function SignUpForm() {
                 setError('Fotoğraf yüklenirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
             } finally {
                 setIsLoading(false);
+                setUploadProgress(0);
             }
         }
         // Step 3 is final submit
@@ -382,9 +417,26 @@ export default function SignUpForm() {
                 />
             </div>
 
+            {/* Upload Progress Bar */}
+            {isLoading && uploadProgress > 0 && (
+                <div className="mt-4 animate-in fade-in duration-300">
+                    <div className="w-full bg-muted h-3 rounded-full overflow-hidden">
+                        <div
+                            className="bg-primary h-full transition-all duration-300 ease-out flex items-center justify-center text-[8px] text-primary-foreground font-bold"
+                            style={{ width: `${uploadProgress}%` }}
+                        />
+                    </div>
+                    <p className="text-xs text-center text-muted-foreground mt-1">
+                        %{uploadProgress} Yükleniyor... Lütfen bekleyiniz.
+                    </p>
+                </div>
+            )}
+
             <div className="flex justify-between mt-8">
                 <button type="button" onClick={prevStep} className="text-muted-foreground hover:text-foreground transition-colors">Geri</button>
-                <button type="button" onClick={nextStep} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-medium transition-colors">Devam Et</button>
+                <button type="button" onClick={nextStep} disabled={isLoading} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-medium transition-colors disabled:opacity-50">
+                    {isLoading ? 'Yükleniyor...' : 'Devam Et'}
+                </button>
             </div>
         </div>
     )
