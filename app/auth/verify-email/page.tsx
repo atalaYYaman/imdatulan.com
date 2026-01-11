@@ -69,7 +69,9 @@ export default function VerifyEmailPage() {
             setStatus('SUCCESS');
             setMessage('Doğrulama başarılı! Yönlendiriliyorsunuz...');
             await update();
-            router.push('/admin');
+            // Force hard navigation to ensure cookie is updated for middleware
+            router.refresh();
+            window.location.href = '/admin';
         } else {
             setStatus('ERROR');
             setMessage(res.message || 'Bir hata oluştu.');
