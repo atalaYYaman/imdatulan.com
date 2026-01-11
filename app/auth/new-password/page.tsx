@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { resetPassword } from '@/app/actions/auth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, KeyRound, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 function NewPasswordForm() {
@@ -39,88 +39,108 @@ function NewPasswordForm() {
 
     if (status === 'SUCCESS') {
         return (
-            <div className="flex min-h-screen items-center justify-center p-4 bg-gray-50">
-                <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-sm border text-center space-y-4">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                        <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                        </svg>
+            <div className="flex min-h-screen items-center justify-center p-4 bg-background overflow-hidden relative">
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/20 blur-[120px] animate-pulse" />
+                </div>
+                <div className="w-full max-w-md bg-card/80 backdrop-blur-xl p-8 rounded-2xl shadow-2xl border border-border text-center space-y-6 relative z-10 animate-in zoom-in-95 duration-500">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10 ring-4 ring-green-500/5">
+                        <CheckCircle2 className="h-8 w-8 text-green-500" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900">Şifre Değiştirildi</h3>
-                    <p className="text-sm text-gray-500">{message}</p>
-                    <p className="text-xs text-gray-400">Yönlendiriliyorsunuz...</p>
+                    <div>
+                        <h3 className="text-xl font-bold text-foreground">Şifre Değiştirildi</h3>
+                        <p className="text-muted-foreground mt-2">{message}</p>
+                    </div>
+                    <div className="h-1 w-full bg-muted overflow-hidden rounded-full">
+                        <div className="h-full bg-primary w-full animate-[shimmer_2s_infinite]" style={{ width: '100%', animation: 'progress 3s linear' }} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Yönlendiriliyorsunuz...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
-            <div className="w-full max-w-md space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border dark:border-gray-700">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Yeni Şifre Belirle</h2>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="min-h-screen relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden bg-background">
+            {/* Background Effects */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute top-[10%] right-[10%] w-[30%] h-[30%] rounded-full bg-primary/20 blur-[100px] animate-pulse" />
+                <div className="absolute bottom-[10%] left-[10%] w-[30%] h-[30%] rounded-full bg-emerald-600/10 blur-[100px] animate-pulse delay-1000" />
+            </div>
+
+            <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
+                <div className="text-center mb-8">
+                    <div className="inline-flex justify-center mb-4 relative">
+                        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                        <div className="bg-card p-3 rounded-2xl shadow-lg border border-border relative z-10">
+                            <KeyRound className="h-8 w-8 text-primary" />
+                        </div>
+                    </div>
+                    <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Yeni Şifre Belirle</h2>
+                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
                         Emailinize gelen 6 haneli kodu ve yeni şifrenizi girin.
                     </p>
                 </div>
 
-                <form className="space-y-6" onSubmit={handleSubmit}>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Doğrulama Kodu</label>
-                        <input
-                            type="text"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            placeholder="6 haneli kod"
-                            required
-                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Yeni Şifre</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            minLength={6}
-                            className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm"
-                        />
-                    </div>
-
-                    {status === 'ERROR' && (
-                        <div className="bg-red-50 p-3 rounded-lg text-red-600 text-sm">
-                            {message}
+                <div className="bg-card/70 backdrop-blur-xl py-8 px-6 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/10 dark:border-white/5 rounded-2xl sm:px-10">
+                    <form className="space-y-5" onSubmit={handleSubmit}>
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="block w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm outline-none transition-all"
+                            />
                         </div>
-                    )}
 
-                    <button
-                        type="submit"
-                        disabled={status === 'LOADING'}
-                        className="flex w-full justify-center items-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {status === 'LOADING' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Şifreyi Değiştir
-                    </button>
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-1.5">Doğrulama Kodu</label>
+                            <input
+                                type="text"
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                placeholder="6 haneli kod"
+                                required
+                                className="block w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm outline-none transition-all tracking-widest text-center font-mono font-bold"
+                            />
+                        </div>
 
-                    <div className="text-center text-sm">
-                        <Link href="/auth/forgot-password" className="text-emerald-600 hover:text-emerald-500 font-medium">
-                            Yeni kod iste
-                        </Link>
-                    </div>
-                </form>
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-1.5">Yeni Şifre</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                minLength={6}
+                                className="block w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-foreground shadow-sm focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm outline-none transition-all"
+                            />
+                        </div>
+
+                        {status === 'ERROR' && (
+                            <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-xl text-destructive text-sm font-medium animate-in shake">
+                                {message}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={status === 'LOADING'}
+                            className="flex w-full justify-center items-center rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {status === 'LOADING' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Şifreyi Değiştir
+                        </button>
+
+                        <div className="text-center text-sm">
+                            <Link href="/auth/forgot-password" className="text-primary hover:text-primary/80 font-medium hover:underline">
+                                Yeni kod iste
+                            </Link>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );

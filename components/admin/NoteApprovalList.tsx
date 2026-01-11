@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 // import { approveNote, rejectNote } from '@/app/actions/adminActions'; // Deprecated in favor of API routes
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, User, Check, X, Loader2, School, BookOpen, AlertCircle } from 'lucide-react';
 
 type NoteData = {
     id: string;
@@ -74,65 +74,109 @@ export default function NoteApprovalList({ notes }: { notes: NoteData[] }) {
     };
 
     if (notes.length === 0) {
-        return <div className="text-gray-400">Bekleyen not başvurusu yok.</div>;
+        return (
+            <div className="flex flex-col items-center justify-center py-20 bg-card/50 rounded-3xl border border-dashed border-border">
+                <div className="bg-muted p-4 rounded-full mb-4">
+                    <FileText className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-bold">Başvuru Yok</h3>
+                <p className="text-muted-foreground">Şu an bekleyen not başvurusu bulunmuyor.</p>
+            </div>
+        );
     }
 
     return (
         <div className="grid gap-6">
             {notes.map(note => (
-                <div key={note.id} className="bg-gray-800 rounded-xl p-6 border border-gray-700 flex flex-col gap-4">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h3 className="text-xl font-bold text-white">{note.title}</h3>
-                            <p className="text-gray-400 text-sm mt-1">{note.description}</p>
-                        </div>
-                        <div className="bg-[#22d3ee]/10 text-[#22d3ee] px-3 py-1 rounded-full text-xs font-bold">
-                            {note.price} Süt
-                        </div>
-                    </div>
+                <div key={note.id} className="bg-card/60 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 group">
+                    <div className="flex flex-col md:flex-row gap-6">
+                        {/* Left Info */}
+                        <div className="flex-1 space-y-4">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded uppercase tracking-wider border border-primary/20">
+                                            Ders Notu
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">• {new Date(note.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <h3 className="text-xl font-black text-foreground">{note.title}</h3>
+                                    <p className="text-muted-foreground text-sm mt-1 leading-relaxed">
+                                        {note.description || <span className="italic opacity-50">Açıklama yok</span>}
+                                    </p>
+                                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-gray-900/50 p-4 rounded-lg">
-                        <div>
-                            <span className="text-gray-500 block">Yükleyen</span>
-                            <span className="text-gray-300">{note.uploader.firstName} {note.uploader.lastName}</span>
+                                <div className="shrink-0 flex flex-col items-end gap-1">
+                                    <div className="bg-cyan-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-cyan-500/20">
+                                        {note.price} Süt
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-xl border border-border/50">
+                                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center shrink-0">
+                                        <User className="w-4 h-4" />
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Yükleyen</div>
+                                        <div className="text-sm font-bold truncate">{note.uploader.firstName} {note.uploader.lastName}</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-xl border border-border/50">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                                        <BookOpen className="w-4 h-4" />
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Ders</div>
+                                        <div className="text-sm font-bold truncate">{note.courseName || '-'}</div>
+                                    </div>
+                                </div>
+
+                                <div className="col-span-1 sm:col-span-2 flex items-center gap-3 p-3 bg-background/50 rounded-xl border border-border/50">
+                                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                                        <School className="w-4 h-4" />
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Okul / Bölüm</div>
+                                        <div className="text-sm font-bold truncate">{note.university} <span className="opacity-50">/</span> {note.department}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <span className="text-gray-500 block">Ders</span>
-                            <span className="text-gray-300">{note.courseName || '-'}</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-500 block">Okul/Bölüm</span>
-                            <span className="text-gray-300">{note.university} / {note.department}</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-500 block">Dosya</span>
+
+                        {/* Right Actions */}
+                        <div className="flex flex-row md:flex-col justify-between gap-3 md:w-48 shrink-0">
                             <a
                                 href={note.fileUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#22d3ee] hover:underline flex items-center gap-1 mt-1"
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 w-full py-3 bg-background border border-border hover:border-primary/50 text-foreground rounded-xl font-bold transition-all hover:shadow-lg group/btn"
                             >
-                                <FileText className="w-4 h-4" />
-                                Önizle / İndir
+                                <FileText className="w-4 h-4 group-hover/btn:scale-110 transition-transform text-primary" />
+                                Önizle
                             </a>
-                        </div>
-                    </div>
 
-                    <div className="flex gap-4 pt-2">
-                        <button
-                            onClick={() => handleApprove(note.id)}
-                            disabled={!!actionLoading}
-                            className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                        >
-                            {actionLoading === note.id ? 'İşleniyor...' : 'Onayla'}
-                        </button>
-                        <button
-                            onClick={() => handleReject(note.id)}
-                            disabled={!!actionLoading}
-                            className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-                        >
-                            Reddet
-                        </button>
+                            <div className="h-px bg-border w-full hidden md:block" />
+
+                            <div className="flex flex-col gap-2 w-full">
+                                <button
+                                    onClick={() => handleApprove(note.id)}
+                                    disabled={!!actionLoading}
+                                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {actionLoading === note.id ? <Loader2 className="animate-spin w-4 h-4" /> : <><Check className="w-4 h-4" /> Onayla</>}
+                                </button>
+                                <button
+                                    onClick={() => handleReject(note.id)}
+                                    disabled={!!actionLoading}
+                                    className="w-full py-3 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 rounded-xl font-bold border border-rose-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <X className="w-4 h-4" /> Reddet
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             ))}

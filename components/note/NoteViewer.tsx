@@ -168,19 +168,23 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         >
             {/* Kilitli Durum Overlay */}
             {isLocked && !isLoading && (
-                <div className="absolute inset-0 z-[60] backdrop-blur-md bg-background/60 flex items-center justify-center pointer-events-auto">
-                    <div className="bg-card border-2 border-primary p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-sm text-center transform hover:scale-105 transition-transform duration-300 animate-in fade-in zoom-in">
-                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-bounce-slow">
-                            <span className="text-4xl">🔒</span>
+                <div className="absolute inset-0 z-[60] backdrop-blur-xl bg-background/50 flex items-center justify-center pointer-events-auto p-4">
+                    <div className="relative overflow-hidden bg-card/80 backdrop-blur-2xl border border-white/10 dark:border-white/5 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col items-center gap-6 max-w-sm text-center transform hover:scale-[1.02] transition-transform duration-300 animate-in fade-in zoom-in group">
+
+                        {/* Animated Glow */}
+                        <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 rotate-45 pointer-events-none" />
+
+                        <div className="relative w-24 h-24 bg-gradient-to-br from-primary/10 to-primary/5 rounded-full flex items-center justify-center animate-bounce-slow ring-8 ring-primary/5">
+                            <span className="text-5xl drop-shadow-md">🔒</span>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-foreground mb-2">Bu Not Kilitli</h2>
-                            <p className="text-muted-foreground text-sm">
-                                Notun tamamını görüntülemek için sütünüzden harcamanız gerekmektedir.
+                            <h2 className="text-3xl font-black text-foreground mb-3 tracking-tight">Bu Not Kilitli</h2>
+                            <p className="text-muted-foreground text-sm leading-relaxed px-4">
+                                Notun tamamını görüntülemek için sadece <span className='font-bold text-primary'>{price} Süt</span> harcamanız yeterli.
                             </p>
                             {errorMessage && (
-                                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-xl animate-in fade-in slide-in-from-top-2">
-                                    <p className="text-red-400 text-xs font-bold flex items-center justify-center gap-2">
+                                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl animate-in fade-in slide-in-from-top-2">
+                                    <p className="text-red-500 text-xs font-bold flex items-center justify-center gap-2">
                                         <span className="text-lg">⚠️</span>
                                         {errorMessage}
                                     </p>
@@ -190,14 +194,20 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                         <button
                             onClick={onUnlock}
                             disabled={isUnlocking}
-                            className="w-full py-4 bg-primary hover:bg-primary/90 disabled:opacity-70 text-primary-foreground font-black uppercase tracking-wider rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2"
+                            className="w-full relative overflow-hidden py-4 bg-primary hover:bg-primary/90 disabled:opacity-70 text-primary-foreground font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/25 transition-all active:scale-95 flex items-center justify-center gap-2 group/btn"
                         >
+                            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover/btn:translate-x-[150%] transition-transform duration-700 ease-in-out" />
                             {isUnlocking ? (
-                                <span className="animate-pulse">Açılıyor...</span>
+                                <span className="flex items-center gap-2 animate-pulse">
+                                    <span className="w-2 h-2 rounded-full bg-white animate-bounce" />
+                                    <span className="w-2 h-2 rounded-full bg-white animate-bounce delay-100" />
+                                    <span className="w-2 h-2 rounded-full bg-white animate-bounce delay-200" />
+                                    Açılıyor...
+                                </span>
                             ) : (
                                 <>
                                     <span>{price} Süt Harca</span>
-                                    <span className="text-lg">🥛</span>
+                                    <span className="text-xl">🥛</span>
                                 </>
                             )}
                         </button>

@@ -127,7 +127,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
             <div className={`flex-1 flex flex-col md:flex-row h-full transition-opacity duration-500 ${!isWarningAccepted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
 
                 {/* SOL TARAFLA: PDF / Dosya Görüntüleyici */}
-                <div className="md:w-3/4 h-full bg-muted/20 relative border-r border-border">
+                <div className="md:w-3/4 h-[50vh] md:h-full bg-muted/20 relative border-b md:border-b-0 md:border-r border-border/50">
                     <NoteViewer
                         fileUrl={note.fileUrl}
                         viewerUser={viewerUser}
@@ -140,25 +140,51 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                 </div>
 
                 {/* SAĞ TARAF: Detaylar ve Etkileşim */}
-                <div className="md:w-1/4 flex flex-col h-full bg-card border-l border-border">
+                <div className="md:w-1/4 flex flex-col h-[50vh] md:h-full bg-card/80 backdrop-blur-md border-l border-border/50 shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
 
                     {/* Üst Bilgi */}
-                    <div className="p-6 border-b border-border">
-                        <h1 className="text-xl font-bold text-primary mb-2">{note.title}</h1>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                            <p>{note.university} - {note.faculty}</p>
-                            <p>{note.courseName} ({note.term})</p>
+                    <div className="p-6 border-b border-border/50">
+                        <div className='flex items-start justify-between mb-4'>
+                            <h1 className="text-lg font-bold text-foreground leading-tight line-clamp-2">{note.title}</h1>
+                            <span className='px-2 py-0.5 rounded text-[10px] bg-primary/10 text-primary font-bold uppercase tracking-wider border border-primary/10 whitespace-nowrap'>
+                                {note.type ? note.type.split(' ')[0] : 'NOT'}
+                            </span>
+                        </div>
+
+                        <div className="text-xs text-muted-foreground space-y-1.5">
+                            <div className='flex items-center gap-2'>
+                                <span className='w-1.5 h-1.5 rounded-full bg-primary shrink-0' />
+                                <p className='font-medium'>{note.university}</p>
+                            </div>
+                            <div className='flex items-center gap-2 pl-3.5'>
+                                <p className='opacity-80'>{note.faculty}</p>
+                            </div>
+                            <div className='flex items-center gap-2 pl-3.5'>
+                                <p className='opacity-80'>{note.courseName} <span className='opacity-50'>•</span> {note.term}</p>
+                            </div>
+
                             {note.description && (
-                                <p className="text-foreground/80 italic text-xs mt-2 border-l-2 border-primary pl-2 py-1">
+                                <div className="mt-4 p-3 bg-secondary/30 rounded-lg text-foreground/90 italic text-xs leading-relaxed">
                                     "{note.description}"
-                                </p>
+                                </div>
                             )}
-                            <p className="text-xs mt-2 text-primary/80">Yükleyen: {note.uploader.firstName} {note.uploader.lastName}</p>
+
+                            <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
+                                <div className='flex items-center gap-2'>
+                                    <div className='w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[10px] text-white font-bold'>
+                                        {note.uploader.firstName ? note.uploader.firstName[0] : 'U'}
+                                    </div>
+                                    <p className="font-medium">
+                                        {note.uploader.firstName} {note.uploader.lastName}
+                                    </p>
+                                </div>
+                                <span className='text-[10px] opacity-50'>{new Date(note.createdAt).toLocaleDateString('tr-TR')}</span>
+                            </div>
                         </div>
                     </div>
 
                     {/* Etkileşim Butonları */}
-                    <div className="p-4 border-b border-border">
+                    <div className="p-4 border-b border-border/50">
                         <InteractionBar
                             noteId={note.id}
                             initialLikeCount={note._count.likes}
@@ -170,7 +196,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                     </div>
 
                     {/* Yorumlar (Kaydırılabilir Alan) */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto bg-muted/10">
                         <CommentSection
                             noteId={note.id}
                             initialComments={note.comments}
