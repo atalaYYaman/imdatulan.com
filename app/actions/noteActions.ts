@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import xss from 'xss';
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function getNoteDetail(noteId: string) {
     try {
@@ -141,6 +142,12 @@ export async function addComment(noteId: string, text: string) {
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
         if (!user) return { success: false, message: "User not found" }
+
+        // RATE LIMIT: 5 Comments per minute
+        const limitCheck = await checkRateLimit(`comment_${user.id}`, 5, 60);
+        if (!limitCheck.success) {
+            return { success: false, message: "Çok hızlı yorum yapıyorsunuz. Biraz yavaşlayın. 🐢" }
+        }
 
         const cleanText = xss(text);
 
@@ -353,6 +360,12 @@ export async function createReport(noteId: string, reason: string, details: stri
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
         if (!user) return { success: false, message: "Kullanıcı bulunamadı" }
+
+        // RATE LIMIT: 3 Reports per 10 mins
+        const limitCheck = await checkRateLimit(`report_${user.id}`, 3, 600);
+        if (!limitCheck.success) {
+            return { success: false, message: "Çok sık şikayet oluşturuyorsunuz. Lütfen bekleyiniz." }
+        }
 
         // Check for existing report
         const existingReport = await prisma.report.findFirst({

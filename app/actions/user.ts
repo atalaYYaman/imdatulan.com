@@ -22,8 +22,20 @@ export type RegistrationDat = {
     studentIdCardUrl: string
 }
 
+import { headers } from "next/headers"
+import { checkRateLimit } from "@/lib/rate-limit"
+
 export async function registerUser(data: RegistrationDat) {
     try {
+        // --- RATE LIMIT CHECK (Anti-Bot) ---
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for") || "unknown";
+
+        // Limit: 3 registrations per hour per IP
+        const limitCheck = await checkRateLimit(`register_${ip}`, 3, 3600);
+        if (!limitCheck.success) {
+            return { success: false, message: "Çok fazla kayıt denemesi yapıldı. Lütfen 1 saat sonra tekrar deneyiniz." };
+        }
         // 1. Consent Check
         if (!data.privacyConsent) {
             return { success: false, message: "KVKK ve Aydınlatma Metni'ni onaylamanız gerekmektedir." }
