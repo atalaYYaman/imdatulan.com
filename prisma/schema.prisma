@@ -43,7 +43,9 @@ model User {
   credits              Int       @default(3) // Süt Bakiyesi (Başlangıç 3 Süt)
   unlockedNotes        UnlockedNote[]
   purchases            ProductPurchase[]
+  purchases            ProductPurchase[]
   reports              Report[]
+  feedbacks            Feedback[]
 
   // Verification
   studentIdCardUrl String?
