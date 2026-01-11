@@ -197,10 +197,24 @@ export async function GET(
             // For now: If unlocked, stream. If locked, return 403 or placeholder.
 
             if (!isUnlocked) {
-                // For security, do not send the file.
-                // NoteViewer will fail to load, showing error.
-                // Ideally we send a placeholder image.
-                return new NextResponse("Preview not available for this file type", { status: 403 });
+                // For locked images, serve a placeholder instead of 403
+                // This allows the UI to render "something" and avoids broken image icons.
+                // The NoteViewer overlay will still appear on top of this.
+                try {
+                    const placeholderUrl = new URL('/locked-placeholder.svg', request.url);
+                    const placeholderRes = await fetch(placeholderUrl);
+                    const placeholderBuffer = await placeholderRes.arrayBuffer();
+
+                    return new NextResponse(placeholderBuffer, {
+                        headers: {
+                            "Content-Type": "image/svg+xml",
+                            "Cache-Control": "public, max-age=3600",
+                        }
+                    });
+                } catch (e) {
+                    console.error("Placeholder fetch error:", e);
+                    return new NextResponse("Locked", { status: 403 });
+                }
             }
 
             // Stream image
