@@ -1,4 +1,4 @@
-import { getNoteDetail, incrementView, isLikedByUser } from "@/app/actions/noteActions";
+import { getNoteDetail, incrementView, isLikedByUser, isNoteUnlocked } from "@/app/actions/noteActions";
 import NoteDetailClient from "@/components/note/NoteDetailClient";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
@@ -6,19 +6,31 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export default async function NoteDetailPage({ params }: { params: Promise<{ noteId: string }> }) {
+    const { noteId } = await params;
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+        redirect('/');
+    }
+
+    // Move data fetching outside try/catch if possible, or handle errors specifically.
+    // However, getNoteDetail might throw.
+    // Best practice: Let fatal errors bubble to error.tsx, but here we have custom error UI.
+    // We must check if the error is a redirect/not-found error.
+
+    let note;
     try {
-        const { noteId } = await params;
-        const note = await getNoteDetail(noteId);
-        const session = await getServerSession(authOptions);
+        note = await getNoteDetail(noteId);
+    } catch (e) {
+        console.error("Failed to fetch note:", e);
+        // Let it fall through to !note check or specific error UI
+    }
 
-        if (!session) {
-            redirect('/');
-        }
+    if (!note) {
+        notFound();
+    }
 
-        if (!note) {
-            notFound();
-        }
-
+    try {
         // Increment view count (server side)
         try {
             await incrementView(noteId);
@@ -30,7 +42,6 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
         const isLiked = await isLikedByUser(noteId);
 
         // Kilit Kontrolü (Süt Sistemi)
-        const { isNoteUnlocked } = await import("@/app/actions/noteActions");
         const isUnlocked = await isNoteUnlocked(noteId);
 
         // Get viewer info for watermark
@@ -55,8 +66,9 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
             }
         }
 
-        // Orijinal dosya uzantısını al
-        const originalExtension = note.fileUrl.split('.').pop()?.toLowerCase();
+        // Orijinal dosya uzantısını al - Safe Check
+        const fileUrl = note.fileUrl || "";
+        const originalExtension = fileUrl.split('.').pop()?.toLowerCase() || "pdf";
 
         // Proxy URL'i oluştur
         const secureNote = { ...note, fileUrl: `/api/notes/${note.id}/file` };
@@ -72,6 +84,12 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
             />
         );
     } catch (error: any) {
+        // Re-throw internal Next.js errors (Redirect/NotFound are not typically caught by simple try/catch unless using 'any' and blocking bubbling? 
+        // Actually, redirect() implementations often strictly check for the throw.
+        // If we act on error, we might interrupt it.
+        // Safer: Check if error is digest/NextJS specific? 
+        // Simplest: The above 'redirect' and 'notFound' are OUTSIDE this try/catch now for the most part (except fetching logic).
+
         console.error("NoteDetailPage Critical Error:", error);
         return (
             <div className="p-8 text-center text-white bg-slate-900 h-screen flex flex-col items-center justify-center">
