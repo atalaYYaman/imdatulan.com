@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import NoteViewer from './NoteViewer';
+import dynamic from 'next/dynamic';
+
+const NoteViewer = dynamic(() => import('./NoteViewer'), {
+    ssr: false,
+    loading: () => <div className="h-96 w-full bg-muted/20 animate-pulse rounded-lg" />
+});
 import InteractionBar from './InteractionBar';
 import CommentSection from './CommentSection';
 import LegalWarningModal from './LegalWarningModal';

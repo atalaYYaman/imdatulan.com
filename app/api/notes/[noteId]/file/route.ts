@@ -115,11 +115,25 @@ export async function GET(
 
             // WATERMARK
             // Get user info or default
+            // Helper to sanitize text for WinAnsi (Standard Fonts)
+            const sanitizeForPdf = (text: string) => {
+                return text
+                    .replace(/ğ/g, 'g').replace(/Ğ/g, 'G')
+                    .replace(/ü/g, 'u').replace(/Ü/g, 'U')
+                    .replace(/ş/g, 's').replace(/Ş/g, 'S')
+                    .replace(/ı/g, 'i').replace(/İ/g, 'I')
+                    .replace(/ö/g, 'o').replace(/Ö/g, 'O')
+                    .replace(/ç/g, 'c').replace(/Ç/g, 'C');
+            };
+
             const watermarkText = "OTLAK.COM.TR";
-            const userName = user
-                ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+            const rawUserName = user
+                ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || ""
                 : "MISAFIR KULLANICI";
-            const userSub = user?.studentNumber || (session?.user?.email || "IP: " + (request.headers.get("x-forwarded-for") || "Gizli"));
+            const userName = sanitizeForPdf(rawUserName);
+
+            const rawUserSub = user?.studentNumber || (session?.user?.email || "IP: " + (request.headers.get("x-forwarded-for") || "Gizli"));
+            const userSub = sanitizeForPdf(rawUserSub);
 
             const pages = pdfDoc.getPages();
             const { width, height } = pages[0].getSize();
