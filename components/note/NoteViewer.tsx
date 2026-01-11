@@ -8,7 +8,8 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 // PDF Worker Ayarı
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Use legacy build for better compatibility on older devices (Tablets/Mobile)
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 
 interface NoteViewerProps {
     fileUrl: string;
@@ -29,6 +30,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const [scale, setScale] = useState<number>(isLocked ? 0.6 : 1.0); // Kilitliyse biraz daha küçük göster
     const [isLoading, setIsLoading] = useState(true);
     const [pageWidth, setPageWidth] = useState<number | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null); // Local error state
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Canvas Refs for Images
@@ -58,6 +60,13 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages);
         setIsLoading(false);
+        setLoadError(null);
+    }
+
+    function onDocumentLoadError(error: Error) {
+        console.error("PDF Load Error:", error);
+        setIsLoading(false);
+        setLoadError("PDF yüklenirken bir sorun oluştu. Cihazınız bu formatı desteklemiyor olabilir veya bağlantı sorunu yaşıyorsunuz.");
     }
 
     // Dosya uzantısı kontrolü
@@ -245,11 +254,14 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                             <Document
                                 file={fileUrl}
                                 onLoadSuccess={onDocumentLoadSuccess}
+                                onLoadError={onDocumentLoadError}
                                 loading={null}
                                 className={`flex flex-col gap-6 transition-all duration-500 ${isLocked ? 'blur-md grayscale opacity-50' : ''}`}
                                 error={
-                                    <div className="p-10 text-center text-red-400">
-                                        <p>PDF görüntülenemedi.</p>
+                                    <div className="p-10 text-center text-red-500 bg-red-50/50 rounded-xl">
+                                        <p className="font-bold">PDF Açılmadı</p>
+                                        <p className="text-sm mt-2 max-w-xs mx-auto text-muted-foreground">{loadError || "Bilinmeyen bir hata oluştu."}</p>
+                                        <a href={fileUrl} target="_blank" className="mt-4 inline-block text-xs text-primary underline">Dosyayı İndirip Açmayı Dene</a>
                                     </div>
                                 }
                             >
