@@ -32,11 +32,19 @@ export async function submitFeedback(formData: FormData) {
         let imageUrl = null;
 
         if (file && file.size > 0) {
-            const blob = await put(file.name, file, {
-                access: 'public',
-                addRandomSuffix: true
-            });
-            imageUrl = blob.url;
+            console.log("Attempting to upload file:", file.name, "Size:", file.size);
+            try {
+                const blob = await put(file.name, file, {
+                    access: 'public',
+                    addRandomSuffix: true,
+                    token: process.env.BLOB_READ_WRITE_TOKEN // Explicitly pass token just in case
+                });
+                imageUrl = blob.url;
+                console.log("Upload successful:", imageUrl);
+            } catch (uploadError) {
+                console.error("Blob upload error:", uploadError);
+                return { success: false, message: "Fotoğraf yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin veya fotoğrafsız gönderin." };
+            }
         }
 
         await prisma.feedback.create({
