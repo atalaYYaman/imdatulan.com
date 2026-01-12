@@ -64,11 +64,10 @@ export default function UserApprovalList({ users }: { users: UserData[] }) {
                             >
                                 {user.studentIdCardUrl ? (
                                     <>
-                                        <Image
+                                        <img
                                             src={`/api/files/identity/${user.id}`}
                                             alt="Student ID"
-                                            fill
-                                            className="object-contain p-2 group-hover/image:scale-105 transition-transform duration-500"
+                                            className="w-full h-full object-contain p-2 group-hover/image:scale-105 transition-transform duration-500"
                                         />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
                                             <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-white font-bold flex items-center gap-2">
@@ -174,11 +173,10 @@ export default function UserApprovalList({ users }: { users: UserData[] }) {
                     onClick={() => setSelectedImage(null)}
                 >
                     <div className="relative w-full max-w-5xl h-[85vh] animate-in zoom-in-95 duration-300">
-                        <Image
+                        <img
                             src={selectedImage}
                             alt="Student ID Full"
-                            fill
-                            className="object-contain drop-shadow-2xl"
+                            className="w-full h-full object-contain drop-shadow-2xl"
                         />
                         <button
                             className="absolute top-4 right-4 text-white hover:text-white/80 transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-md p-3 rounded-full border border-white/10"
