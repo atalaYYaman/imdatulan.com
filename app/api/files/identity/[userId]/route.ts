@@ -34,7 +34,11 @@ export async function GET(request: Request, props: { params: Promise<{ userId: s
         }
 
         // --- PROXY STREAMING ---
-        const fileResponse = await fetch(targetUser.studentIdCardUrl);
+        const fileResponse = await fetch(targetUser.studentIdCardUrl, {
+            headers: {
+                'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
+            }
+        });
         if (!fileResponse.ok) {
             return new NextResponse("File fetch error", { status: 502 });
         }

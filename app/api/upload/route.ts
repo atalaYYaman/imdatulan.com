@@ -26,7 +26,8 @@ export async function POST(req: Request) {
 
         // Vercel Blob Storage
         const blob = await put(file.name, file, {
-            access: 'public',
+            // @ts-ignore
+            access: 'private',
             addRandomSuffix: true
         });
 

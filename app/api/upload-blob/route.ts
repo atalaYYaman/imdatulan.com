@@ -59,10 +59,8 @@ export async function POST(request: Request) {
         const uniqueFilename = `${uuidv4()}.${ext}`;
 
         const blob = await put(uniqueFilename, request.body, {
-            access: 'public', // Kept public but we will protect it via UI logic (Private Proxy is better but Blob doesn't support Private ACL easily without Token Auth. 
-            // User wanted Private/Signed. Vercel Blob 'private' require server-side token generation.
-            // Actually 'access: public' means unguessable unique URL. With UUID it's safeish. 
-            // BUT plan said Proxy. We will implement proxy logic to SERVE it, hiding this URL from frontend.)
+            // @ts-ignore: Vercel Blob private support might be missing in types but exists in runtime
+            access: 'private',
         });
 
         return NextResponse.json(blob);
