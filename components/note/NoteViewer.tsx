@@ -94,31 +94,38 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         const subText = viewerUser.name.toUpperCase();
         const studentNumber = viewerUser.studentNumber;
 
-        const cols = 4;
-        const rows = 6;
+        // Reduced density: 4x6 -> 2x4
+        const cols = 2;
+        const rows = 4;
         const xSpacing = width / cols;
         const ySpacing = height / rows;
 
         for (let i = 0; i < cols; i++) {
             for (let j = 0; j < rows; j++) {
                 ctx.save();
-                const x = i * xSpacing + (j % 2 === 0 ? 0 : xSpacing / 2);
-                const y = j * ySpacing;
+                // Add offset to every other row for a brick pattern look
+                const xOffset = (j % 2 === 0) ? 0 : xSpacing / 2;
+                const x = i * xSpacing + xOffset + (xSpacing / 2) * 0.5; // Centering adjustment
+                const y = j * ySpacing + (ySpacing / 2);
 
                 ctx.translate(x, y);
-                ctx.rotate(-12 * Math.PI / 180);
+                // Sharp diagonal rotation
+                ctx.rotate(-30 * Math.PI / 180);
 
                 ctx.font = "900 40px Inter, Roboto, sans-serif";
-                ctx.fillStyle = "rgba(203, 213, 225, 0.3)";
+                // Reduced Opacity: 0.3 -> 0.15
+                ctx.fillStyle = "rgba(203, 213, 225, 0.15)";
                 ctx.textAlign = "center";
                 ctx.fillText(text, 0, 0);
 
                 ctx.font = "bold 20px Inter, Roboto, sans-serif";
-                ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
+                // Reduced Opacity: 0.2 -> 0.12
+                ctx.fillStyle = "rgba(239, 68, 68, 0.12)";
                 ctx.fillText(subText, 0, 30);
 
                 ctx.font = "monospace 14px monospace";
-                ctx.fillStyle = "rgba(148, 163, 184, 0.3)";
+                // Reduced Opacity: 0.3 -> 0.1
+                ctx.fillStyle = "rgba(148, 163, 184, 0.1)";
                 ctx.fillText(studentNumber, 0, 50);
 
                 ctx.restore();
