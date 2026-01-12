@@ -33,8 +33,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const [loadError, setLoadError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Canvas Refs for Images
-    const imageCanvasRef = useRef<HTMLCanvasElement>(null);
 
     // Reset state when fileUrl changes or lock state changes
     useEffect(() => {
@@ -129,28 +127,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         ctx.restore();
     }, [viewerUser]);
 
-    /**
-     * Handle Image Rendering on Canvas
-     */
-    useEffect(() => {
-        // Only render if image, NOT LOCKED, and not loading (wait for hidden img to load)
-        // Actually, we need to draw AFTER loading.
-        if (isImage && !isLocked && !isLoading && imageCanvasRef.current) {
-            const canvas = imageCanvasRef.current;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = fileUrl;
-            img.onload = () => {
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
-                ctx.drawImage(img, 0, 0);
-                drawWatermark(ctx, canvas.width, canvas.height);
-            };
-        }
-    }, [isImage, isLocked, fileUrl, isLoading, drawWatermark]);
 
     return (
         <div
@@ -266,29 +242,28 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                         ))}
                                     </Document>
                                 ) : isImage ? (
-                                    <div className="relative bg-white p-2 shadow-md">
-                                        <canvas
-                                            ref={imageCanvasRef}
-                                            className="max-w-[90vw] object-contain pointer-events-none"
+                                    <div className="relative bg-white p-2 shadow-md inline-block">
+                                        <div
                                             style={{
                                                 transform: `scale(${scale})`,
                                                 transformOrigin: 'top center',
-                                                width: 'auto',
-                                                height: 'auto',
-                                                maxWidth: '90vw'
                                             }}
-                                            onContextMenu={(e) => e.preventDefault()}
-                                        />
-                                        <img
-                                            src={fileUrl}
-                                            className="hidden"
-                                            onLoad={() => setIsLoading(false)}
-                                            onError={() => {
-                                                setIsLoading(false);
-                                                setLoadError("Resim yüklenemedi");
-                                            }}
-                                            alt="Hidden loader"
-                                        />
+                                            className="relative"
+                                        >
+                                            <img
+                                                src={fileUrl}
+                                                className="max-w-[90vw] object-contain pointer-events-auto"
+                                                onLoad={() => setIsLoading(false)}
+                                                onError={() => {
+                                                    setIsLoading(false);
+                                                    setLoadError("Resim yüklenemedi");
+                                                }}
+                                                alt="Note content"
+                                                draggable={false}
+                                            />
+                                            {/* Watermark Overlay on top of image */}
+                                            <WatermarkOverlay drawWatermark={drawWatermark} />
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
