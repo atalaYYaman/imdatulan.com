@@ -149,7 +149,7 @@ export default function NoteApprovalList({ notes }: { notes: NoteData[] }) {
                         {/* Right Actions */}
                         <div className="flex flex-row md:flex-col justify-between gap-3 md:w-48 shrink-0">
                             <a
-                                href={note.fileUrl}
+                                href={`/api/files/${note.id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex-1 md:flex-none flex items-center justify-center gap-2 w-full py-3 bg-background border border-border hover:border-primary/50 text-foreground rounded-xl font-bold transition-all hover:shadow-lg group/btn"

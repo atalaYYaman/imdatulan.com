@@ -41,7 +41,7 @@ export async function POST(req: Request) {
         // Give Credits to Uploader
         await prisma.user.update({
             where: { id: note.uploaderId },
-            data: { credits: { increment: 3 } }
+            data: { credits: { increment: note.price } }
         })
 
         // Send Email
