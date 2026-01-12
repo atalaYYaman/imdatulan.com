@@ -40,7 +40,7 @@ model User {
   comments             Comment[]
   likes                Like[]
   views                View[]
-  credits              Int       @default(3) // Süt Bakiyesi (Başlangıç 3 Süt)
+  credits              Int       @default(0) // Süt Bakiyesi (Başlangıç 0 Süt)
   unlockedNotes        UnlockedNote[]
   purchases            ProductPurchase[]
   reports              Report[]
