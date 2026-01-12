@@ -60,12 +60,12 @@ export default function UserApprovalList({ users }: { users: UserData[] }) {
                             {/* ID Card Image */}
                             <div
                                 className="w-full lg:w-1/3 relative h-64 lg:h-auto min-h-[250px] rounded-2xl overflow-hidden cursor-pointer group/image border-2 border-border/50 hover:border-primary/50 transition-colors bg-black/5"
-                                onClick={() => user.studentIdCardUrl && setSelectedImage(user.studentIdCardUrl)}
+                                onClick={() => user.studentIdCardUrl && setSelectedImage(`/api/files/identity/${user.id}`)}
                             >
                                 {user.studentIdCardUrl ? (
                                     <>
                                         <Image
-                                            src={user.studentIdCardUrl}
+                                            src={`/api/files/identity/${user.id}`}
                                             alt="Student ID"
                                             fill
                                             className="object-contain p-2 group-hover/image:scale-105 transition-transform duration-500"
