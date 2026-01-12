@@ -258,8 +258,10 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                                     renderTextLayer={false}
                                                     renderAnnotationLayer={false}
                                                     loading={<div className="bg-muted animate-pulse" style={{ width: 600 * scale, height: 800 * scale }} />}
-                                                    className="nod-pdf-page"
-                                                />
+                                                    className="nod-pdf-page relative"
+                                                >
+                                                    <WatermarkOverlay drawWatermark={drawWatermark} />
+                                                </Page>
                                             </div>
                                         ))}
                                     </Document>
@@ -321,5 +323,48 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                 </div>
             </div>
         </div>
+    );
+}
+
+// Separate component for Watermark to handle its own canvas context and sizing
+function WatermarkOverlay({ drawWatermark }: { drawWatermark: (ctx: CanvasRenderingContext2D, width: number, height: number) => void }) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        // Use ResizeObserver to keep watermark in sync with page size
+        const resizeObserver = new ResizeObserver(() => {
+            const { width, height } = canvas.getBoundingClientRect();
+            // Scaling for high DPI screens could be added here if needed, but simple sync is good for now
+            // We set internal resolution to match display size
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) drawWatermark(ctx, width, height);
+            }
+        });
+
+        resizeObserver.observe(canvas.parentElement || canvas);
+
+        // Initial draw
+        const { width, height } = canvas.getBoundingClientRect();
+        if (width && height) {
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) drawWatermark(ctx, width, height);
+        }
+
+        return () => resizeObserver.disconnect();
+    }, [drawWatermark]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none z-10"
+        />
     );
 }
