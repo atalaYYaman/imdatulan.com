@@ -198,7 +198,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                 {/* Mobile: Show only if tab is 'note'. Desktop: Use remaining space (flex-1). */}
                 <div className={`flex-1 h-full bg-muted/20 relative md:border-r border-border/50 ${mobileTab !== 'note' ? 'hidden md:block' : 'block'}`}>
                     <NoteViewer
-                        fileUrl={`/api/files/${note.id}`}
+                        fileUrl={note.fileUrl || `/api/download/${note.id}`}
                         viewerUser={viewerUser}
                         isLocked={!isUnlocked}
                         onUnlock={handleUnlockNote}

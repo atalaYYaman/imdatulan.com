@@ -66,12 +66,17 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
             }
         }
 
-        // Orijinal dosya uzantısını al - Safe Check
+        // Orijinal dosya uzantısını al
         const fileUrl = note.fileUrl || "";
         const originalExtension = fileUrl.split('.').pop()?.toLowerCase() || "pdf";
 
         // Proxy URL'i oluştur
-        const secureNote = { ...note, fileUrl: `/api/notes/${note.id}/file` };
+        // SECURITY: We explicitly do NOT pass the raw note.fileUrl to the client.
+        // We overwrite it with the proxy link.
+        const secureNote = {
+            ...note,
+            fileUrl: `/api/download/${note.id}`
+        };
 
         return (
             <NoteDetailClient
