@@ -44,13 +44,8 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         }
 
         // --- PROXY STREAMING ---
-        // Fetch from Blob Storage (which is public-read but obscure/UUID)
-        const fileResponse = await fetch(note.fileUrl, {
-            headers: {
-                // Required for Private Folder/Blob access on Vercel
-                'Authorization': `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
-            }
-        });
+        // Fetch from Blob Storage (Public but hidden URL)
+        const fileResponse = await fetch(note.fileUrl);
         if (!fileResponse.ok) {
             return new NextResponse("File fetch error", { status: 502 });
         }

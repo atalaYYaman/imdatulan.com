@@ -33,8 +33,8 @@ export async function POST(request: Request) {
         // --- 1. MAGIC BYTES CHECK ---
         // Need to read the first few bytes of the stream without consuming it? 
         // request.body is a ReadableStream. Cloning it is necessary.
-        const clone = request.clone();
-        const arrayBuffer = await clone.arrayBuffer();
+        // Read the body once into a buffer
+        const arrayBuffer = await request.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
         // Check signatures
@@ -58,11 +58,9 @@ export async function POST(request: Request) {
         // Enforce safe extensions based on magic bytes if we were stricter, but UUID + ext is decent.
         const uniqueFilename = `${uuidv4()}.${ext}`;
 
-        const blob = await put(uniqueFilename, request.body, {
-            // @ts-ignore: Vercel Blob private support might be missing in types but exists in runtime
-            access: 'private',
+        const blob = await put(uniqueFilename, buffer, {
+            access: 'public',
         });
-
         return NextResponse.json(blob);
     } catch (error: any) {
         console.error("Blob Upload Error:", error);
