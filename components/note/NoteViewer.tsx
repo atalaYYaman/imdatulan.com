@@ -27,14 +27,20 @@ interface NoteViewerProps {
 
 export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking, price = 1, errorMessage, fileExtension }: NoteViewerProps) {
     const [numPages, setNumPages] = useState<number>(0);
-    const [scale, setScale] = useState<number>(isLocked ? 0.6 : 1.0); // Kilitliyse biraz daha küçük göster
+    const [scale, setScale] = useState<number>(1.0);
     const [isLoading, setIsLoading] = useState(true);
     const [pageWidth, setPageWidth] = useState<number | null>(null);
-    const [loadError, setLoadError] = useState<string | null>(null); // Local error state
+    const [loadError, setLoadError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Canvas Refs for Images
     const imageCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    // Reset state when fileUrl changes or lock state changes
+    useEffect(() => {
+        setIsLoading(true);
+        setLoadError(null);
+    }, [fileUrl, isLocked]);
 
     // Handle Resize Logic
     useEffect(() => {
@@ -42,7 +48,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
 
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
-                // Use contentRect or contentBoxSize
                 const width = entry.contentRect.width;
                 if (width) {
                     setPageWidth(width);
@@ -82,94 +87,70 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
 
     /**
      * Shared Watermark Drawing Function
-     * Draws the watermark directly onto the provided canvas context.
-     * USED ONLY FOR IMAGES NOW (Server handles PDF watermark)
      */
     const drawWatermark = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
         if (!ctx) return;
 
-        // Save context state
         ctx.save();
-
-        // Watermark Configuration
         const text = "OTLAK.COM.TR";
         const subText = viewerUser.name.toUpperCase();
         const studentNumber = viewerUser.studentNumber;
 
-        // Calculate spacing
-        const cols = 4; // Number of columns
-        const rows = 6; // Number of rows
+        const cols = 4;
+        const rows = 6;
         const xSpacing = width / cols;
         const ySpacing = height / rows;
 
-        ctx.rotate(-12 * Math.PI / 180); // Rotate entire context slightly or individually? 
-        // Better to rotate individually or rotate context once?
-        // Let's rotate individual blocks to match previous design: transform -rotate-12
-        ctx.restore(); // Restore to remove global rotation if we want local rotation
-
-        // Loop to fill the canvas
-        // We actually want a grid of watermarks.
         for (let i = 0; i < cols; i++) {
             for (let j = 0; j < rows; j++) {
                 ctx.save();
-
-                // Position logic
-                // Add some offset for "brick" pattern if desired, or simple grid
                 const x = i * xSpacing + (j % 2 === 0 ? 0 : xSpacing / 2);
                 const y = j * ySpacing;
 
-                // Move to position
                 ctx.translate(x, y);
                 ctx.rotate(-12 * Math.PI / 180);
 
-                // Draw Branding
-                ctx.font = "900 40px Inter, Roboto, sans-serif"; // Tailwind text-5xl approx
-                ctx.fillStyle = "rgba(203, 213, 225, 0.3)"; // slate-300/50 approx
+                ctx.font = "900 40px Inter, Roboto, sans-serif";
+                ctx.fillStyle = "rgba(203, 213, 225, 0.3)";
                 ctx.textAlign = "center";
                 ctx.fillText(text, 0, 0);
 
-                // Draw Name
-                ctx.font = "bold 20px Inter, Roboto, sans-serif"; // text-xl approx
-                ctx.fillStyle = "rgba(239, 68, 68, 0.2)"; // red-500/40 approx
+                ctx.font = "bold 20px Inter, Roboto, sans-serif";
+                ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
                 ctx.fillText(subText, 0, 30);
 
-                // Draw Student Number
-                ctx.font = "monospace 14px monospace"; // text-sm font-mono
-                ctx.fillStyle = "rgba(148, 163, 184, 0.3)"; // slate-400/50 approx
+                ctx.font = "monospace 14px monospace";
+                ctx.fillStyle = "rgba(148, 163, 184, 0.3)";
                 ctx.fillText(studentNumber, 0, 50);
 
                 ctx.restore();
             }
         }
+        ctx.restore();
     }, [viewerUser]);
 
     /**
      * Handle Image Rendering on Canvas
      */
     useEffect(() => {
-        if (isImage && fileUrl && imageCanvasRef.current && !isLoading) {
+        // Only render if image, NOT LOCKED, and not loading (wait for hidden img to load)
+        // Actually, we need to draw AFTER loading.
+        if (isImage && !isLocked && !isLoading && imageCanvasRef.current) {
             const canvas = imageCanvasRef.current;
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
             const img = new Image();
-            img.crossOrigin = "anonymous"; // Needed if images are on different domain (Blob storage)
+            img.crossOrigin = "anonymous";
             img.src = fileUrl;
             img.onload = () => {
-                // Set canvas size to match image
                 canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
-
-                // Draw image
                 ctx.drawImage(img, 0, 0);
-
-                // Draw Watermark
                 drawWatermark(ctx, canvas.width, canvas.height);
             };
         }
-    }, [isImage, fileUrl, isLoading, drawWatermark, scale]);
-    // Re-run if scale changes? No, canvas internal resolution should be high quality (natural size).
-    // CSS handle scaling.
+    }, [isImage, isLocked, fileUrl, isLoading, drawWatermark]);
 
     return (
         <div
@@ -178,7 +159,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
             ref={containerRef}
         >
             {/* Kilitli Durum Overlay */}
-            {isLocked && !isLoading && (
+            {isLocked && (
                 <div className="absolute inset-0 z-[60] bg-background/95 backdrop-blur-3xl flex items-center justify-center pointer-events-auto p-4 select-none">
                     <div className="relative overflow-hidden bg-card border border-border/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-sm text-center animate-in fade-in zoom-in duration-300">
 
@@ -240,102 +221,103 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
             <div className={`flex-1 w-full overflow-y-auto bg-muted/20 scroll-smooth ${isLocked ? 'overflow-hidden pointer-events-none' : ''}`}>
                 <div className="max-w-max mx-auto px-4 py-20 min-h-full flex flex-col items-center gap-8 relative">
 
-                    {isLoading && isPdf && (
-                        <div className="absolute inset-0 flex items-center justify-center text-primary z-40">
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current"></div>
-                                <span className="text-sm font-medium animate-pulse">Not yükleniyor...</span>
+                    {/* ONLY RENDER CONTENT IF UNLOCKED */}
+                    {!isLocked && (
+                        <>
+                            {isLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center text-primary z-40 pointer-events-none">
+                                    <div className="flex flex-col items-center gap-4 bg-background/80 p-6 rounded-2xl backdrop-blur-sm border border-border/50 shadow-xl">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current"></div>
+                                        <span className="text-sm font-medium animate-pulse">İçerik yükleniyor...</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="relative shadow-2xl min-h-[500px] min-w-[300px] bg-white transition-all duration-500 animate-in fade-in" id="content-container">
+                                {isPdf ? (
+                                    <Document
+                                        file={fileUrl}
+                                        onLoadSuccess={onDocumentLoadSuccess}
+                                        onLoadError={onDocumentLoadError}
+                                        loading={null}
+                                        className="flex flex-col gap-6"
+                                        error={
+                                            <div className="p-10 text-center text-red-500 bg-red-50/50 rounded-xl">
+                                                <p className="font-bold">PDF Açılmadı</p>
+                                                <p className="text-sm mt-2 max-w-xs mx-auto text-muted-foreground">{loadError || "Bilinmeyen bir hata oluştu."}</p>
+                                                <a href={fileUrl} target="_blank" className="mt-4 inline-block text-xs text-primary underline">Dosyayı İndirip Açmayı Dene</a>
+                                            </div>
+                                        }
+                                    >
+                                        {Array.from(new Array(numPages), (_, index) => (
+                                            <div key={`page_${index + 1}`} className="relative bg-white shadow-md">
+                                                <Page
+                                                    pageNumber={index + 1}
+                                                    width={pageWidth ? (Math.min(pageWidth - 48, 800) * scale) : undefined}
+                                                    scale={pageWidth ? 1 : scale}
+                                                    renderTextLayer={false}
+                                                    renderAnnotationLayer={false}
+                                                    loading={<div className="bg-muted animate-pulse" style={{ width: 600 * scale, height: 800 * scale }} />}
+                                                    className="nod-pdf-page"
+                                                />
+                                            </div>
+                                        ))}
+                                    </Document>
+                                ) : isImage ? (
+                                    <div className="relative bg-white p-2 shadow-md">
+                                        <canvas
+                                            ref={imageCanvasRef}
+                                            className="max-w-[90vw] object-contain pointer-events-none"
+                                            style={{
+                                                transform: `scale(${scale})`,
+                                                transformOrigin: 'top center',
+                                                width: 'auto',
+                                                height: 'auto',
+                                                maxWidth: '90vw'
+                                            }}
+                                            onContextMenu={(e) => e.preventDefault()}
+                                        />
+                                        <img
+                                            src={fileUrl}
+                                            className="hidden"
+                                            onLoad={() => setIsLoading(false)}
+                                            onError={() => {
+                                                setIsLoading(false);
+                                                setLoadError("Resim yüklenemedi");
+                                            }}
+                                            alt="Hidden loader"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
+                                        <p className="text-xl font-bold mb-4">Önizleme Kullanılamıyor</p>
+                                        <p className="text-muted-foreground mb-6">Bu dosya formatı ({fileUrl.split('.').pop()}) şu an için tarayıcıda görüntülenemez.</p>
+                                        <a
+                                            href={fileUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
+                                        >
+                                            Dosyayı İndir
+                                        </a>
+                                    </div>
+                                )}
+
+                                {/* Transparent Interaction Blocker */}
+                                <div className="absolute inset-0 z-50 bg-transparent" onContextMenu={(e) => e.preventDefault()}></div>
                             </div>
+                        </>
+                    )}
+
+                    {/* PLACEHOLDER BACKGROUND IF LOCKED */}
+                    {isLocked && (
+                        <div className="w-full max-w-2xl h-screen opacity-50 flex flex-col gap-4 items-center">
+                            {/* Fake Pages / Content to look like a blurred document */}
+                            <div className="w-full aspect-[3/4] bg-white shadow-lg rounded-sm blur-sm"></div>
+                            <div className="w-full aspect-[3/4] bg-white shadow-lg rounded-sm blur-sm"></div>
                         </div>
                     )}
 
-                    <div className="relative shadow-2xl" id="content-container">
-                        {isPdf ? (
-                            <Document
-                                file={fileUrl}
-                                onLoadSuccess={onDocumentLoadSuccess}
-                                onLoadError={onDocumentLoadError}
-                                loading={null}
-                                className={`flex flex-col gap-6 transition-all duration-500 ${isLocked ? 'blur-md grayscale opacity-50' : ''}`}
-                                error={
-                                    <div className="p-10 text-center text-red-500 bg-red-50/50 rounded-xl">
-                                        <p className="font-bold">PDF Açılmadı</p>
-                                        <p className="text-sm mt-2 max-w-xs mx-auto text-muted-foreground">{loadError || "Bilinmeyen bir hata oluştu."}</p>
-                                        <a href={fileUrl} target="_blank" className="mt-4 inline-block text-xs text-primary underline">Dosyayı İndirip Açmayı Dene</a>
-                                    </div>
-                                }
-                            >
-                                {Array.from(new Array(numPages), (_, index) => {
-                                    if (isLocked && index > 0) return null;
-                                    return (
-                                        <div key={`page_${index + 1}`} className="relative bg-white shadow-md">
-                                            <Page
-                                                pageNumber={index + 1}
-                                                // Responsive width logic:
-                                                // Fit to container width (safe margin) * scale
-                                                width={pageWidth ? (Math.min(pageWidth - 48, 800) * scale) : undefined}
-                                                // If width is undefined (initial load), react-pdf uses original width.
-                                                // 'scale' prop is ignored if width is provided in some versions, or acts as multiplier? 
-                                                // To be safe, we rely on 'width' for Zooming.
-                                                // If pageWidth is null, we can pass scale prop for initial render (though it might flicker).
-                                                scale={pageWidth ? 1 : scale}
-                                                renderTextLayer={false}
-                                                renderAnnotationLayer={false}
-                                                loading={<div className="bg-muted animate-pulse" style={{ width: 600 * scale, height: 800 * scale }} />}
-                                                className="nod-pdf-page"
-                                            />
-                                        </div>
-                                    );
-                                })}
-                            </Document>
-                        ) : isImage ? (
-                            <div className={`relative bg-white p-2 shadow-md ${isLocked ? 'blur-md grayscale opacity-50' : ''}`}>
-                                <canvas
-                                    ref={imageCanvasRef}
-                                    className="max-w-[90vw] object-contain pointer-events-none"
-                                    style={{
-                                        transform: `scale(${scale})`,
-                                        transformOrigin: 'top center',
-                                        width: 'auto',
-                                        height: 'auto',
-                                        maxWidth: '90vw'
-                                    }}
-                                    onContextMenu={(e) => e.preventDefault()}
-                                />
-                                {isLoading && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-primary z-40 bg-white/80">
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current"></div>
-                                            <span className="text-sm font-medium animate-pulse">Resim işleniyor...</span>
-                                        </div>
-                                    </div>
-                                )}
-                                {/* Trigger loading completion for images */}
-                                <img
-                                    src={fileUrl}
-                                    className="hidden"
-                                    onLoad={() => setIsLoading(false)}
-                                    alt="Hidden loader"
-                                />
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
-                                <p className="text-xl font-bold mb-4">Önizleme Kullanılamıyor</p>
-                                <p className="text-muted-foreground mb-6">Bu dosya formatı ({fileUrl.split('.').pop()}) şu an için tarayıcıda görüntülenemez.</p>
-                                <a
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
-                                >
-                                    Dosyayı İndir
-                                </a>
-                            </div>
-                        )}
-
-                        {/* Transparent Interaction Blocker for extra security */}
-                        <div className="absolute inset-0 z-50 bg-transparent" onContextMenu={(e) => e.preventDefault()}></div>
-                    </div>
                 </div>
             </div>
         </div>
