@@ -135,6 +135,15 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     }, [viewerUser]);
 
 
+    const imgRef = useRef<HTMLImageElement>(null);
+
+    // Check if image is already loaded (cached) to remove spinner
+    useEffect(() => {
+        if (imgRef.current?.complete) {
+            setIsLoading(false);
+        }
+    }, [isLoading]); // Check whenever loading state is true
+
     return (
         <div
             className="flex flex-col h-full bg-muted/20 relative select-none"
@@ -258,6 +267,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                             className="relative"
                                         >
                                             <img
+                                                ref={imgRef}
                                                 src={fileUrl}
                                                 className="max-w-[90vw] object-contain pointer-events-auto"
                                                 onLoad={() => setIsLoading(false)}
