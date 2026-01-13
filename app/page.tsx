@@ -32,11 +32,11 @@ export default function Home() {
         </div>
 
         {/* Title & Subtitle */}
-        <h1 className="text-4xl md:text-6xl font-black text-foreground mb-6 tracking-tighter max-w-3xl mx-auto leading-tight">
-          Notların <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-600">Dijital Yüzü</span>
+        <h1 className="text-4xl md:text-6xl font-black text-foreground mb-6 tracking-tighter max-w-4xl mx-auto leading-tight">
+          Kanka, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-600">Kimseye Atma Olur mu?</span>
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-          Üniversite notlarını paylaş, bilgiye eriş ve topluluğun bir parçası olarak kazanmaya başla.
+          O iş bitti. Artık notlarını saklama devri kapandı. Yükle, sat, <b>Süt</b> kazan ve harca!
         </p>
 
         {/* Call to Action */}
@@ -78,9 +78,9 @@ export default function Home() {
             <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
               <Send className="w-7 h-7 text-primary" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-foreground">Not Paylaş</h3>
+            <h3 className="text-xl font-bold mb-3 text-foreground">Süt Kazan</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Ders notlarını kolayca yükle ve binlerce öğrenciyle paylaşarak bilgi ağını genişlet.
+              Ders notlarını yükle ve fiyatını belirle. Diğerleri notunu satın aldıkça hesabına Süt yatsın.
             </p>
           </div>
 
@@ -89,9 +89,9 @@ export default function Home() {
             <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
               <FolderOpen className="w-7 h-7 text-emerald-500" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-foreground">Bilgiye Eriş</h3>
+            <h3 className="text-xl font-bold mb-3 text-foreground">Not Satın Al</h3>
             <p className="text-muted-foreground leading-relaxed">
-              İhtiyacın olan ders notlarına anında ulaş, sınavlara eksiksiz hazırlan.
+              İster biriktirdiğin Sütlerle, ister yüklediğin kredilerle ihtiyacın olan tüm notlara anında eriş.
             </p>
           </div>
 
@@ -100,9 +100,9 @@ export default function Home() {
             <div className="w-14 h-14 bg-yellow-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
               <Trophy className="w-7 h-7 text-yellow-500" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-foreground">Ödüller Kazan</h3>
+            <h3 className="text-xl font-bold mb-3 text-foreground">Pazarda Harca</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Topluluğa katkıda bulunarak puanlar topla ve sürpriz ödüllerin sahibi ol.
+              Kazandığın Sütleri Pazar alanında harca! Kahve, yemek veya indirim kuponlarını kap.
             </p>
           </div>
 
