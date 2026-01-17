@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { User, FileText, MessageSquare, AlertOctagon, BarChart3, Shield, ArrowRight } from 'lucide-react'
+import { User, FileText, MessageSquare, AlertOctagon, BarChart3, Shield, ArrowRight, ScrollText } from 'lucide-react'
 
 export default function AdminDashboard() {
     return (
@@ -122,6 +122,28 @@ export default function AdminDashboard() {
                         <div>
                             <h2 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">Sistem Özeti</h2>
                             <p className="text-sm text-muted-foreground">Kullanıcı, not ve gelir istatistiklerini detaylı görüntüle.</p>
+                        </div>
+                        <div className="mt-6 flex items-center text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                            Yönet <ArrowRight className="w-3 h-3 ml-1" />
+                        </div>
+                    </div>
+                </Link>
+
+                {/* Changelog Module */}
+                <Link
+                    href="/admin/changelog"
+                    className="group relative overflow-hidden bg-card/60 backdrop-blur-xl border border-white/10 dark:border-white/5 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                >
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <ScrollText className="w-24 h-24" />
+                    </div>
+                    <div className="relative z-10 flex flex-col h-full justify-between">
+                        <div className="mb-4 p-3 bg-pink-500/10 text-pink-500 w-fit rounded-xl group-hover:bg-pink-500 group-hover:text-white transition-colors duration-300">
+                            <ScrollText className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">Geliştirme Notları</h2>
+                            <p className="text-sm text-muted-foreground">Kullanıcılar için yeni güncelleme ve sürüm notları paylaş.</p>
                         </div>
                         <div className="mt-6 flex items-center text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
                             Yönet <ArrowRight className="w-3 h-3 ml-1" />
