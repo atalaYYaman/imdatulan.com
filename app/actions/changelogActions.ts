@@ -27,6 +27,13 @@ export async function createReleaseNote(formData: FormData) {
 
         let imageUrl = null;
         if (file && file.size > 0) {
+            console.log("Attempting to upload file:", file.name, "Size:", file.size);
+
+            if (!process.env.BLOB_READ_WRITE_TOKEN) {
+                console.error("BLOB_READ_WRITE_TOKEN is missing in environment variables.");
+                return { success: false, message: "Sunucu konfigürasyon hatası: Görsel yükleme token'ı bulunamadı." };
+            }
+
             try {
                 const blob = await put(file.name, file, {
                     access: 'public',
@@ -34,9 +41,10 @@ export async function createReleaseNote(formData: FormData) {
                     token: process.env.BLOB_READ_WRITE_TOKEN
                 });
                 imageUrl = blob.url;
-            } catch (uploadError) {
-                console.error("Blob upload error:", uploadError);
-                return { success: false, message: "Görsel yüklenirken bir hata oluştu." };
+                console.log("Upload successful:", imageUrl);
+            } catch (uploadError: any) {
+                console.error("Blob upload error full:", uploadError);
+                return { success: false, message: `Görsel yüklenirken bir hata oluştu: ${uploadError.message || "Bilinmeyen hata"}` };
             }
         }
 

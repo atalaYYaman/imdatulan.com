@@ -8,6 +8,7 @@ import Link from 'next/link';
 export default function AdminChangelogPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [fileName, setFileName] = useState<string | null>(null);
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -20,11 +21,27 @@ export default function AdminChangelogPage() {
         if (result.success) {
             setMessage({ type: 'success', text: result.message! });
             (event.target as HTMLFormElement).reset();
+            setFileName(null);
         } else {
             setMessage({ type: 'error', text: result.message! });
         }
         setIsLoading(false);
     }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 4 * 1024 * 1024) {
+                alert("Dosya boyutu 4MB'dan büyük olamaz!");
+                e.target.value = "";
+                setFileName(null);
+                return;
+            }
+            setFileName(file.name);
+        } else {
+            setFileName(null);
+        }
+    };
 
     return (
         <div className="max-w-4xl mx-auto pb-12">
@@ -40,8 +57,8 @@ export default function AdminChangelogPage() {
                     {/* Status Message */}
                     {message && (
                         <div className={`p-4 rounded-xl flex items-center gap-3 ${message.type === 'success'
-                                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                                : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                            : 'bg-red-500/10 text-red-600 border border-red-500/20'
                             }`}>
                             {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
                             <p className="font-medium">{message.text}</p>
@@ -94,16 +111,19 @@ export default function AdminChangelogPage() {
                                 type="file"
                                 name="file"
                                 accept="image/*"
+                                onChange={handleFileChange}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             />
-                            <div className="border-2 border-dashed border-border group-hover:border-primary/50 rounded-xl p-8 flex flex-col items-center justify-center transition-colors bg-background/30">
-                                <div className="p-3 bg-muted rounded-full mb-3 group-hover:scale-110 transition-transform duration-300">
-                                    <Upload className="w-6 h-6 text-muted-foreground" />
+                            <div className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center transition-colors ${fileName ? 'border-primary/50 bg-primary/5' : 'border-border group-hover:border-primary/50 bg-background/30'
+                                }`}>
+                                <div className={`p-3 rounded-full mb-3 transition-transform duration-300 ${fileName ? 'bg-primary/20 text-primary scale-110' : 'bg-muted text-muted-foreground group-hover:scale-110'
+                                    }`}>
+                                    {fileName ? <CheckCircle2 className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
                                 </div>
-                                <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                                    Görsel yüklemek için tıklayın veya sürükleyin
+                                <p className={`text-sm font-medium transition-colors ${fileName ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                    {fileName ? fileName : 'Görsel yüklemek için tıklayın veya sürükleyin'}
                                 </p>
-                                <p className="text-xs text-muted-foreground/60 mt-1">PNG, JPG, GIF (Max 4MB)</p>
+                                {!fileName && <p className="text-xs text-muted-foreground/60 mt-1">PNG, JPG, GIF (Max 4MB)</p>}
                             </div>
                         </div>
                     </div>
