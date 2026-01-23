@@ -3,7 +3,7 @@
 import { FileText, Star, User } from 'lucide-react';
 import Image from 'next/image';
 
-interface NodCardProps {
+interface NoteCardProps {
     note: {
         id: string;
         title: string;
@@ -20,7 +20,7 @@ interface NodCardProps {
     };
 }
 
-export function NodCard({ note, author }: NodCardProps) {
+export function NoteCard({ note, author }: NoteCardProps) {
     return (
         <div className="group relative h-full">
             {/* Hover Glow Effect */}

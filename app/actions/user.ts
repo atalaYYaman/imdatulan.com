@@ -24,6 +24,7 @@ export type RegistrationDat = {
 
 import { headers } from "next/headers"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { StudentNumberSchema } from "@/lib/schemas"
 
 export async function registerUser(data: RegistrationDat) {
     try {
@@ -44,6 +45,12 @@ export async function registerUser(data: RegistrationDat) {
         // 2. Format Valdation
         if (!validateEmail(data.email)) {
             return { success: false, message: "Geçersiz email adresi." }
+        }
+
+        // Student Number Validation (Zod)
+        const snParse = StudentNumberSchema.safeParse(data.studentNumber);
+        if (!snParse.success) {
+            return { success: false, message: snParse.error.message || "Öğrenci numarası 11 haneli olmalıdır." };
         }
 
         const passwordCheck = validatePassword(data.password)

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Search, Filter, Layers, LayoutGrid, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { universities, years } from "@/lib/universityData";
-import { NodCard } from "@/components/ui/NodCard";
+import { NoteCard } from "@/components/ui/NoteCard";
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import { Lock } from "lucide-react";
@@ -245,7 +245,7 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                                 className="block transition-transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary rounded-2xl"
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >
-                                <NodCard note={mappedNote} author={author} />
+                                <NoteCard note={mappedNote} author={author} />
                             </Link>
                         );
                     })}

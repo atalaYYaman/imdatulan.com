@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { User, Trophy, FileText, Settings, Sparkles } from "lucide-react";
-import { NodCard } from "@/components/ui/NodCard";
+import { NoteCard } from "@/components/ui/NoteCard";
 import { useState } from "react";
 
 interface ProfileViewProps {
@@ -61,8 +61,8 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                                 <div className="flex flex-col md:flex-row items-center gap-3">
                                     <h1 className="text-3xl font-black text-foreground tracking-tight">{user.name}</h1>
                                     <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider border ${user.role === 'ADMIN'
-                                            ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                                            : 'bg-primary/10 text-primary border-primary/20'
+                                        ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                                        : 'bg-primary/10 text-primary border-primary/20'
                                         }`}>
                                         {user.role === 'ADMIN' ? 'Yönetici' : 'Öğrenci'}
                                     </span>
@@ -107,8 +107,8 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                         <button
                             onClick={() => setActiveTab('shared')}
                             className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'shared'
-                                    ? 'bg-background text-primary shadow-sm ring-1 ring-border'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                                ? 'bg-background text-primary shadow-sm ring-1 ring-border'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                                 }`}
                         >
                             <FileText className="h-4 w-4" />
@@ -117,8 +117,8 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                         <button
                             onClick={() => setActiveTab('viewed')}
                             className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${activeTab === 'viewed'
-                                    ? 'bg-background text-primary shadow-sm ring-1 ring-border'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                                ? 'bg-background text-primary shadow-sm ring-1 ring-border'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                                 }`}
                         >
                             <Trophy className="h-4 w-4" />
@@ -145,7 +145,7 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                                 {notes.map(note => (
                                     <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-[1.02] active:scale-95 duration-300">
                                         <div className="relative h-full">
-                                            <NodCard note={note} author={{ name: user.name, avatar: '' } as any} />
+                                            <NoteCard note={note} author={{ name: user.name, avatar: '' } as any} />
 
                                             {/* Status Overlay Badges */}
                                             {note.status === 'PENDING' && (
@@ -184,7 +184,7 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                                         return (
                                             <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-[1.02] active:scale-95 duration-300">
                                                 <div className="relative h-full">
-                                                    <NodCard note={note} author={{ name: authorName, avatar: '' } as any} />
+                                                    <NoteCard note={note} author={{ name: authorName, avatar: '' } as any} />
                                                     <div className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg ring-1 ring-white/20 z-20 flex items-center gap-1">
                                                         <span>SATIN ALINDI</span>
                                                         <span>✓</span>

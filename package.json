@@ -24,7 +24,8 @@
     "react-pdf": "^10.3.0",
     "resend": "^6.7.0",
     "uuid": "^13.0.0",
-    "xss": "^1.0.15"
+    "xss": "^1.0.15",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

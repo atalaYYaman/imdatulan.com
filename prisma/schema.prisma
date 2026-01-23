@@ -55,6 +55,7 @@ model User {
   
   isTwoFactorEnabled Boolean @default(false)
   twoFactorConfirmation TwoFactorConfirmation?
+  transactions Transaction[]
 }
 
 model VerificationToken {
@@ -271,4 +272,27 @@ model ReleaseNote {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+enum TransactionType {
+  UPLOAD_REWARD     // Süt kazanımı (Not yükleme)
+  NOTE_UNLOCK       // Süt harcaması (Not açma)
+  ADMIN_ADJUSTMENT  // Yönetici müdahalesi
+  PRODUCT_PURCHASE  // Market harcaması
+  REFUND            // İade
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  amount      Int             // Değişim miktarı (+ veya -)
+  balanceAfter Int            // İşlem sonrası güncel bakiye (Snapshot)
+  type        TransactionType
+  description String?
+  referenceId String?         // İlgili kayıt ID'si (Note ID, vb.)
+  
+  createdAt   DateTime        @default(now())
+
+  @@index([userId])
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useOptimistic, startTransition } from 'react';
 import dynamic from 'next/dynamic';
 
 const NoteViewer = dynamic(() => import('./NoteViewer'), {
@@ -51,7 +51,13 @@ interface NoteDetailClientProps {
 
 export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked, currentUserId, fileExtension }: NoteDetailClientProps) {
     const [isWarningAccepted, setIsWarningAccepted] = useState(false);
-    const [isUnlocked, setIsUnlocked] = useState(initialIsUnlocked);
+
+    // Optimistic UI for Instant Unlock
+    const [optimisticUnlocked, setOptimisticUnlocked] = useOptimistic(
+        initialIsUnlocked,
+        (currentStatus: boolean, newStatus: boolean) => newStatus
+    );
+
     const [isUnlocking, setIsUnlocking] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false); // Modal State
@@ -63,20 +69,27 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
     const handleUnlockNote = async () => {
         setIsUnlocking(true);
         setErrorMessage(null);
-        try {
-            const { unlockNote } = await import('@/app/actions/noteActions');
-            const result = await unlockNote(note.id);
-            if (result.success) {
-                setIsUnlocked(true);
-            } else {
-                setErrorMessage(result.message || "Bir hata oluştu");
+
+        // Optimistically unlock immediately
+        startTransition(async () => {
+            setOptimisticUnlocked(true);
+            try {
+                const { unlockNote } = await import('@/app/actions/noteActions');
+                const result = await unlockNote(note.id);
+                if (!result.success) {
+                    setErrorMessage(result.message || "Bir hata oluştu");
+                    // Revert is handled automatically by useOptimistic if we wanted to revert 
+                    // but here we just show error. Optimistic state will reset when transition ends 
+                    // if the prop didn't change (i.e. if purchase failed).
+                }
+                // If success, server revalidates, parent re-renders, prop updates to true.
+            } catch (error) {
+                console.error("Unlock error:", error);
+                setErrorMessage("Beklenmedik bir hata oluştu");
+            } finally {
+                setIsUnlocking(false);
             }
-        } catch (error) {
-            console.error("Unlock error:", error);
-            setErrorMessage("Beklenmedik bir hata oluştu");
-        } finally {
-            setIsUnlocking(false);
-        }
+        });
     };
 
     // Resizable Panel Logic
@@ -162,7 +175,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
             )}
 
             {/* 4. PURCHASED (Unlocked & Not Owner) */}
-            {isUnlocked && !isOwner && note.status === 'APPROVED' && (
+            {optimisticUnlocked && !isOwner && note.status === 'APPROVED' && (
                 <div className="bg-emerald-500/10 border-b border-emerald-500/20 text-emerald-500 px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2 animate-in slide-in-from-top-2">
                     <span className="text-lg">✅</span>
                     Bu notu satın aldınız.
@@ -200,7 +213,7 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                     <NoteViewer
                         fileUrl={note.fileUrl || `/api/download/${note.id}`}
                         viewerUser={viewerUser}
-                        isLocked={!isUnlocked}
+                        isLocked={!optimisticUnlocked}
                         onUnlock={handleUnlockNote}
                         isUnlocking={isUnlocking}
                         price={note.price}

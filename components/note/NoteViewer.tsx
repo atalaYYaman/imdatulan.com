@@ -33,7 +33,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const [loadError, setLoadError] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-
     // Reset state when fileUrl changes or lock state changes
     useEffect(() => {
         setIsLoading(true);
@@ -43,21 +42,14 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     // Handle Resize Logic
     useEffect(() => {
         if (!containerRef.current) return;
-
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 const width = entry.contentRect.width;
-                if (width) {
-                    setPageWidth(width);
-                }
+                if (width) setPageWidth(width);
             }
         });
-
         resizeObserver.observe(containerRef.current);
-
-        return () => {
-            resizeObserver.disconnect();
-        };
+        return () => resizeObserver.disconnect();
     }, []);
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
@@ -85,9 +77,15 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
 
     /**
      * Shared Watermark Drawing Function
+     * Renders directly onto the same canvas context
      */
-    const drawWatermark = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const drawWatermark = useCallback((canvas: HTMLCanvasElement | null) => {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
         if (!ctx) return;
+
+        const width = canvas.width;
+        const height = canvas.height;
 
         ctx.save();
         const text = "OTLAK.COM.TR";
@@ -105,7 +103,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                 ctx.save();
                 // Add offset to every other row for a brick pattern look
                 const xOffset = (j % 2 === 0) ? 0 : xSpacing / 2;
-                const x = i * xSpacing + xOffset + (xSpacing / 2) * 0.5; // Centering adjustment
+                const x = i * xSpacing + xOffset + (xSpacing / 2) * 0.5;
                 const y = j * ySpacing + (ySpacing / 2);
 
                 ctx.translate(x, y);
@@ -134,16 +132,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         ctx.restore();
     }, [viewerUser]);
 
-
-    const imgRef = useRef<HTMLImageElement>(null);
-
-    // Check if image is already loaded (cached) to remove spinner
-    useEffect(() => {
-        if (imgRef.current?.complete) {
-            setIsLoading(false);
-        }
-    }, [isLoading]); // Check whenever loading state is true
-
     return (
         <div
             className="flex flex-col h-full bg-muted/20 relative select-none"
@@ -154,7 +142,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
             {isLocked && (
                 <div className="absolute inset-0 z-[60] bg-background/95 backdrop-blur-3xl flex items-center justify-center pointer-events-auto p-4 select-none">
                     <div className="relative overflow-hidden bg-card border border-border/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-sm text-center animate-in fade-in zoom-in duration-300">
-
                         {/* Animated Glow */}
                         <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50 rotate-45 pointer-events-none" />
 
@@ -213,7 +200,6 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
             <div className={`flex-1 w-full overflow-y-auto bg-muted/20 scroll-smooth ${isLocked ? 'overflow-hidden pointer-events-none' : ''}`}>
                 <div className="max-w-max mx-auto px-4 py-20 min-h-full flex flex-col items-center gap-8 relative">
 
-                    {/* ONLY RENDER CONTENT IF UNLOCKED */}
                     {!isLocked && (
                         <>
                             {isLoading && (
@@ -242,46 +228,26 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                         }
                                     >
                                         {Array.from(new Array(numPages), (_, index) => (
-                                            <div key={`page_${index + 1}`} className="relative bg-white shadow-md">
-                                                <Page
-                                                    pageNumber={index + 1}
-                                                    width={pageWidth ? (Math.min(pageWidth - 48, 800) * scale) : undefined}
-                                                    scale={pageWidth ? 1 : scale}
-                                                    renderTextLayer={false}
-                                                    renderAnnotationLayer={false}
-                                                    loading={<div className="bg-muted animate-pulse" style={{ width: 600 * scale, height: 800 * scale }} />}
-                                                    className="nod-pdf-page relative"
-                                                >
-                                                    <WatermarkOverlay drawWatermark={drawWatermark} />
-                                                </Page>
-                                            </div>
+                                            <SecurePage
+                                                key={`page_${index + 1}`}
+                                                pageNumber={index + 1}
+                                                width={pageWidth ? (Math.min(pageWidth - 48, 800) * scale) : undefined}
+                                                scale={pageWidth ? 1 : scale}
+                                                drawWatermark={drawWatermark}
+                                            />
                                         ))}
                                     </Document>
                                 ) : isImage ? (
-                                    <div className="relative bg-white p-2 shadow-md inline-block">
-                                        <div
-                                            style={{
-                                                transform: `scale(${scale})`,
-                                                transformOrigin: 'top center',
-                                            }}
-                                            className="relative"
-                                        >
-                                            <img
-                                                ref={imgRef}
-                                                src={fileUrl}
-                                                className="max-w-[90vw] object-contain pointer-events-auto"
-                                                onLoad={() => setIsLoading(false)}
-                                                onError={() => {
-                                                    setIsLoading(false);
-                                                    setLoadError("Resim yüklenemedi");
-                                                }}
-                                                alt="Note content"
-                                                draggable={false}
-                                            />
-                                            {/* Watermark Overlay on top of image */}
-                                            <WatermarkOverlay drawWatermark={drawWatermark} />
-                                        </div>
-                                    </div>
+                                    <SecureImage
+                                        fileUrl={fileUrl}
+                                        scale={scale}
+                                        drawWatermark={drawWatermark}
+                                        onLoad={() => setIsLoading(false)}
+                                        onError={() => {
+                                            setIsLoading(false);
+                                            setLoadError("Resim yüklenemedi");
+                                        }}
+                                    />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
                                         <p className="text-xl font-bold mb-4">Önizleme Kullanılamıyor</p>
@@ -296,67 +262,108 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                         </a>
                                     </div>
                                 )}
-
-                                {/* Transparent Interaction Blocker */}
-                                <div className="absolute inset-0 z-50 bg-transparent" onContextMenu={(e) => e.preventDefault()}></div>
                             </div>
                         </>
                     )}
 
-                    {/* PLACEHOLDER BACKGROUND IF LOCKED */}
                     {isLocked && (
                         <div className="w-full max-w-2xl h-screen opacity-50 flex flex-col gap-4 items-center">
-                            {/* Fake Pages / Content to look like a blurred document */}
                             <div className="w-full aspect-[3/4] bg-white shadow-lg rounded-sm blur-sm"></div>
                             <div className="w-full aspect-[3/4] bg-white shadow-lg rounded-sm blur-sm"></div>
                         </div>
                     )}
-
                 </div>
             </div>
         </div>
     );
 }
 
-// Separate component for Watermark to handle its own canvas context and sizing
-function WatermarkOverlay({ drawWatermark }: { drawWatermark: (ctx: CanvasRenderingContext2D, width: number, height: number) => void }) {
+// Security Wrapper for PDF Page
+interface SecurePageProps {
+    pageNumber: number;
+    width?: number;
+    scale: number;
+    drawWatermark: (canvas: HTMLCanvasElement | null) => void;
+}
+
+function SecurePage({ pageNumber, width, scale, drawWatermark }: SecurePageProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
+    return (
+        <div className="relative bg-white shadow-md">
+            <Page
+                pageNumber={pageNumber}
+                width={width}
+                scale={scale}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+                canvasRef={canvasRef}
+                onRenderSuccess={() => drawWatermark(canvasRef.current)}
+                loading={<div className="bg-muted animate-pulse" style={{ width: width || 600, height: (width || 600) * 1.41 }} />}
+                className="nod-pdf-page relative"
+            />
+            {/* Transparent overlay strictly for event blocking, NOT for visual watermarking */}
+            <div className="absolute inset-0 z-50 bg-transparent" onContextMenu={(e) => e.preventDefault()} />
+        </div>
+    );
+}
+
+// Security Wrapper for Image
+interface SecureImageProps {
+    fileUrl: string;
+    scale: number;
+    drawWatermark: (canvas: HTMLCanvasElement | null) => void;
+    onLoad: () => void;
+    onError: () => void;
+}
+
+function SecureImage({ fileUrl, scale, drawWatermark, onLoad, onError }: SecureImageProps) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [imageLoaded, setImageLoaded] = useState(false);
+
+    // Draw image + watermark on a single canvas
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = fileUrl;
 
-        // Use ResizeObserver to keep watermark in sync with page size
-        const resizeObserver = new ResizeObserver(() => {
-            const { width, height } = canvas.getBoundingClientRect();
-            // Scaling for high DPI screens could be added here if needed, but simple sync is good for now
-            // We set internal resolution to match display size
-            if (canvas.width !== width || canvas.height !== height) {
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                if (ctx) drawWatermark(ctx, width, height);
-            }
-        });
+        img.onload = () => {
+            onLoad();
+            setImageLoaded(true);
+            const canvas = canvasRef.current;
+            if (!canvas) return;
 
-        resizeObserver.observe(canvas.parentElement || canvas);
+            // Set canvas size to match image natural size
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
 
-        // Initial draw
-        const { width, height } = canvas.getBoundingClientRect();
-        if (width && height) {
-            canvas.width = width;
-            canvas.height = height;
             const ctx = canvas.getContext('2d');
-            if (ctx) drawWatermark(ctx, width, height);
-        }
-
-        return () => resizeObserver.disconnect();
-    }, [drawWatermark]);
+            if (ctx) {
+                // 1. Draw Image
+                ctx.drawImage(img, 0, 0);
+                // 2. Bake Watermark
+                drawWatermark(canvas);
+            }
+        };
+        img.onerror = onError;
+    }, [fileUrl, drawWatermark, onLoad, onError]);
 
     return (
-        <canvas
-            ref={canvasRef}
-            className="absolute inset-0 w-full h-full pointer-events-none z-10"
-        />
+        <div className="relative bg-white p-2 shadow-md inline-block">
+            <div
+                style={{
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top center',
+                }}
+                className="relative"
+            >
+                {/* We render ONLY the canvas, no <img> tag that can be inspected separately */}
+                <canvas
+                    ref={canvasRef}
+                    className="max-w-[90vw] object-contain pointer-events-auto block"
+                />
+                <div className="absolute inset-0 z-50 bg-transparent" onContextMenu={(e) => e.preventDefault()} />
+            </div>
+        </div>
     );
 }

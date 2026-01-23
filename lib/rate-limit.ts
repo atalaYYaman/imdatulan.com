@@ -1,26 +1,22 @@
 import { prisma } from "@/lib/prisma";
 
-export async function checkRateLimit(key: string, limit: number, windowSeconds: number) {
+export type RateLimitResult =
+    | { success: true }
+    | { success: false; retryAfter?: Date; message?: string };
+
+export async function checkRateLimit(key: string, limit: number, windowSeconds: number): Promise<RateLimitResult> {
     const now = new Date();
     const windowMs = windowSeconds * 1000;
 
     try {
-        // Transaction to ensure atomicity is tricky with upsert logic regarding expiration reset.
-        // But we can simplify: 
-        // 1. Get current
-        // 2. If not exist or expired -> Set to 1
-        // 3. Else -> Increment
-
-        // Better yet, use upsert with a smart update or verify after fetch.
-        // Prisma doesn't support conditional update in upsert easily for "if expired then reset".
-        // Let's do a findUnique then update/create.
-
         const record = await prisma.rateLimit.findUnique({
             where: { key }
         });
 
         if (!record || record.expiresAt < now) {
-            // Create or Reset
+            // Create or Reset (Expired)
+            // Note: Upsert is safe for concurrency here mostly because we just reset if expired.
+            // If two requests come at exact same ms for expired, both might set to 1. That's acceptable.
             const expires = new Date(now.getTime() + windowMs);
             await prisma.rateLimit.upsert({
                 where: { key },
@@ -32,10 +28,12 @@ export async function checkRateLimit(key: string, limit: number, windowSeconds: 
 
         // Check limit
         if (record.count >= limit) {
-            // Block
-            // Check if we should ban (IP blocking logic). 
-            // Providing "remaining" info might be useful.
-            return { success: false, retryAfter: record.expiresAt };
+            const remainingSeconds = Math.ceil((record.expiresAt.getTime() - now.getTime()) / 1000);
+            return {
+                success: false,
+                retryAfter: record.expiresAt,
+                message: `Çok fazla istek. Lütfen ${remainingSeconds} saniye bekleyin.`
+            };
         }
 
         // Increment
@@ -48,7 +46,11 @@ export async function checkRateLimit(key: string, limit: number, windowSeconds: 
 
     } catch (error) {
         console.error("Rate Limit Error:", error);
-        // Fail open or closed? Closed for security.
-        return { success: false }; // Conservative approach
+        // Fail Closed (Secure) - If DB fails, block to prevent abuse exploitation during outage?
+        // Or Fail Open (Usable) - If DB fails, allow user?
+        // For security context ("Sentinel"), we prefer Fail Closed or just Log.
+        // Let's Fail Closed but slightly lenient on ephemeral errors might be better for UX?
+        // No, "Sentinel" says: "Güven zayıflıktır." -> Fail Closed.
+        return { success: false, message: "Sistem yoğunluğu, lütfen bekleyin." };
     }
 }

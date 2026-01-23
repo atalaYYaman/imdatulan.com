@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { put } from '@vercel/blob';
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions)
@@ -18,11 +19,24 @@ export async function POST(req: Request) {
         const noteType = formData.get("noteType") as string
         const description = formData.get("description") as string
         const priceStr = formData.get("price") as string
-        const price = priceStr ? parseInt(priceStr) : 1
 
-        if (!file || !courseName) {
-            return NextResponse.json({ message: "Missing fields" }, { status: 400 })
+        // --- VALIDATION (Sentinel) ---
+        // 1. Rate Limit
+        const limitCheck = await checkRateLimit(`upload_${session.user.email}`, 5, 3600); // 5 uploads per hour
+        if (!limitCheck.success) {
+            return NextResponse.json({ message: limitCheck.message }, { status: 429 });
         }
+
+        // 2. Input Validation
+        if (!file || !courseName) {
+            return NextResponse.json({ message: "Dosya ve Ders Adı zorunludur." }, { status: 400 })
+        }
+
+        let price = priceStr ? parseInt(priceStr) : 1;
+        // Validate Price using Schema manually (or just logic)
+        // Schema: min 1, max 50
+        if (price < 1) price = 1;
+        if (price > 50) return NextResponse.json({ message: "Fiyat en fazla 50 süt olabilir." }, { status: 400 });
 
         // Vercel Blob Storage
         const blob = await put(file.name, file, {

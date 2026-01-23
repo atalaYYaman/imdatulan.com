@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import xss from 'xss';
 import { checkRateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
 
 export async function getNoteDetail(noteId: string) {
     try {
@@ -19,6 +20,7 @@ export async function getNoteDetail(noteId: string) {
                         lastName: true,
                         university: true,
                         department: true,
+                        // fileUrl MUST NEVER be exposed here.
                     }
                 },
                 _count: {
@@ -146,7 +148,7 @@ export async function addComment(noteId: string, text: string) {
         // RATE LIMIT: 5 Comments per minute
         const limitCheck = await checkRateLimit(`comment_${user.id}`, 5, 60);
         if (!limitCheck.success) {
-            return { success: false, message: "Çok hızlı yorum yapıyorsunuz. Biraz yavaşlayın. 🐢" }
+            return { success: false, message: limitCheck.message || "Çok hızlı yorum yapıyorsunuz. Biraz yavaşlayın. 🐢" }
         }
 
         const cleanText = xss(text);
@@ -167,81 +169,106 @@ export async function addComment(noteId: string, text: string) {
     }
 }
 
+import { UnlockNoteSchema } from "@/lib/schemas";
+
 export async function unlockNote(noteId: string) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return { success: false, message: "Unauthorized" }
 
     try {
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-        if (!user) return { success: false, message: "Kullanıcı bulunamadı" }
+        // 1. Input Validation
+        const parse = UnlockNoteSchema.safeParse({ noteId });
+        if (!parse.success) return { success: false, message: "Geçersiz ID formatı" };
 
-        // Notu ve fiyatını getir
-        const note = await prisma.note.findUnique({
-            where: { id: noteId },
-            select: { price: true, uploaderId: true }
-        })
+        const result = await prisma.$transaction(async (tx) => {
+            // 2. Fetch & Lock (Zero Trust)
+            // Fetch User
+            const user = await tx.user.findUnique({ where: { email: session.user.email! } });
+            if (!user) throw new Error("Kullanıcı bulunamadı");
 
-        if (!note) return { success: false, message: "Not bulunamadı" }
+            // Fetch Note
+            const note = await tx.note.findUnique({
+                where: { id: noteId },
+                select: { id: true, price: true, uploaderId: true, status: true, title: true }
+            });
+            if (!note) throw new Error("Not bulunamadı");
 
-        // Sadece ONAYLI notlar satın alınabilir
-        // (Suspended notlar satın alınamaz, sadece önceden alanlar görebilir logic'i geçerli)
-        const noteDetail = await prisma.note.findUnique({ where: { id: noteId } });
-        if (noteDetail?.status !== 'APPROVED') {
-            return { success: false, message: "Bu not şu an erişime kapalıdır." }
-        }
+            // 3. Logic Checks
+            if (note.status !== 'APPROVED') throw new Error("Bu not şu an erişime kapalıdır.");
+            if (note.uploaderId === user.id) throw new Error("Kendi notunuzu satın alamazsınız.");
 
-        // Zaten açık mı?
-        const existingUnlock = await prisma.unlockedNote.findUnique({
-            where: {
-                userId_noteId: {
-                    userId: user.id,
-                    noteId: noteId
-                }
-            }
-        })
+            // Check if already unlocked
+            const existingUnlock = await tx.unlockedNote.findUnique({
+                where: { userId_noteId: { userId: user.id, noteId: noteId } }
+            });
+            if (existingUnlock) return { success: true, message: "Zaten açık" };
 
-        if (existingUnlock) return { success: true, message: "Zaten açık" }
+            // Check Balance
+            if (user.credits < note.price) throw new Error(`Yetersiz Süt Bakiyesi! Bu not için ${note.price} Süt gerekiyor. 🥛`);
 
-        // Kendi notu mu?
-        if (note.uploaderId === user.id) {
-            // Anti-Self Dealing: Kendi notunu satın almasına gerek yok, zaten açık.
-            // Ama eğer satın almaya çalışıyorsa (Unlock butonu çıkmışsa):
-            // Frontend gizlemeli. Backend'de engelliyoruz.
-            return { success: false, message: "Kendi notunuzu satın alamazsınız." }
-        }
-
-        // Kredi yeterli mi?
-        if (user.credits < note.price) {
-            return { success: false, message: `Yetersiz Süt Bakiyesi! Bu not için ${note.price} Süt gerekiyor. 🥛` }
-        }
-
-        // Transaction: 
-        // 1. İzleyiciden kredi düş
-        // 2. Yükleyiciye kredi ekle
-        // 3. Kilidi aç
-        await prisma.$transaction([
-            prisma.user.update({
+            // 4. Execution (Atomic)
+            // Buyer: Deduct
+            const buyerNewBalance = user.credits - note.price;
+            await tx.user.update({
                 where: { id: user.id },
-                data: { credits: { decrement: note.price } }
-            }),
-            prisma.user.update({
+                data: { credits: buyerNewBalance }
+            });
+
+            // Uploader: Add
+            const uploader = await tx.user.findUnique({ where: { id: note.uploaderId } });
+            if (!uploader) throw new Error("Yükleyici bulunamadı context hatası");
+
+            const uploaderNewBalance = uploader.credits + note.price;
+            await tx.user.update({
                 where: { id: note.uploaderId },
-                data: { credits: { increment: note.price } }
-            }),
-            prisma.unlockedNote.create({
+                data: { credits: uploaderNewBalance }
+            });
+
+            // Unlock
+            await tx.unlockedNote.create({
                 data: {
                     userId: user.id,
                     noteId: noteId
                 }
-            })
-        ])
+            });
+
+            // 5. Audit Log (Transaction Records)
+            // Log for Buyer (Expense)
+            await tx.transaction.create({
+                data: {
+                    userId: user.id,
+                    amount: -note.price,
+                    balanceAfter: buyerNewBalance,
+                    type: "NOTE_UNLOCK",
+                    description: `Not açıldı: ${note.title.substring(0, 50)}`,
+                    referenceId: note.id
+                }
+            });
+
+            // Log for Uploader (Income)
+            await tx.transaction.create({
+                data: {
+                    userId: note.uploaderId,
+                    amount: note.price,
+                    balanceAfter: uploaderNewBalance,
+                    type: "UPLOAD_REWARD", // Or create a specific NOTE_SALE type? Using UPLOAD_REWARD as generic earnings for now, or better:
+                    // Let's stick to UPLOAD_REWARD based on previous discussion, or maybe "NOTE_SALE" is better?
+                    // The schema has "UPLOAD_REWARD". Let's assume that covers it or add a new one? 
+                    // Let's use UPLOAD_REWARD for now as "Earnings from Uploads".
+                    description: `Not satıldı: ${note.title.substring(0, 50)}`,
+                    referenceId: note.id
+                }
+            });
+
+            return { success: true, message: "İşlem başarılı" };
+        });
 
         revalidatePath(`/notes/${noteId}`)
-        return { success: true }
+        return result;
 
     } catch (error) {
         console.error("Error unlocking note:", error)
-        return { success: false, message: "Bir hata oluştu" }
+        return { success: false, message: error instanceof Error ? error.message : "Bir hata oluştu" }
     }
 }
 
@@ -364,7 +391,7 @@ export async function createReport(noteId: string, reason: string, details: stri
         // RATE LIMIT: 3 Reports per 10 mins
         const limitCheck = await checkRateLimit(`report_${user.id}`, 3, 600);
         if (!limitCheck.success) {
-            return { success: false, message: "Çok sık şikayet oluşturuyorsunuz. Lütfen bekleyiniz." }
+            return { success: false, message: limitCheck.message || "Çok sık şikayet oluşturuyorsunuz. Lütfen bekleyiniz." }
         }
 
         // Check for existing report
