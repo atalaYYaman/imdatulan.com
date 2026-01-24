@@ -26,6 +26,9 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
 
     const router = useRouter();
 
+    // Admin Check
+    const isAdmin = currentUser?.role === 'ADMIN';
+
     // Sync with server revalidation updates
     useEffect(() => {
         setMessages(initialMessages);
@@ -37,19 +40,34 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
     useEffect(() => {
         const channel = pusherClient.subscribe('global-chat');
 
+        // Debug Connection
+        channel.bind('pusher:subscription_succeeded', () => {
+            console.log("Connected to global-chat");
+        });
+
+        // New Message
         channel.bind('new-message', (data: ChatMessageDto) => {
-            // Deduplicate logic:
-            // Check if we already have this message (by ID)
             setMessages((prev) => {
                 if (prev.some(m => m.id === data.id)) return prev;
                 return [...prev, data];
             });
         });
 
+        // Message Deleted
+        channel.bind('message-deleted', (data: { id: string }) => {
+            setMessages((prev) => prev.filter(m => m.id !== data.id));
+        });
+
+        // Chat Clear
+        channel.bind('chat-clear', () => {
+            router.refresh();
+            setMessages([]);
+        });
+
         return () => {
             pusherClient.unsubscribe('global-chat');
         };
-    }, []);
+    }, [router]);
 
     // Auto-scroll to bottom on new message
     useEffect(() => {
@@ -57,6 +75,12 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
     }, [messages.length]);
 
     const handleSend = async (content: string, replyToId?: string) => {
+        // Validation for Slash Commands
+        if (content.startsWith('/')) {
+            await sendMessage(content, replyToId);
+            return;
+        }
+
         const tempId = crypto.randomUUID();
 
         // Optimistic Update
@@ -75,9 +99,16 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
 
         // Server Action
         await sendMessage(content, replyToId);
-        // We rely on revalidatePath in action to fetch real data next render,
-        // which will trigger the useEffect([initialMessages]) to update state 
-        // with the real ID and consistent data.
+    };
+
+    const handleDelete = async (messageId: string) => {
+        // Optimistic Delete
+        setMessages((prev) => prev.filter(m => m.id !== messageId));
+
+        // Dynamically import to avoid server-action-in-client-component issues if wrongly bundled,
+        // though strictly 'sendMessage' worked fine.
+        const { deleteMessage } = await import("@/app/actions/chatActions");
+        await deleteMessage(messageId);
     };
 
     return (
@@ -89,7 +120,10 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                     <h3 className="font-bold text-sm tracking-wide">Genel Sohbet</h3>
                 </div>
-                <span className="text-[10px] uppercase font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">Canlı</span>
+                <div className="flex items-center gap-2">
+                    {isAdmin && <span className="text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full font-bold">Admin</span>}
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">Canlı</span>
+                </div>
             </div>
 
             {/* Messages Area */}
@@ -126,8 +160,10 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
                         key={msg.id}
                         message={msg}
                         isCurrentUser={currentUser?.id === msg.user.id}
+                        isAdmin={isAdmin}
                         replyToMessage={messages.find(m => m.id === msg.parentId)}
                         onReply={(m) => !isGuest && setReplyTo(m)}
+                        onDelete={handleDelete}
                     />
                 ))}
                 <div ref={bottomRef} />
