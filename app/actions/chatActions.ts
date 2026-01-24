@@ -107,9 +107,8 @@ export async function sendMessage(content: string, parentId?: string) {
             }
         };
 
-        // --- Pusher Trigger (Fire & Forget) ---
-        pusherServer.trigger('global-chat', 'new-message', safePayload)
-            .catch(err => console.error("Pusher Trigger Error:", err));
+        // --- Pusher Trigger ---
+        await pusherServer.trigger('global-chat', 'new-message', safePayload);
 
         return {
             success: true,
