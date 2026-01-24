@@ -6,6 +6,8 @@ import { ChatInput } from "./ChatInput";
 import { ChatMessageDto, sendMessage } from "@/app/actions/chatActions";
 import Link from "next/link";
 import { Lock } from "lucide-react";
+import { pusherClient } from "@/lib/pusher";
+import { useRouter } from "next/navigation";
 
 interface ChatBoxProps {
     initialMessages: ChatMessageDto[];
@@ -20,16 +22,47 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
     const scrollRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
 
+    const router = useRouter();
+
     // Optimistic Logic
     const [messages, addOptimisticMessage] = useOptimistic(
         initialMessages,
-        (state: ChatMessageDto[], newMessage: ChatMessageDto) => [
-            ...state,
-            newMessage
-        ]
+        (state: ChatMessageDto[], newMessage: ChatMessageDto) => {
+            // Deduplicate: If message ID already exists, don't add it again
+            if (state.some(m => m.id === newMessage.id)) return state;
+            return [...state, newMessage];
+        }
     );
 
     const isGuest = !currentUser;
+
+    // Real-Time Subscription
+    useEffect(() => {
+        const channel = pusherClient.subscribe('global-chat');
+
+        channel.bind('new-message', (data: ChatMessageDto) => {
+            // Deduplicate logic:
+            // 1. If we sent it, we already have it optimistically (check userId)
+            // 2. OR check if ID exists (handled by useOptimistic reducer above, but we pass unique IDs)
+
+            // Wait, useOptimistic is purely render-time. We can't "add" to it from outside easily 
+            // without a parent state update or router refresh. 
+            // Actually, server actions revalidatePath SHOULD trigger a router refresh which updates 'initialMessages'.
+            // So we might get the message via prop update.
+            // BUT, for real-time smoothness without full refresh waiting:
+
+            // If the message is NOT from me, add it via transition
+            if (data.user.id !== currentUser?.id) {
+                startTransition(() => {
+                    addOptimisticMessage(data);
+                });
+            }
+        });
+
+        return () => {
+            pusherClient.unsubscribe('global-chat');
+        };
+    }, [currentUser?.id, addOptimisticMessage]);
 
     // Auto-scroll to bottom on new message
     useEffect(() => {

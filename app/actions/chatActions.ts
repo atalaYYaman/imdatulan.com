@@ -11,9 +11,7 @@ import xss from 'xss'
 import { checkRateLimit } from "@/lib/rate-limit"
 import { cleanText } from "@/lib/text-filter"
 import { ChatMessageSchema } from "@/lib/schemas"
-
-// --- Validation ---
-// Schema moved to @/lib/schemas
+import { pusherServer } from "@/lib/pusher-server"
 
 // --- Types ---
 export type ChatMessageDto = {
@@ -23,7 +21,6 @@ export type ChatMessageDto = {
     user: {
         id: string
         name: string
-        // We do NOT expose email or sensitive data
     }
     parentId?: string | null
 }
@@ -56,9 +53,6 @@ export async function sendMessage(content: string, parentId?: string) {
             const count = await tx.chatMessage.count();
 
             if (count >= 100) {
-                // Delete oldest N messages to make room
-                // Prisma doesn't support LIMIT in DELETE directly effectively without IDs
-                // So we fetch the IDs of the oldest (count - 99) messages
                 const toDeleteCount = count - 99; // Keep 99, add 1 = 100
                 if (toDeleteCount > 0) {
                     const oldMessages = await tx.chatMessage.findMany({
@@ -102,19 +96,25 @@ export async function sendMessage(content: string, parentId?: string) {
         const maskedName = `${result.user.firstName} ${result.user.lastName ? result.user.lastName[0] + '.' : ''}`;
         const maskedNum = maskStudentNumber(result.user.studentNumber);
 
+        const safePayload: ChatMessageDto = {
+            id: result.id,
+            content: result.content,
+            createdAt: result.createdAt,
+            parentId: result.parentId,
+            user: {
+                id: result.userId,
+                name: `${maskedName} (${maskedNum})`
+            }
+        };
+
+        // --- Pusher Trigger (Fire & Forget) ---
+        pusherServer.trigger('global-chat', 'new-message', safePayload)
+            .catch(err => console.error("Pusher Trigger Error:", err));
+
         return {
             success: true,
             message: "Mesaj gönderildi",
-            data: {
-                id: result.id,
-                content: result.content,
-                createdAt: result.createdAt,
-                user: {
-                    id: result.userId,
-                    name: `${maskedName} (${maskedNum})`
-                },
-                parentId: result.parentId
-            }
+            data: safePayload
         };
 
     } catch (error) {
@@ -163,9 +163,7 @@ export async function getChatMessages() {
             };
         });
 
-        // Usually chat UI wants oldest at top (asc), but we fetched desc to get "latest".
-        // So reverse it for the UI if needed, or let UI handle it. 
-        // Let's reverse here to return chronological order (Oldest -> Newest)
+        // Return chronological order (Oldest -> Newest)
         return safeMessages.reverse();
 
     } catch (error) {
