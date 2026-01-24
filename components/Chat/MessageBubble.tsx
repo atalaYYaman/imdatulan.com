@@ -34,7 +34,7 @@ export function MessageBubble({ message, isCurrentUser, replyToMessage, onReply 
                     <span className="text-[10px] font-bold text-muted-foreground opacity-70">
                         {message.user.name}
                     </span>
-                    <span className="text-[9px] text-muted-foreground/50">
+                    <span className="text-[9px] text-muted-foreground/50" suppressHydrationWarning>
                         {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                 </div>
