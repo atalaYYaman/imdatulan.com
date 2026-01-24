@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { Home, User, Trophy, Heart, Upload, Menu, Landmark, FolderOpen, ShoppingBag, MessageSquare, ScrollText } from 'lucide-react';
+import { Home, User, Trophy, Heart, Upload, Menu, Landmark, FolderOpen, ShoppingBag, MessageSquare, ScrollText, Send } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 export default function Sidebar() {
@@ -18,7 +18,7 @@ export default function Sidebar() {
         { name: 'Sohbet', href: '/chat', icon: MessageSquare },
         { name: 'Store', href: '/store', icon: ShoppingBag },
         { name: 'Geliştirme', href: '/updates', icon: ScrollText },
-        { name: 'Bize Yazın', href: '/feedback', icon: MessageSquare },
+        { name: 'Bize Yazın', href: '/feedback', icon: Send },
     ];
 
     const isActive = (path: string) => pathname === path;
