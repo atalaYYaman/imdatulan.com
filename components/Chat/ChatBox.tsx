@@ -14,6 +14,7 @@ interface ChatBoxProps {
     currentUser?: {
         id: string;
         name: string;
+        role?: string;
     } | null;
 }
 

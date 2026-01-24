@@ -53,3 +53,7 @@ export const ChatMessageSchema = z.object({
         .refine(val => !/<[^>]*>/g.test(val), { message: "HTML etiketleri kullanılamaz." }), // Simple HTML check
     parentId: z.string().cuid().optional()
 });
+
+export const BulkDeleteSchema = z.object({
+    count: z.number().min(1, "En az 1 mesaj silinmelidir.").max(100, "Tek seferde en fazla 100 mesaj silebilirsiniz.")
+});

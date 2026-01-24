@@ -10,7 +10,7 @@ import xss from 'xss'
 
 import { checkRateLimit } from "@/lib/rate-limit"
 import { cleanText } from "@/lib/text-filter"
-import { ChatMessageSchema } from "@/lib/schemas"
+import { ChatMessageSchema, BulkDeleteSchema } from "@/lib/schemas"
 import { pusherServer } from "@/lib/pusher-server"
 
 // --- Types ---
@@ -41,6 +41,28 @@ export async function sendMessage(content: string, parentId?: string) {
     const parse = ChatMessageSchema.safeParse({ content, parentId });
     if (!parse.success) {
         return { success: false, message: parse.error.issues[0].message };
+    }
+
+    // --- Command Parser (Admin Only) ---
+    if (content.startsWith('/')) {
+        if ((session.user as any).role !== 'ADMIN') {
+            // Silently ignore or show error? Let's show error to user
+            return { success: false, message: "Komut kullanma yetkiniz yok." };
+        }
+
+        const args = content.split(' ');
+        const command = args[0].toLowerCase();
+
+        // /sil <count>
+        if (command === '/sil') {
+            const count = parseInt(args[1]);
+            if (!isNaN(count) && count > 0) {
+                await bulkDeleteMessages(count);
+                return { success: true, message: `${count} mesaj silindi.` }; // Do not save command
+            } else {
+                return { success: false, message: "Geçersiz sayı. Kullanım: /sil 10" };
+            }
+        }
     }
 
     // 3. Profanity Filter & XSS
@@ -107,10 +129,9 @@ export async function sendMessage(content: string, parentId?: string) {
             }
         };
 
-        // --- Pusher Trigger ---
-        console.log("Triggering Pusher event for channel: global-chat");
-        await pusherServer.trigger('global-chat', 'new-message', safePayload);
-        console.log("Pusher event triggered successfully.");
+        // --- Pusher Trigger (Fire & Forget) ---
+        pusherServer.trigger('global-chat', 'new-message', safePayload)
+            .catch(err => console.error("Pusher Trigger Error:", err));
 
         return {
             success: true,
@@ -121,6 +142,100 @@ export async function sendMessage(content: string, parentId?: string) {
     } catch (error) {
         console.error("sendMessage Error:", error);
         return { success: false, message: "Mesaj gönderilemedi." };
+    }
+}
+
+export async function deleteMessage(messageId: string) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) return { success: false, message: "Yetkisiz işlem." };
+
+    try {
+        const message = await prisma.chatMessage.findUnique({
+            where: { id: messageId },
+            select: { userId: true }
+        });
+
+        if (!message) return { success: false, message: "Mesaj bulunamadı." };
+
+        const isAdmin = (session.user as any).role === 'ADMIN';
+        const isOwner = message.userId === session.user.id;
+
+        if (!isAdmin && !isOwner) {
+            return { success: false, message: "Bu mesajı silme yetkiniz yok." };
+        }
+
+        await prisma.chatMessage.delete({
+            where: { id: messageId }
+        });
+
+        revalidatePath('/chat');
+
+        // Pusher Event: message-deleted
+        pusherServer.trigger('global-chat', 'message-deleted', { id: messageId })
+            .catch(err => console.error("Pusher Delete Error:", err));
+
+        return { success: true, message: "Mesaj silindi." };
+
+    } catch (error) {
+        console.error("deleteMessage Error:", error);
+        return { success: false, message: "Silme işlemi başarısız." };
+    }
+}
+
+import { ChatMessageSchema, BulkDeleteSchema } from "@/lib/schemas"
+// ...
+
+// ...
+
+export async function bulkDeleteMessages(count: number) {
+    const session = await getServerSession(authOptions);
+
+    // 1. Authorization Guard (Strict)
+    if (!session?.user?.id || (session.user as any).role !== 'ADMIN') {
+        console.warn(`[Security Audit] Unauthorized bulk delete attempt by UserID: ${session?.user?.id || 'Anonymous'}`);
+        return { success: false, message: "Yetkisiz işlem: Sadece Adminler." };
+    }
+
+    try {
+        // 2. Input Validation (Zod)
+        // If > 100, we cap it or error? User said "100'e eşitle VEYA hata ver".
+        // Let's coerce and validate.
+        const safeCount = count > 100 ? 100 : count;
+
+        const parse = BulkDeleteSchema.safeParse({ count: safeCount });
+        if (!parse.success) {
+            return { success: false, message: parse.error.issues[0].message };
+        }
+
+        const validCount = parse.data.count;
+
+        // Get IDs
+        const messagesToDelete = await prisma.chatMessage.findMany({
+            select: { id: true },
+            orderBy: { createdAt: 'desc' },
+            take: validCount
+        });
+
+        if (messagesToDelete.length > 0) {
+            await prisma.chatMessage.deleteMany({
+                where: { id: { in: messagesToDelete.map((m: { id: string }) => m.id) } }
+            });
+
+            revalidatePath('/chat');
+
+            // Pusher Event
+            pusherServer.trigger('global-chat', 'chat-clear', { count: messagesToDelete.length })
+                .catch(err => console.error("Pusher Bulk Delete Error:", err));
+
+            // 3. Audit Log
+            console.info(`[AUDIT] Admin ${session.user.email} (ID: ${session.user.id}) deleted ${messagesToDelete.length} messages.`);
+        }
+
+        return { success: true, message: `${messagesToDelete.length} mesaj silindi.` };
+
+    } catch (error) {
+        console.error("bulkDeleteMessages Error:", error);
+        return { success: false, message: "Toplu silme başarısız." };
     }
 }
 

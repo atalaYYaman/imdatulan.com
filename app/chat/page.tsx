@@ -18,13 +18,14 @@ export default async function ChatPage() {
     if (session?.user?.email) {
         const user = await prisma.user.findUnique({
             where: { email: session.user.email },
-            select: { id: true, firstName: true, lastName: true }
+            select: { id: true, firstName: true, lastName: true, role: true }
         });
 
         if (user) {
             currentUser = {
                 id: user.id,
-                name: `${user.firstName} ${user.lastName?.[0] || ''}.`
+                name: `${user.firstName} ${user.lastName?.[0] || ''}.`,
+                role: (user as any).role // Assuming role exists on User model
             };
         }
     }

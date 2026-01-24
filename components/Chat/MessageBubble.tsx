@@ -1,17 +1,19 @@
 'use client';
 
 import { cn } from "@/lib/utils";
-import { User } from "lucide-react";
+import { User, Trash2 } from "lucide-react";
 import { ChatMessageDto } from "@/app/actions/chatActions";
 
 interface MessageBubbleProps {
     message: ChatMessageDto;
     isCurrentUser: boolean;
+    isAdmin?: boolean;
     replyToMessage?: ChatMessageDto; // The message being replied to (if any)
     onReply: (message: ChatMessageDto) => void;
+    onDelete?: (messageId: string) => void;
 }
 
-export function MessageBubble({ message, isCurrentUser, replyToMessage, onReply }: MessageBubbleProps) {
+export function MessageBubble({ message, isCurrentUser, isAdmin, replyToMessage, onReply, onDelete }: MessageBubbleProps) {
     return (
         <div className={cn("flex gap-3 max-w-[85%]", isCurrentUser ? "ml-auto flex-row-reverse" : "")}>
             {/* Avatar */}
@@ -60,16 +62,28 @@ export function MessageBubble({ message, isCurrentUser, replyToMessage, onReply 
                     </p>
 
                     {/* Actions (Reply - Visible on Hover) */}
-                    <button
-                        onClick={() => onReply(message)}
-                        className={cn(
-                            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full hover:bg-background/80 text-muted-foreground hover:text-primary",
-                            isCurrentUser ? "-left-10" : "-right-10"
+                    <div className={cn(
+                        "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1",
+                        isCurrentUser ? "-left-16" : "-right-16"
+                    )}>
+                        <button
+                            onClick={() => onReply(message)}
+                            className="p-1.5 rounded-full hover:bg-background/80 text-muted-foreground hover:text-primary transition-colors"
+                            title="Yanıtla"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-reply"><polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" /></svg>
+                        </button>
+
+                        {isAdmin && onDelete && (
+                            <button
+                                onClick={() => onDelete(message.id)}
+                                className="p-1.5 rounded-full hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+                                title="Sil (Admin)"
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                         )}
-                        title="Yanıtla"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-reply"><polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" /></svg>
-                    </button>
+                    </div>
                 </div>
             </div>
         </div>
