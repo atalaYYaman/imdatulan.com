@@ -56,6 +56,7 @@ model User {
   isTwoFactorEnabled Boolean @default(false)
   twoFactorConfirmation TwoFactorConfirmation?
   transactions Transaction[]
+  chatMessages ChatMessage[]
 }
 
 model VerificationToken {
@@ -295,4 +296,20 @@ model Transaction {
   createdAt   DateTime        @default(now())
 
   @@index([userId])
+}
+
+model ChatMessage {
+  id        String       @id @default(cuid())
+  content   String
+  createdAt DateTime     @default(now())
+  
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  
+  parentId  String?
+  parent    ChatMessage? @relation("ChatReplies", fields: [parentId], references: [id])
+  replies   ChatMessage[] @relation("ChatReplies")
+
+  @@index([userId])
+  @@index([createdAt])
 }

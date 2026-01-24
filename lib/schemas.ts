@@ -45,3 +45,11 @@ export const CommentSchema = z.object({
     noteId: z.string().cuid(),
     text: z.string().min(1, "Yorum boş olamaz.").max(500, "Yorum çok uzun.")
 });
+
+export const ChatMessageSchema = z.object({
+    content: z.string()
+        .min(1, "Mesaj boş olamaz")
+        .max(280, "Mesaj 280 karakterden uzun olamaz")
+        .refine(val => !/<[^>]*>/g.test(val), { message: "HTML etiketleri kullanılamaz." }), // Simple HTML check
+    parentId: z.string().cuid().optional()
+});
