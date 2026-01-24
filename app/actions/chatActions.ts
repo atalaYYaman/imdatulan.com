@@ -182,10 +182,6 @@ export async function deleteMessage(messageId: string) {
     }
 }
 
-import { ChatMessageSchema, BulkDeleteSchema } from "@/lib/schemas"
-// ...
-
-// ...
 
 export async function bulkDeleteMessages(count: number) {
     const session = await getServerSession(authOptions);
