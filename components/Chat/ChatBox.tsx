@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useOptimistic, startTransition } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
 import { ChatMessageDto, sendMessage } from "@/app/actions/chatActions";
@@ -18,21 +18,17 @@ interface ChatBoxProps {
 }
 
 export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) {
+    const [messages, setMessages] = useState<ChatMessageDto[]>(initialMessages);
     const [replyTo, setReplyTo] = useState<ChatMessageDto | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
 
     const router = useRouter();
 
-    // Optimistic Logic
-    const [messages, addOptimisticMessage] = useOptimistic(
-        initialMessages,
-        (state: ChatMessageDto[], newMessage: ChatMessageDto) => {
-            // Deduplicate: If message ID already exists, don't add it again
-            if (state.some(m => m.id === newMessage.id)) return state;
-            return [...state, newMessage];
-        }
-    );
+    // Sync with server revalidation updates
+    useEffect(() => {
+        setMessages(initialMessages);
+    }, [initialMessages]);
 
     const isGuest = !currentUser;
 
@@ -42,27 +38,17 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
 
         channel.bind('new-message', (data: ChatMessageDto) => {
             // Deduplicate logic:
-            // 1. If we sent it, we already have it optimistically (check userId)
-            // 2. OR check if ID exists (handled by useOptimistic reducer above, but we pass unique IDs)
-
-            // Wait, useOptimistic is purely render-time. We can't "add" to it from outside easily 
-            // without a parent state update or router refresh. 
-            // Actually, server actions revalidatePath SHOULD trigger a router refresh which updates 'initialMessages'.
-            // So we might get the message via prop update.
-            // BUT, for real-time smoothness without full refresh waiting:
-
-            // If the message is NOT from me, add it via transition
-            if (data.user.id !== currentUser?.id) {
-                startTransition(() => {
-                    addOptimisticMessage(data);
-                });
-            }
+            // Check if we already have this message (by ID)
+            setMessages((prev) => {
+                if (prev.some(m => m.id === data.id)) return prev;
+                return [...prev, data];
+            });
         });
 
         return () => {
             pusherClient.unsubscribe('global-chat');
         };
-    }, [currentUser?.id, addOptimisticMessage]);
+    }, []);
 
     // Auto-scroll to bottom on new message
     useEffect(() => {
@@ -70,9 +56,11 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
     }, [messages.length]);
 
     const handleSend = async (content: string, replyToId?: string) => {
+        const tempId = crypto.randomUUID();
+
         // Optimistic Update
         const optimisticMsg: ChatMessageDto = {
-            id: crypto.randomUUID(), // Temp ID
+            id: tempId,
             content,
             createdAt: new Date(),
             parentId: replyToId,
@@ -82,13 +70,13 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
             }
         };
 
-        startTransition(() => {
-            addOptimisticMessage(optimisticMsg);
-        });
+        setMessages((prev) => [...prev, optimisticMsg]);
 
         // Server Action
         await sendMessage(content, replyToId);
-        // We rely on revalidatePath in action to fetch real data next render
+        // We rely on revalidatePath in action to fetch real data next render,
+        // which will trigger the useEffect([initialMessages]) to update state 
+        // with the real ID and consistent data.
     };
 
     return (
@@ -106,7 +94,7 @@ export default function ChatBox({ initialMessages, currentUser }: ChatBoxProps) 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto pt-16 pb-4 px-4 space-y-4 scroll-smooth scrollbar-none" ref={scrollRef}>
 
-                {/* Guest Wall Overlay - If Guest, appear at top of list logic */}
+                {/* Guest Wall Overlay */}
                 {isGuest && (
                     <div className="sticky top-0 z-20 -mx-4 px-4 pb-10 bg-gradient-to-b from-card via-card/90 to-transparent pt-4 flex flex-col items-center text-center gap-3 mb-4 backdrop-blur-[2px]">
                         <div className="p-3 bg-primary/10 rounded-full text-primary">

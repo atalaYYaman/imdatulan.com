@@ -108,7 +108,9 @@ export async function sendMessage(content: string, parentId?: string) {
         };
 
         // --- Pusher Trigger ---
+        console.log("Triggering Pusher event for channel: global-chat");
         await pusherServer.trigger('global-chat', 'new-message', safePayload);
+        console.log("Pusher event triggered successfully.");
 
         return {
             success: true,

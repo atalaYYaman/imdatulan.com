@@ -1,9 +1,18 @@
 import Pusher from 'pusher';
 
+const appId = process.env.PUSHER_APP_ID;
+const key = process.env.PUSHER_KEY;
+const secret = process.env.PUSHER_SECRET;
+const cluster = process.env.PUSHER_CLUSTER;
+
+if (!appId || !key || !secret || !cluster) {
+    throw new Error("Pusher/Chat Environment Variables are missing! Check Vercel Settings.");
+}
+
 export const pusherServer = new Pusher({
-    appId: process.env.PUSHER_APP_ID!,
-    key: process.env.PUSHER_KEY!,
-    secret: process.env.PUSHER_SECRET!,
-    cluster: process.env.PUSHER_CLUSTER!,
+    appId,
+    key,
+    secret,
+    cluster,
     useTLS: true,
 });
