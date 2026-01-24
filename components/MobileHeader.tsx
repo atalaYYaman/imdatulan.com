@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, X, Home, User, FolderOpen, ShoppingBag, MessageSquare, Upload, LogOut, ChevronRight, Moon, Sun, Monitor } from 'lucide-react';
+import { Menu, X, Home, User, FolderOpen, ShoppingBag, MessageSquare, Upload, LogOut, ChevronRight, Moon, Sun, Monitor, Landmark, ScrollText, Send } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -25,8 +25,11 @@ export default function MobileHeader() {
     const navigation = [
         { name: 'Ana Sayfa', href: '/', icon: Home },
         { name: 'Notlar', href: '/notes', icon: FolderOpen },
+        { name: 'Sohbet', href: '/chat', icon: MessageSquare },
+        ...((session?.user as any)?.role === 'ADMIN' ? [{ name: 'Admin Paneli', href: '/admin', icon: Landmark }] : []),
         { name: 'Mağaza', href: '/store', icon: ShoppingBag },
-        { name: 'Bize Yazın', href: '/feedback', icon: MessageSquare },
+        { name: 'Geliştirme', href: '/updates', icon: ScrollText },
+        { name: 'Bize Yazın', href: '/feedback', icon: Send },
     ];
 
     return (
