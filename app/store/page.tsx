@@ -1,5 +1,5 @@
 import { getStoreProducts } from "@/app/actions/storeActions";
-import { authOptions } from "@/app/auth/auth";
+import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import StoreClient from "@/components/store/StoreClient";
 import { prisma } from "@/lib/prisma";
