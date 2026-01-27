@@ -134,12 +134,13 @@ export async function getUserCoupons() {
 }
 
 export async function getStoreProducts(storeId?: string) {
+    const session = await getServerSession(authOptions);
+    const userRole = (session?.user as any)?.role;
     const isStoreOpen = process.env.STORE_OPEN === 'true';
+    const isAdmin = userRole === 'ADMIN';
 
-    // If calling from admin/partner dashboard, maybe we skip this?
-    // But for public store:
-    if (!isStoreOpen) {
-        // Return a flag so UI can show "Closed" banner instead of empty list
+    // If store is closed and user is NOT an admin, return maintenance
+    if (!isStoreOpen && !isAdmin) {
         return { success: false, message: 'Mağaza şu anda kapalıdır.', maintenance: true };
     }
 
@@ -162,7 +163,10 @@ export async function buyStoreProduct(productId: string) {
         return { success: false, message: 'Giriş yapmalısınız.' };
     }
 
-    if (process.env.STORE_OPEN !== 'true') {
+    const userRole = (session.user as any).role;
+    const isStoreOpen = process.env.STORE_OPEN === 'true';
+
+    if (!isStoreOpen && userRole !== 'ADMIN') {
         return { success: false, message: 'Mağaza şu anda hizmet dışıdır.' };
     }
 
