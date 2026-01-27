@@ -7,6 +7,7 @@ declare module "next-auth" {
             id: string
             role: string
             credits: number
+            storeId?: string | null // Added storeId
             isTwoFactorVerified?: boolean
         } & DefaultSession["user"]
     }
@@ -15,6 +16,7 @@ declare module "next-auth" {
         id: string
         role: string
         credits: number
+        storeId?: string | null // Added storeId
         firstName?: string | null
         lastName?: string | null
     }
@@ -25,6 +27,7 @@ declare module "next-auth/jwt" {
         id: string
         role: string
         credits: number
+        storeId?: string | null // Added storeId
         isTwoFactorVerified?: boolean
     }
 }

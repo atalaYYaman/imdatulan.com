@@ -14,7 +14,7 @@ model User {
   id       String  @id @default(cuid())
   email    String  @unique
   password String? // For credentials auth
-  role     String  @default("USER") // ADMIM, USER
+  role     String  @default("USER") // ADMIN, USER, PARTNER
 
   // Identity Info
   firstName    String?
@@ -46,6 +46,11 @@ model User {
   reports              Report[]
   feedbacks            Feedback[]
   releaseNotes         ReleaseNote[]
+
+  // Store & Partner
+  storeId        String?
+  store          Store?    @relation(fields: [storeId], references: [id])
+  storeTransactions StoreTransaction[]
 
   // Verification
   studentIdCardUrl String?
@@ -312,4 +317,58 @@ model ChatMessage {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  logo        String?
+  location    String?
+  contactInfo String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  partners    User[]
+  products    StoreProduct[]
+  transactions StoreTransaction[]
+}
+
+model StoreProduct {
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  
+  title       String
+  description String?
+  price       Int
+  stock       Int      @default(0)
+  image       String?
+  type        String   @default("PHYSICAL_ITEM") // PHYSICAL_ITEM, COUPON, SERVICE
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions StoreTransaction[]
+}
+
+model StoreTransaction {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  
+  storeId        String
+  store          Store    @relation(fields: [storeId], references: [id])
+  
+  productId      String
+  product        StoreProduct @relation(fields: [productId], references: [id])
+  
+  cost           Int
+  redemptionCode String   @unique // 8-char code
+  isRedeemed     Boolean  @default(false)
+  redeemedAt     DateTime?
+  redeemedBy     String? // User ID of the partner who redeemed it
+  
+  createdAt      DateTime @default(now())
 }

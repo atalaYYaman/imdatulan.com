@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User, Settings, Ticket, Landmark } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -58,6 +58,28 @@ export default function Header() {
                                     {session.user?.email}
                                 </p>
                             </div>
+
+                            {/* Partner Link */}
+                            {session.user.role === 'PARTNER' && (
+                                <Link
+                                    href="/partner/dashboard"
+                                    onClick={() => setIsOpen(false)}
+                                    className="flex items-center px-4 py-3 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                                >
+                                    <Landmark className="w-4 h-4 mr-3 text-primary" />
+                                    Partner Paneli
+                                </Link>
+                            )}
+
+                            {/* Wallet Link */}
+                            <Link
+                                href="/profile/wallet"
+                                onClick={() => setIsOpen(false)}
+                                className="flex items-center px-4 py-3 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                            >
+                                <Ticket className="w-4 h-4 mr-3" />
+                                Cüzdanım
+                            </Link>
 
                             <Link
                                 href="/profile"

@@ -117,12 +117,14 @@ export const authOptions: NextAuthOptions = {
                         firstName: true,
                         lastName: true,
                         role: true,
+                        storeId: true, // Select storeId
                         twoFactorConfirmation: true
                     }
                 });
 
                 if (dbUser) {
                     token.credits = dbUser.credits;
+                    token.storeId = dbUser.storeId; // Add storeId to token
                     const fullName = `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim();
                     if (fullName) {
                         token.name = fullName;
@@ -149,6 +151,7 @@ export const authOptions: NextAuthOptions = {
                 (session.user as any).id = (token as any).id;
                 (session.user as any).role = (token as any).role;
                 (session.user as any).credits = (token as any).credits;
+                (session.user as any).storeId = (token as any).storeId; // Add storeId to session
                 // name is already handled by default but let's ensure it comes from our logic
                 session.user.name = token.name as string;
                 (session.user as any).isTwoFactorVerified = (token as any).isTwoFactorVerified;

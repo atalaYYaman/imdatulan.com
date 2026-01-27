@@ -15,6 +15,7 @@ export default function Sidebar() {
         { name: 'Notlar', href: '/notes', icon: FolderOpen },
         ...(session ? [{ name: 'Profilim', href: '/profile', icon: User }] : []),
         ...((session?.user as any)?.role === 'ADMIN' ? [{ name: 'Admin Paneli', href: '/admin', icon: Landmark }] : []),
+        ...((session?.user as any)?.role === 'PARTNER' ? [{ name: 'Partner Paneli', href: '/partner/dashboard', icon: Landmark }] : []),
         { name: 'Sohbet', href: '/chat', icon: MessageSquare },
         { name: 'Store', href: '/store', icon: ShoppingBag },
         { name: 'Geliştirme', href: '/updates', icon: ScrollText },

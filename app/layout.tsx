@@ -8,6 +8,7 @@ import MobileHeader from "@/components/MobileHeader";
 import Header from "@/components/Header";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +66,7 @@ export default function RootLayout({
                 </main>
               </div>
             </div>
+            <Toaster position="bottom-center" richColors />
           </ThemeProvider>
         </SessionProvider>
       </body>

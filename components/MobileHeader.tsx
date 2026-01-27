@@ -27,6 +27,7 @@ export default function MobileHeader() {
         { name: 'Notlar', href: '/notes', icon: FolderOpen },
         { name: 'Sohbet', href: '/chat', icon: MessageSquare },
         ...((session?.user as any)?.role === 'ADMIN' ? [{ name: 'Admin Paneli', href: '/admin', icon: Landmark }] : []),
+        ...((session?.user as any)?.role === 'PARTNER' ? [{ name: 'Partner Paneli', href: '/partner/dashboard', icon: Landmark }] : []),
         { name: 'Mağaza', href: '/store', icon: ShoppingBag },
         { name: 'Geliştirme', href: '/updates', icon: ScrollText },
         { name: 'Bize Yazın', href: '/feedback', icon: Send },

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { User, Trophy, FileText, Settings, Sparkles } from "lucide-react";
+import { User, Trophy, FileText, Settings, Sparkles, Ticket } from "lucide-react";
 import { NoteCard } from "@/components/ui/NoteCard";
 import { useState } from "react";
 
@@ -93,6 +93,9 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
 
                         {/* Actions */}
                         <div className="flex flex-col gap-2">
+                            <Link href="/profile/wallet" className="p-3 rounded-full bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border flex items-center justify-center group/wallet" title="Cüzdanım">
+                                <Ticket className="h-5 w-5 group-hover/wallet:text-primary transition-colors" />
+                            </Link>
                             <button className="p-3 rounded-full bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border">
                                 <Settings className="h-5 w-5" />
                             </button>

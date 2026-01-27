@@ -144,6 +144,36 @@ async function main() {
         console.log(`Updated/Created (Passive): ${uniName}`)
     }
 
+    // 3. Seed Example Store & Product
+    const store = await prisma.store.upsert({
+        where: { id: "store-demo-01" },
+        update: {},
+        create: {
+            id: "store-demo-01",
+            name: "Kampüs Kırtasiye",
+            location: "Kütüphane Yanı",
+            contactInfo: "0555 123 45 67",
+            isActive: true
+        }
+    });
+
+    await prisma.storeProduct.upsert({
+        where: { id: "prod-tea-01" },
+        update: {},
+        create: {
+            id: "prod-tea-01",
+            storeId: store.id,
+            title: "Bir Bardak Çay",
+            description: "Sıcak bir mola için.",
+            price: 5,
+            stock: 100,
+            type: "COUPON",
+            isActive: true
+        }
+    });
+
+    console.log(`Seeded Store: ${store.name}`);
+
     console.log(`Seeding finished.`)
 }
 
