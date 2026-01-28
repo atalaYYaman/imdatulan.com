@@ -24,9 +24,10 @@ interface AdminStoreDetailProps {
     };
     partners: {
         id: string;
-        name: string | null;
+        firstName: string | null;
+        lastName: string | null;
         email: string | null;
-        image: string | null;
+        // image: string | null; // Removed
     }[];
 }
 
@@ -335,10 +336,10 @@ function PartnersTab({ storeId, partners }: { storeId: string; partners: any[] }
                     {partners.map(partner => (
                         <div key={partner.id} className="bg-card border border-border p-4 rounded-xl flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center font-bold text-foreground text-lg">
-                                {(partner.name || '?')[0].toUpperCase()}
+                                {(partner.firstName?.[0] || '?').toUpperCase()}
                             </div>
                             <div>
-                                <div className="font-bold">{partner.name}</div>
+                                <div className="font-bold">{partner.firstName} {partner.lastName}</div>
                                 <div className="text-sm text-muted-foreground">{partner.email}</div>
                                 <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full">
                                     <CheckCircle2 className="w-3 h-3" />

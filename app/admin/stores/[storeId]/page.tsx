@@ -37,9 +37,10 @@ export default async function AdminStoreDetailPage({ params }: PageProps) {
         },
         select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
-            image: true
+            // image: true // User model has no image field, maybe add if needed later
         }
     });
 
