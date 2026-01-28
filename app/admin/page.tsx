@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { User, FileText, MessageSquare, AlertOctagon, BarChart3, Shield, ArrowRight, ScrollText, ShoppingBag } from 'lucide-react'
+import { User, FileText, MessageSquare, AlertOctagon, BarChart3, Shield, ArrowRight, ScrollText, ShoppingBag, Users } from 'lucide-react'
 
 export default function AdminDashboard() {
     return (
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
                 {/* Notes Module */}
                 <Link
                     href="/admin/notes"
-                    className="group relative overflow-hidden bg-card/60 backdrop-blur-xl border border-white/10 dark:border-white/5 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                    className="group relative overflow-hidden bg-card/60 backdrop-blur-xl border border-white/10 dark:border-white/5 p-6 rounded-3xl shadow-shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                 >
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                         <FileText className="w-24 h-24" />
@@ -172,7 +172,34 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 </Link>
+
+                {/* Partner Management Module */}
+                <Link
+                    href="/admin/partners"
+                    className="group relative overflow-hidden bg-card/60 backdrop-blur-xl border border-white/10 dark:border-white/5 p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                >
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Users className="w-24 h-24" />
+                    </div>
+                    <div className="relative z-10 flex flex-col h-full justify-between">
+                        <div className="mb-4 p-3 bg-violet-500/10 text-violet-400 w-fit rounded-xl group-hover:bg-violet-500 group-hover:text-white transition-colors duration-300">
+                            <Users className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
+                                Partnerler
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                İş birlikçi mağaza hesaplarını oluşturun ve yönetin.
+                            </p>
+                        </div>
+                        <div className="mt-6 flex items-center text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                            Yönet <ArrowRight className="w-3 h-3 ml-1" />
+                        </div>
+                    </div>
+                </Link>
             </div>
         </div>
     )
 }
+
