@@ -3,24 +3,33 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { Home, User, Trophy, Heart, Upload, Menu, Landmark, FolderOpen, ShoppingBag, MessageSquare, ScrollText, Send } from 'lucide-react';
+import { Home, User, Upload, Landmark, FolderOpen, ShoppingBag, MessageSquare, ScrollText, Send, Briefcase, Ticket } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 export default function Sidebar() {
     const pathname = usePathname();
     const { data: session } = useSession();
 
-    const navigation = [
-        { name: 'Ana Sayfa', href: '/', icon: Home },
-        { name: 'Notlar', href: '/notes', icon: FolderOpen },
-        ...(session ? [{ name: 'Profilim', href: '/profile', icon: User }] : []),
-        ...((session?.user as any)?.role === 'ADMIN' ? [{ name: 'Admin Paneli', href: '/admin', icon: Landmark }] : []),
-        ...((session?.user as any)?.role === 'PARTNER' ? [{ name: 'Partner Paneli', href: '/partner/dashboard', icon: Landmark }] : []),
-        { name: 'Sohbet', href: '/chat', icon: MessageSquare },
-        { name: 'Store', href: '/store', icon: ShoppingBag },
-        { name: 'Geliştirme', href: '/updates', icon: ScrollText },
-        { name: 'Bize Yazın', href: '/feedback', icon: Send },
-    ];
+    const role = (session?.user as any)?.role as string | undefined;
+    const isPartner = role === 'PARTNER';
+
+    const navigation = isPartner
+        ? [
+            { name: 'Ana Sayfa', href: '/', icon: Home },
+            { name: 'Store', href: '/store', icon: ShoppingBag },
+            { name: 'Geliştirme', href: '/updates', icon: ScrollText },
+            { name: 'Partner Paneli', href: '/partner/dashboard', icon: Briefcase },
+        ]
+        : [
+            { name: 'Ana Sayfa', href: '/', icon: Home },
+            { name: 'Notlar', href: '/notes', icon: FolderOpen },
+            ...(session ? [{ name: 'Profilim', href: '/profile', icon: User }] : []),
+            ...((role === 'ADMIN') ? [{ name: 'Admin Paneli', href: '/admin', icon: Landmark }] : []),
+            { name: 'Sohbet', href: '/chat', icon: MessageSquare },
+            { name: 'Store', href: '/store', icon: ShoppingBag },
+            { name: 'Geliştirme', href: '/updates', icon: ScrollText },
+            { name: 'Bize Yazın', href: '/feedback', icon: Send },
+        ];
 
     const isActive = (path: string) => pathname === path;
 
@@ -69,8 +78,17 @@ export default function Sidebar() {
                 })}
 
                 {/* CTA Button */}
-                {session && (
+                {session && !isPartner && (
                     <div className="mt-4 px-1">
+                        <Link
+                            href="/profile/wallet"
+                            className="mb-2 flex items-center px-3 py-3.5 text-sm font-bold rounded-xl text-foreground bg-muted/50 hover:bg-muted shadow-sm transition-all active:scale-[0.98] overflow-hidden whitespace-nowrap relative group/wallet border border-border"
+                        >
+                            <Ticket className="h-6 w-6 flex-shrink-0 relative z-10 text-primary" />
+                            <span className="ml-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 relative z-10">
+                                Cüzdan
+                            </span>
+                        </Link>
                         <Link
                             href="/upload"
                             className="flex items-center px-3 py-3.5 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90 shadow-[0_4px_20px_rgba(16,185,129,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden whitespace-nowrap relative group/btn"

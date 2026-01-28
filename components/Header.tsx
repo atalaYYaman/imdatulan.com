@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { LogOut, User, Settings, Ticket, Landmark } from 'lucide-react';
+import { LogOut, User, Settings, Ticket, Briefcase } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -66,7 +66,7 @@ export default function Header() {
                                     onClick={() => setIsOpen(false)}
                                     className="flex items-center px-4 py-3 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
-                                    <Landmark className="w-4 h-4 mr-3 text-primary" />
+                                    <Briefcase className="w-4 h-4 mr-3 text-primary" />
                                     Partner Paneli
                                 </Link>
                             )}

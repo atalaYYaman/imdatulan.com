@@ -19,17 +19,45 @@ export default withAuth(
             }
         }
 
+        // Partner Route Restrictions (UI hides links, backend enforces)
+        // Partner can only access: "/", "/store", "/updates", "/partner/*" and auth pages.
+        if (token?.role === 'PARTNER') {
+            const allowed =
+                path === "/" ||
+                path.startsWith("/store") ||
+                path.startsWith("/updates") ||
+                path.startsWith("/partner") ||
+                path.startsWith("/auth");
+
+            if (!allowed) {
+                return NextResponse.redirect(new URL("/", req.url));
+            }
+        }
+
         // Other protections can be added here
         return NextResponse.next();
     },
     {
         callbacks: {
-            // Authorized if token exists. Logic above handles role checks.
-            authorized: ({ token }) => !!token,
+            // Allow public access; apply role checks only when token exists.
+            authorized: () => true,
         },
     }
 );
 
 export const config = {
-    matcher: ["/admin/:path*", "/dashboard/:path*"],
+    matcher: [
+        "/admin/:path*",
+        "/partner/:path*",
+        "/profile/:path*",
+        "/notes/:path*",
+        "/note/:path*",
+        "/chat/:path*",
+        "/upload/:path*",
+        "/feedback/:path*",
+        "/updates/:path*",
+        "/store/:path*",
+        "/top-noder/:path*",
+        "/support/:path*",
+    ],
 };
