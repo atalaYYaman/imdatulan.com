@@ -270,7 +270,6 @@ export default function PartnerManagementClient({ partners: initialPartners, sto
                                     className="w-full px-3 py-2.5 rounded-xl border border-border bg-background/60 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                                     required
                                 />
-                            }
                             </div>
 
                             <div className="space-y-1.5">
