@@ -3,14 +3,16 @@ import AdminStoreDetailClient from '@/components/admin/AdminStoreDetailClient';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
-    params: {
+    params: Promise<{
         storeId: string;
-    };
+    }>;
 }
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminStoreDetailPage({ params }: PageProps) {
+export default async function AdminStoreDetailPage(props: PageProps) {
+    const params = await props.params;
+
     const store = await prisma.store.findUnique({
         where: { id: params.storeId },
         include: {
