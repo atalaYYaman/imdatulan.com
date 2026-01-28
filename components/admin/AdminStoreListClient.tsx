@@ -9,18 +9,19 @@ import { toast } from 'sonner';
 
 interface AdminStoreListProps {
     stores: (Store & {
-        _count: { products: number; transactions: number }
+        products?: any[]; // Allow arrays
+        transactions?: any[]; // Allow arrays
+        _count?: { products: number; transactions: number }; // Allow old format too
     })[];
 }
 
 export default function AdminStoreListClient({ stores }: AdminStoreListProps) {
     const [isCreating, setIsCreating] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    // Form State
     const [name, setName] = useState('');
 
     const handleCreate = async (e: React.FormEvent) => {
+        // ... (Keep existing handler logic same, just updating interface)
         e.preventDefault();
         setIsLoading(true);
 
@@ -45,7 +46,7 @@ export default function AdminStoreListClient({ stores }: AdminStoreListProps) {
 
     return (
         <div className="space-y-6">
-            {/* Actions Bar */}
+            {/* Actions Bar ... (Keep existing) */}
             <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -107,49 +108,55 @@ export default function AdminStoreListClient({ stores }: AdminStoreListProps) {
 
             {/* Stores Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {stores.map(store => (
-                    <div key={store.id} className="group bg-card border border-border rounded-2xl p-5 hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center border border-border">
-                                    {store.logo ? (
-                                        <img src={store.logo} className="w-full h-full object-cover rounded-xl" />
-                                    ) : (
-                                        <StoreIcon className="w-6 h-6 text-muted-foreground" />
-                                    )}
+                {stores.map(store => {
+                    // Safe access to counts
+                    const productCount = store._count?.products ?? store.products?.length ?? 0;
+                    const transactionCount = store._count?.transactions ?? store.transactions?.length ?? 0;
+
+                    return (
+                        <div key={store.id} className="group bg-card border border-border rounded-2xl p-5 hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/5">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center border border-border">
+                                        {store.logo ? (
+                                            <img src={store.logo} className="w-full h-full object-cover rounded-xl" />
+                                        ) : (
+                                            <StoreIcon className="w-6 h-6 text-muted-foreground" />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg leading-tight">{store.name}</h3>
+                                        <p className="text-xs text-muted-foreground font-mono opacity-70">ID: {store.id.substring(0, 8)}...</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-lg leading-tight">{store.name}</h3>
-                                    <p className="text-xs text-muted-foreground font-mono opacity-70">ID: {store.id.substring(0, 8)}...</p>
+                                <Link
+                                    href={`/admin/stores/${store.id}`}
+                                    className="p-2 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                </Link>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 mb-4">
+                                <div className="bg-muted/30 p-2 rounded-lg text-center">
+                                    <div className="text-xl font-black text-foreground">{productCount}</div>
+                                    <div className="text-[10px] uppercase font-bold text-muted-foreground">Ürün</div>
+                                </div>
+                                <div className="bg-muted/30 p-2 rounded-lg text-center">
+                                    <div className="text-xl font-black text-foreground">{transactionCount}</div>
+                                    <div className="text-[10px] uppercase font-bold text-muted-foreground">Satış</div>
                                 </div>
                             </div>
+
                             <Link
                                 href={`/admin/stores/${store.id}`}
-                                className="p-2 hover:bg-primary/10 text-muted-foreground hover:text-primary rounded-lg transition-colors"
+                                className="flex items-center justify-center w-full py-2.5 bg-primary/10 text-primary font-bold rounded-xl hover:bg-primary hover:text-white transition-all text-sm group-hover:translate-y-0.5"
                             >
-                                <ExternalLink className="w-4 h-4" />
+                                Yönet
                             </Link>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-2 mb-4">
-                            <div className="bg-muted/30 p-2 rounded-lg text-center">
-                                <div className="text-xl font-black text-foreground">{store._count.products}</div>
-                                <div className="text-[10px] uppercase font-bold text-muted-foreground">Ürün</div>
-                            </div>
-                            <div className="bg-muted/30 p-2 rounded-lg text-center">
-                                <div className="text-xl font-black text-foreground">{store._count.transactions}</div>
-                                <div className="text-[10px] uppercase font-bold text-muted-foreground">Satış</div>
-                            </div>
-                        </div>
-
-                        <Link
-                            href={`/admin/stores/${store.id}`}
-                            className="flex items-center justify-center w-full py-2.5 bg-primary/10 text-primary font-bold rounded-xl hover:bg-primary hover:text-white transition-all text-sm group-hover:translate-y-0.5"
-                        >
-                            Yönet
-                        </Link>
-                    </div>
-                ))}
+                    );
+                })}
 
                 {stores.length === 0 && (
                     <div className="col-span-full py-12 flex flex-col items-center justify-center text-center text-muted-foreground border-2 border-dashed border-border rounded-3xl">

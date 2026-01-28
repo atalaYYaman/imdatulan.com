@@ -8,9 +8,8 @@ export default async function AdminStoresPage() {
     // Fetch all stores with product counts
     const stores = await prisma.store.findMany({
         include: {
-            _count: {
-                select: { products: true, transactions: true }
-            }
+            products: { select: { id: true } },
+            transactions: { select: { id: true } }
         },
         orderBy: { createdAt: 'desc' }
     });
