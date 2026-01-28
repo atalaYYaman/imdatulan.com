@@ -6,6 +6,8 @@ import { authOptions } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
 import { sendEmail } from "@/lib/email";
+import bcrypt from "bcryptjs";
+import { createPartnerSchema } from "@/lib/schemas";
 
 // Helper to check admin role
 async function isAdmin() {
@@ -110,6 +112,92 @@ export async function rejectUser(userId: string, reason: string) {
         console.error("Reject User Error:", error);
         return { success: false, message: "Error rejecting user" };
     }
+}
+
+// --- Partner Management ---
+
+type CreatePartnerInput = {
+    name: string;
+    email: string;
+    password: string;
+    storeId?: string | null;
+};
+
+export async function createPartnerUser(input: CreatePartnerInput) {
+    // Strong role guard as requested
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'ADMIN') {
+        throw new Error('Unauthorized');
+    }
+
+    // Zod validation
+    const parsed = createPartnerSchema.parse({
+        name: input.name,
+        email: input.email,
+        password: input.password
+    });
+
+    const { name, email, password } = parsed;
+    const storeId = input.storeId || null;
+
+    // Email uniqueness check
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+        return { success: false, message: "Kullanıcı zaten mevcut" };
+    }
+
+    // Password hashing (bcryptjs)
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Basic audit log to server logs (can be upgraded to DB log)
+    console.log("[ADMIN] Partner create request", {
+        adminId: session.user.id,
+        adminEmail: session.user.email,
+        partnerEmail: email
+    });
+
+    const data: any = {
+        email,
+        password: hashedPassword,
+        role: "PARTNER",
+        credits: 0,
+        approvalStatus: "APPROVED", // Partner hesapları admin tarafından onaylı gelir
+        firstName: name
+    };
+
+    if (storeId) {
+        data.store = {
+            connect: { id: storeId }
+        };
+    }
+
+    const user = await prisma.user.create({
+        data,
+        include: {
+            store: true
+        }
+    });
+
+    // Never return password to caller
+    const { password: _password, ...safeUser } = user;
+
+    return { success: true, data: safeUser };
+}
+
+export async function getAllPartners() {
+    if (!await isAdmin()) return { success: false, message: "Unauthorized" };
+
+    const partners = await prisma.user.findMany({
+        where: { role: "PARTNER" },
+        include: {
+            store: true
+        },
+        orderBy: {
+            createdAt: "desc"
+        }
+    });
+
+    return { success: true, data: partners };
 }
 
 // --- Notes ---

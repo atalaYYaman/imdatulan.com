@@ -16,6 +16,14 @@ export const PriceSchema = z.number()
     .min(1, "Fiyat en az 1 süt olmalıdır.")
     .max(50, "Fiyat en fazla 50 süt olabilir.");
 
+// --- Admin / Partner Schemas ---
+
+export const createPartnerSchema = z.object({
+    name: z.string().min(2, "İsim en az 2 karakter olmalıdır."),
+    email: z.string().email("Geçerli bir email adresi giriniz."),
+    password: z.string().min(6, "Şifre en az 6 karakter olmalıdır.")
+});
+
 // --- Action Schemas ---
 
 export const UnlockNoteSchema = z.object({
