@@ -6,7 +6,8 @@ export async function getNotes() {
     try {
         const notes = await prisma.note.findMany({
             where: {
-                status: 'APPROVED' // Only fetch approved notes
+                status: 'APPROVED', // Only fetch approved notes
+                deletedAt: null    // Exclude soft-deleted notes
             },
             include: {
                 uploader: {
