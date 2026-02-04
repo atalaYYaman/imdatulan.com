@@ -138,46 +138,52 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
             onContextMenu={(e) => e.preventDefault()}
             ref={containerRef}
         >
-            {/* Kilitli Durum Overlay */}
+            {/* Kilitli Durum Banner - Floating at top */}
             {isLocked && (
-                <div className="absolute inset-0 z-[60] bg-background/95 backdrop-blur-3xl flex items-center justify-center pointer-events-auto p-4 select-none">
-                    <div className="relative overflow-hidden bg-card border border-border/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-sm text-center animate-in fade-in zoom-in duration-300">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-2xl px-4 pointer-events-none animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="relative overflow-hidden bg-card/95 backdrop-blur-md border border-primary/20 p-4 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 pointer-events-auto">
                         {/* Animated Glow */}
                         <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50 rotate-45 pointer-events-none" />
-
-                        <div className="relative w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center shadow-inner">
-                            <span className="text-5xl drop-shadow-sm">🔒</span>
+                        
+                        <div className="flex items-center gap-3 relative z-10">
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                                <span className="text-2xl">🔒</span>
+                            </div>
+                            <div className="text-left">
+                                <p className="text-sm font-bold text-foreground">
+                                    Önizleme Modu
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Tamamını görmek için <span className='font-bold text-primary'>{price} Süt</span> harcayın
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-3xl font-black text-foreground mb-3 tracking-tight">Kilitli İçerik</h2>
-                            <p className="text-muted-foreground text-sm leading-relaxed px-4">
-                                Bu notun tamamını ve yüksek kaliteli halini görüntülemek için <span className='font-bold text-primary'>{price} Süt</span> harcayın.
-                            </p>
-                            {errorMessage && (
-                                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-xl animate-in fade-in slide-in-from-top-2">
-                                    <p className="text-destructive text-xs font-bold flex items-center justify-center gap-2">
-                                        <span className="text-lg">⚠️</span>
-                                        {errorMessage}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+                        
+                        {errorMessage && (
+                            <div className="p-2 bg-destructive/10 border border-destructive/20 rounded-lg animate-in fade-in slide-in-from-top-2 relative z-10">
+                                <p className="text-destructive text-xs font-bold flex items-center gap-2">
+                                    <span>⚠️</span>
+                                    {errorMessage}
+                                </p>
+                            </div>
+                        )}
+                        
                         <button
                             onClick={onUnlock}
                             disabled={isUnlocking}
-                            className="w-full relative overflow-hidden py-4 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90 disabled:opacity-70 text-white font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/25 transition-all active:scale-95 flex items-center justify-center gap-2 group/btn"
+                            className="relative z-10 shrink-0 px-6 py-2.5 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90 disabled:opacity-70 text-white font-bold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-primary/25 transition-all active:scale-95 flex items-center justify-center gap-2 group/btn"
                         >
                             {isUnlocking ? (
                                 <span className="flex items-center gap-2 animate-pulse">
-                                    <span className="w-2 h-2 rounded-full bg-white animate-bounce" />
-                                    <span className="w-2 h-2 rounded-full bg-white animate-bounce delay-100" />
-                                    <span className="w-2 h-2 rounded-full bg-white animate-bounce delay-200" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce delay-100" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-bounce delay-200" />
                                     Açılıyor...
                                 </span>
                             ) : (
                                 <>
                                     <span>{price} Süt Harca</span>
-                                    <span className="text-xl">🥛</span>
+                                    <span className="text-lg">🥛</span>
                                 </>
                             )}
                         </button>
@@ -185,91 +191,101 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                 </div>
             )}
 
-            {/* Toolbar - Floating Zoom Controls */}
-            {!isLocked && (
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-6 bg-card/80 backdrop-blur-md px-8 py-4 rounded-full border border-primary/20 shadow-2xl transition-transform hover:scale-105 select-none ring-1 ring-black/5">
-                    <button onClick={zoomOut} className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90"><ZoomOut className="w-6 h-6" /></button>
-                    <div className="w-px h-8 bg-border"></div>
-                    <span className="text-base font-bold text-primary min-w-[3.5rem] text-center font-mono">{Math.round(scale * 100)}%</span>
-                    <div className="w-px h-8 bg-border"></div>
-                    <button onClick={zoomIn} className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90"><ZoomIn className="w-6 h-6" /></button>
-                </div>
-            )}
+            {/* Toolbar - Floating Zoom Controls (shown for both locked and unlocked, but zoom disabled when locked) */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-6 bg-card/80 backdrop-blur-md px-8 py-4 rounded-full border border-primary/20 shadow-2xl transition-transform hover:scale-105 select-none ring-1 ring-black/5">
+                <button 
+                    onClick={zoomOut} 
+                    disabled={isLocked}
+                    className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <ZoomOut className="w-6 h-6" />
+                </button>
+                <div className="w-px h-8 bg-border"></div>
+                <span className="text-base font-bold text-primary min-w-[3.5rem] text-center font-mono">{Math.round(scale * 100)}%</span>
+                <div className="w-px h-8 bg-border"></div>
+                <button 
+                    onClick={zoomIn} 
+                    disabled={isLocked}
+                    className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <ZoomIn className="w-6 h-6" />
+                </button>
+            </div>
 
-            {/* Main Scrollable Area */}
-            <div className={`flex-1 w-full overflow-y-auto bg-muted/20 scroll-smooth ${isLocked ? 'overflow-hidden pointer-events-none' : ''}`}>
+            {/* Main Scrollable Area - Always show content (preview for locked, full for unlocked) */}
+            <div className="flex-1 w-full overflow-y-auto bg-muted/20 scroll-smooth">
                 <div className="max-w-max mx-auto px-4 py-20 min-h-full flex flex-col items-center gap-8 relative">
-
-                    {!isLocked && (
-                        <>
-                            {isLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center text-primary z-40 pointer-events-none">
-                                    <div className="flex flex-col items-center gap-4 bg-background/80 p-6 rounded-2xl backdrop-blur-sm border border-border/50 shadow-xl">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current"></div>
-                                        <span className="text-sm font-medium animate-pulse">İçerik yükleniyor...</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="relative shadow-2xl min-h-[500px] min-w-[300px] bg-white transition-all duration-500 animate-in fade-in" id="content-container">
-                                {isPdf ? (
-                                    <Document
-                                        file={fileUrl}
-                                        onLoadSuccess={onDocumentLoadSuccess}
-                                        onLoadError={onDocumentLoadError}
-                                        loading={null}
-                                        className="flex flex-col gap-6"
-                                        error={
-                                            <div className="p-10 text-center text-red-500 bg-red-50/50 rounded-xl">
-                                                <p className="font-bold">PDF Açılmadı</p>
-                                                <p className="text-sm mt-2 max-w-xs mx-auto text-muted-foreground">{loadError || "Bilinmeyen bir hata oluştu."}</p>
-                                                <a href={fileUrl} target="_blank" className="mt-4 inline-block text-xs text-primary underline">Dosyayı İndirip Açmayı Dene</a>
-                                            </div>
-                                        }
-                                    >
-                                        {Array.from(new Array(numPages), (_, index) => (
-                                            <SecurePage
-                                                key={`page_${index + 1}`}
-                                                pageNumber={index + 1}
-                                                width={pageWidth ? (Math.min(pageWidth - 48, 800) * scale) : undefined}
-                                                scale={pageWidth ? 1 : scale}
-                                                drawWatermark={drawWatermark}
-                                            />
-                                        ))}
-                                    </Document>
-                                ) : isImage ? (
-                                    <SecureImage
-                                        fileUrl={fileUrl}
-                                        scale={scale}
-                                        drawWatermark={drawWatermark}
-                                        onLoad={() => setIsLoading(false)}
-                                        onError={() => {
-                                            setIsLoading(false);
-                                            setLoadError("Resim yüklenemedi");
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
-                                        <p className="text-xl font-bold mb-4">Önizleme Kullanılamıyor</p>
-                                        <p className="text-muted-foreground mb-6">Bu dosya formatı ({fileUrl.split('.').pop()}) şu an için tarayıcıda görüntülenemez.</p>
-                                        <a
-                                            href={fileUrl}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
-                                        >
-                                            Dosyayı İndir
-                                        </a>
-                                    </div>
-                                )}
+                    {isLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center text-primary z-40 pointer-events-none">
+                            <div className="flex flex-col items-center gap-4 bg-background/80 p-6 rounded-2xl backdrop-blur-sm border border-border/50 shadow-xl">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current"></div>
+                                <span className="text-sm font-medium animate-pulse">İçerik yükleniyor...</span>
                             </div>
-                        </>
+                        </div>
                     )}
 
-                    {isLocked && (
-                        <div className="w-full max-w-2xl h-screen opacity-50 flex flex-col gap-4 items-center">
-                            <div className="w-full aspect-[3/4] bg-white shadow-lg rounded-sm blur-sm"></div>
-                            <div className="w-full aspect-[3/4] bg-white shadow-lg rounded-sm blur-sm"></div>
+                    <div className="relative shadow-2xl min-h-[500px] min-w-[300px] bg-white transition-all duration-500 animate-in fade-in" id="content-container">
+                        {isPdf ? (
+                            <Document
+                                file={fileUrl}
+                                onLoadSuccess={onDocumentLoadSuccess}
+                                onLoadError={onDocumentLoadError}
+                                loading={null}
+                                className="flex flex-col gap-6"
+                                error={
+                                    <div className="p-10 text-center text-red-500 bg-red-50/50 rounded-xl">
+                                        <p className="font-bold">PDF Açılmadı</p>
+                                        <p className="text-sm mt-2 max-w-xs mx-auto text-muted-foreground">{loadError || "Bilinmeyen bir hata oluştu."}</p>
+                                        <a href={fileUrl} target="_blank" className="mt-4 inline-block text-xs text-primary underline">Dosyayı İndirip Açmayı Dene</a>
+                                    </div>
+                                }
+                            >
+                                {Array.from(new Array(numPages), (_, index) => (
+                                    <SecurePage
+                                        key={`page_${index + 1}`}
+                                        pageNumber={index + 1}
+                                        width={pageWidth ? (Math.min(pageWidth - 48, 800) * scale) : undefined}
+                                        scale={pageWidth ? 1 : scale}
+                                        drawWatermark={drawWatermark}
+                                    />
+                                ))}
+                            </Document>
+                        ) : isImage ? (
+                            <SecureImage
+                                fileUrl={fileUrl}
+                                scale={scale}
+                                drawWatermark={drawWatermark}
+                                onLoad={() => setIsLoading(false)}
+                                onError={() => {
+                                    setIsLoading(false);
+                                    setLoadError("Resim yüklenemedi");
+                                }}
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
+                                <p className="text-xl font-bold mb-4">Önizleme Kullanılamıyor</p>
+                                <p className="text-muted-foreground mb-6">Bu dosya formatı ({fileUrl.split('.').pop()}) şu an için tarayıcıda görüntülenemez.</p>
+                                <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
+                                >
+                                    Dosyayı İndir
+                                </a>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Locked Content Notice at bottom of preview */}
+                    {isLocked && numPages > 0 && (
+                        <div className="w-full max-w-2xl p-6 bg-primary/5 border border-primary/20 rounded-2xl text-center animate-in fade-in slide-in-from-bottom-2">
+                            <p className="text-sm text-muted-foreground mb-3">
+                                <span className="font-bold text-primary">Önizleme Modu:</span> Şu anda sadece ilk {numPages} sayfa görüntüleniyor.
+                            </p>
+                            <p className="text-xs text-muted-foreground/80">
+                                Notun tamamını görmek için yukarıdaki butona tıklayarak {price} Süt harcayın.
+                            </p>
                         </div>
                     )}
                 </div>

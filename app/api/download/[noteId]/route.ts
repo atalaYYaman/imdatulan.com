@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { PDFDocument } from "pdf-lib";
 
 export async function GET(request: Request, props: { params: Promise<{ noteId: string }> }) {
     const params = await props.params;
@@ -30,7 +31,8 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
                 id: true,
                 fileUrl: true,
                 uploaderId: true,
-                title: true
+                title: true,
+                pageCount: true, // For preview calculation
             }
         });
 
@@ -62,55 +64,97 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
             }
         }
 
-        if (!hasAccess) {
-            return new NextResponse("Forbidden: Purchase required", { status: 403 });
-        }
+        // 3. Analytics (Record View) - Only for full access
+        if (hasAccess) {
+            try {
+                const existingView = await prisma.view.findUnique({
+                    where: { userId_noteId: { userId, noteId } }
+                });
 
-        // 3. Analytics (Record View)
-        try {
-            const existingView = await prisma.view.findUnique({
-                where: { userId_noteId: { userId, noteId } }
-            });
-
-            if (!existingView) {
-                await prisma.$transaction([
-                    prisma.view.create({
-                        data: { userId, noteId }
-                    }),
-                    prisma.note.update({
-                        where: { id: noteId },
-                        data: { viewCount: { increment: 1 } }
-                    })
-                ]);
+                if (!existingView) {
+                    await prisma.$transaction([
+                        prisma.view.create({
+                            data: { userId, noteId }
+                        }),
+                        prisma.note.update({
+                            where: { id: noteId },
+                            data: { viewCount: { increment: 1 } }
+                        })
+                    ]);
+                }
+            } catch (error) {
+                console.error("View logging failed:", error);
+                // Non-blocking for download
             }
-        } catch (error) {
-            console.error("View logging failed:", error);
-            // Non-blocking for download
         }
 
-        // 4. Proxy Streaming
+        // 4. Fetch File
         const fileResponse = await fetch(note.fileUrl);
         if (!fileResponse.ok) {
             console.error(`[DownloadProxy] Upstream fetch failed: ${fileResponse.status}`);
             return new NextResponse("File fetch error", { status: 502 });
         }
 
-        // Stream back with Security Headers
-        const headers = new Headers(fileResponse.headers);
+        const fileArrayBuffer = await fileResponse.arrayBuffer();
+        const contentType = fileResponse.headers.get("content-type") || "application/pdf";
+        const isPdf = contentType.includes("pdf") || note.fileUrl.toLowerCase().endsWith(".pdf");
+
+        // 5. Process PDF for preview if locked
+        let finalFileBuffer: ArrayBuffer = fileArrayBuffer;
+        if (isPdf && !hasAccess) {
+            try {
+                let pdfDoc = await PDFDocument.load(fileArrayBuffer);
+                const totalPageCount = note.pageCount || pdfDoc.getPageCount();
+                
+                // Dynamic preview logic
+                let PREVIEW_PAGE_COUNT: number;
+                if (totalPageCount <= 5) {
+                    PREVIEW_PAGE_COUNT = 1;
+                } else if (totalPageCount <= 10) {
+                    PREVIEW_PAGE_COUNT = 2;
+                } else {
+                    PREVIEW_PAGE_COUNT = 3;
+                }
+                
+                PREVIEW_PAGE_COUNT = Math.min(PREVIEW_PAGE_COUNT, totalPageCount);
+                
+                if (totalPageCount > PREVIEW_PAGE_COUNT) {
+                    const previewPdf = await PDFDocument.create();
+                    const pagesToCopy = Array.from({ length: PREVIEW_PAGE_COUNT }, (_, i) => i);
+                    const copiedPages = await previewPdf.copyPages(pdfDoc, pagesToCopy);
+                    
+                    copiedPages.forEach((page) => {
+                        previewPdf.addPage(page);
+                    });
+                    
+                    // Note: Watermark is handled client-side in NoteViewer component
+                    finalFileBuffer = await previewPdf.save();
+                }
+            } catch (error) {
+                console.error("Preview processing failed:", error);
+                // Fallback to full file if preview fails
+            }
+        }
+
+        // 6. Stream back with Security Headers
+        const headers = new Headers();
 
         // --- SENTINEL HEADERS ---
         // Prevent caching on public/shared devices
         headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
         headers.set("Pragma", "no-cache");
         headers.set("Expires", "0");
+        headers.set("Content-Type", contentType);
 
         // Force inline display but with correct filename
         headers.set("Content-Disposition", `inline; filename="${note.title.replace(/[^a-z0-9]/gi, '_').substring(0, 50)}.pdf"`);
-        // Remove potentially leaking upstream headers
-        headers.delete("x-vercel-id");
-        headers.delete("server");
+        
+        // Add preview indicator header
+        if (!hasAccess && isPdf) {
+            headers.set("X-Preview-Mode", "true");
+        }
 
-        return new NextResponse(fileResponse.body, {
+        return new NextResponse(finalFileBuffer, {
             status: 200,
             headers: headers
         });
