@@ -73,10 +73,23 @@ export default function UploadPage() {
             });
 
             if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.message || "Yükleme başarısız");
+                let errorMessage = "Yükleme başarısız";
+                try {
+                    const contentType = res.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const err = await res.json();
+                        errorMessage = err.message || errorMessage;
+                    } else {
+                        const text = await res.text();
+                        errorMessage = text || `${res.status} ${res.statusText}`;
+                    }
+                } catch (parseError) {
+                    errorMessage = `${res.status} ${res.statusText || "Bilinmeyen hata"}`;
+                }
+                throw new Error(errorMessage);
             }
 
+            const result = await res.json();
             setShowModal(true);
         } catch (error) {
             console.error(error);
