@@ -7,8 +7,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Direct blob upload endpoint for large files (up to 25MB)
- * This endpoint uploads files directly to Vercel Blob without going through
- * the serverless function body, avoiding the 4.5MB limit.
+ * IMPORTANT: This endpoint still has the 4.5MB serverless function body limit.
+ * For files > 4MB, we need to use client-side direct upload to Vercel Blob.
+ * 
+ * This endpoint is kept for backward compatibility with small files.
+ * Large files should use the client-side upload flow with progress tracking.
  */
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
@@ -23,6 +26,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: limitCheck.message }, { status: 429 });
         }
 
+        // Check content-length header first to avoid reading large bodies
+        const contentLength = req.headers.get("content-length");
+        const MAX_FUNCTION_SIZE = 4 * 1024 * 1024; // 4MB - safe limit below 4.5MB
+        if (contentLength && parseInt(contentLength) > MAX_FUNCTION_SIZE) {
+            return NextResponse.json({
+                message: "Bu dosya çok büyük. Lütfen client-side upload kullanın."
+            }, { status: 413 });
+        }
+
         const formData = await req.formData();
         const file = formData.get("file") as File;
 
@@ -30,7 +42,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Dosya bulunamadı." }, { status: 400 });
         }
 
-        // File size validation (25MB for Vercel Pro)
+        // File size validation (25MB for Vercel Pro, but function limit is 4.5MB)
         const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
         if (file.size > MAX_FILE_SIZE) {
             return NextResponse.json({
@@ -64,8 +76,8 @@ export async function POST(req: Request) {
         const uniqueFilename = `${uuidv4()}.${ext}`;
 
         // Upload to Vercel Blob
-        // Vercel Blob's put() accepts File objects and handles streaming internally
-        // This avoids loading the entire file into memory, bypassing serverless function body limits
+        // Note: For files > 4MB, this will fail due to function body limit
+        // Client should use direct blob upload instead
         const blob = await put(uniqueFilename, file, {
             access: 'public',
         });
@@ -78,6 +90,12 @@ export async function POST(req: Request) {
 
     } catch (error) {
         console.error("Direct blob upload error:", error);
+        // Check if it's a payload too large error
+        if (error instanceof Error && error.message.includes('payload') || error instanceof Error && error.message.includes('too large')) {
+            return NextResponse.json({
+                message: "Dosya çok büyük. Lütfen client-side upload kullanın veya dosyayı küçültün."
+            }, { status: 413 });
+        }
         return NextResponse.json({
             message: "Yükleme hatası: " + (error instanceof Error ? error.message : String(error))
         }, { status: 500 });

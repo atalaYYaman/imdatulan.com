@@ -5,6 +5,7 @@ import { UploadCloud, FileText, CheckCircle, AlertCircle, X, Sparkles, ChevronRi
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { upload } from '@vercel/blob/client';
 
 export default function UploadPage() {
     const { data: session } = useSession();
@@ -20,6 +21,7 @@ export default function UploadPage() {
         isAI: false
     });
     const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const handleDrag = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -40,12 +42,15 @@ export default function UploadPage() {
             const MAX_SIZE = 25 * 1024 * 1024; // 25MB (Vercel Pro limit)
             
             if (droppedFile.size > MAX_SIZE) {
-                alert(`Dosya boyutu çok büyük! Maksimum 25MB yükleyebilirsiniz. Seçilen dosya: ${(droppedFile.size / 1024 / 1024).toFixed(2)}MB`);
+                const fileSizeMB = (droppedFile.size / 1024 / 1024).toFixed(2);
+                const maxSizeMB = (MAX_SIZE / 1024 / 1024).toFixed(0);
+                alert(`⚠️ Dosya boyutu çok büyük!\n\nSeçilen dosya: ${fileSizeMB}MB\nMaksimum boyut: ${maxSizeMB}MB\n\nLütfen daha küçük bir dosya seçin veya dosyanızı sıkıştırın.`);
                 setFile(null);
                 return;
             }
             
             setFile(droppedFile);
+            setUploadProgress(0); // Reset progress when new file is dropped
         }
     }, []);
 
@@ -55,13 +60,16 @@ export default function UploadPage() {
             const MAX_SIZE = 25 * 1024 * 1024; // 25MB (Vercel Pro limit)
             
             if (selectedFile.size > MAX_SIZE) {
-                alert(`Dosya boyutu çok büyük! Maksimum 25MB yükleyebilirsiniz. Seçilen dosya: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
+                const fileSizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
+                const maxSizeMB = (MAX_SIZE / 1024 / 1024).toFixed(0);
+                alert(`⚠️ Dosya boyutu çok büyük!\n\nSeçilen dosya: ${fileSizeMB}MB\nMaksimum boyut: ${maxSizeMB}MB\n\nLütfen daha küçük bir dosya seçin veya dosyanızı sıkıştırın.`);
                 e.target.value = "";
                 setFile(null);
                 return;
             }
             
             setFile(selectedFile);
+            setUploadProgress(0); // Reset progress when new file is selected
         }
     };
 
@@ -77,45 +85,80 @@ export default function UploadPage() {
         // Double-check file size before upload
         const MAX_SIZE = 25 * 1024 * 1024; // 25MB
         if (file.size > MAX_SIZE) {
-            alert(`Dosya boyutu çok büyük! Maksimum 25MB yükleyebilirsiniz. Seçilen dosya: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+            const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+            const maxSizeMB = (MAX_SIZE / 1024 / 1024).toFixed(0);
+            alert(`⚠️ Dosya boyutu çok büyük!\n\nSeçilen dosya: ${fileSizeMB}MB\nMaksimum boyut: ${maxSizeMB}MB\n\nLütfen daha küçük bir dosya seçin veya dosyanızı sıkıştırın.`);
             return;
         }
 
         setLoading(true);
+        setUploadProgress(0);
 
         try {
             const SMALL_FILE_THRESHOLD = 4 * 1024 * 1024; // 4MB
             let blobUrl: string | null = null;
 
-            // For large files (>4MB), upload directly to blob first
+            // For large files (>4MB), use client-side direct upload to Vercel Blob
+            // This bypasses serverless function body limits
             if (file.size > SMALL_FILE_THRESHOLD) {
-                const blobFormData = new FormData();
-                blobFormData.append("file", file);
-
-                const blobRes = await fetch("/api/upload-blob-direct", {
-                    method: "POST",
-                    body: blobFormData,
-                });
-
-                if (!blobRes.ok) {
-                    let errorMessage = "Dosya yükleme başarısız";
-                    try {
-                        const contentType = blobRes.headers.get("content-type");
-                        if (contentType && contentType.includes("application/json")) {
-                            const err = await blobRes.json();
-                            errorMessage = err.message || errorMessage;
-                        } else {
-                            const text = await blobRes.text();
-                            errorMessage = text || `${blobRes.status} ${blobRes.statusText}`;
-                        }
-                    } catch (parseError) {
-                        errorMessage = `${blobRes.status} ${blobRes.statusText || "Bilinmeyen hata"}`;
-                    }
-                    throw new Error(errorMessage);
+                try {
+                    const blob = await upload(file.name, file, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload-handler',
+                        onUploadProgress: (event) => {
+                            setUploadProgress(event.percentage);
+                        },
+                    });
+                    blobUrl = blob.url;
+                } catch (uploadError) {
+                    throw new Error(uploadError instanceof Error ? uploadError.message : 'Dosya yükleme başarısız');
                 }
+            } else {
+                // Small files: use the old method (through serverless function)
+                blobUrl = await new Promise<string>((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    const blobFormData = new FormData();
+                    blobFormData.append("file", file);
 
-                const blobResult = await blobRes.json();
-                blobUrl = blobResult.url;
+                    // Track upload progress
+                    xhr.upload.onprogress = (event) => {
+                        if (event.lengthComputable) {
+                            const percentComplete = Math.round((event.loaded / event.total) * 100);
+                            setUploadProgress(percentComplete);
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                resolve(response.url);
+                            } catch (e) {
+                                reject(new Error('Geçersiz yanıt alındı'));
+                            }
+                        } else {
+                            let errorMessage = "Dosya yükleme başarısız";
+                            try {
+                                const contentType = xhr.getResponseHeader("content-type");
+                                if (contentType && contentType.includes("application/json")) {
+                                    const err = JSON.parse(xhr.responseText);
+                                    errorMessage = err.message || errorMessage;
+                                } else {
+                                    errorMessage = `${xhr.status} ${xhr.statusText || "Bilinmeyen hata"}`;
+                                }
+                            } catch (parseError) {
+                                errorMessage = `${xhr.status} ${xhr.statusText || "Bilinmeyen hata"}`;
+                            }
+                            reject(new Error(errorMessage));
+                        }
+                    };
+
+                    xhr.onerror = () => reject(new Error('Ağ hatası oluştu'));
+                    xhr.onabort = () => reject(new Error('Yükleme iptal edildi'));
+
+                    xhr.open('POST', '/api/upload-blob-direct');
+                    xhr.send(blobFormData);
+                });
             }
 
             // Now send metadata to server (with blob URL for large files, or file for small files)
@@ -131,6 +174,11 @@ export default function UploadPage() {
             data.append("noteType", formData.noteType);
             data.append("price", formData.price.toString());
             data.append("isAI", formData.isAI.toString());
+
+            // Update progress for metadata upload
+            if (blobUrl) {
+                setUploadProgress(90); // Large files: blob uploaded, now uploading metadata
+            }
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -154,13 +202,17 @@ export default function UploadPage() {
                 throw new Error(errorMessage);
             }
 
+            setUploadProgress(100);
             const result = await res.json();
             setShowModal(true);
         } catch (error) {
             console.error(error);
             alert("Bir hata oluştu: " + (error as Error).message);
+            setUploadProgress(0);
         } finally {
             setLoading(false);
+            // Reset progress after a short delay
+            setTimeout(() => setUploadProgress(0), 2000);
         }
     };
 
@@ -394,6 +446,27 @@ export default function UploadPage() {
                         </div>
 
                         <div className="pt-4">
+                            {/* Progress Bar */}
+                            {loading && uploadProgress > 0 && (
+                                <div className="mb-4 space-y-2">
+                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <span>Yükleniyor...</span>
+                                        <span className="font-bold text-primary">{uploadProgress}%</span>
+                                    </div>
+                                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-primary to-emerald-500 transition-all duration-300 ease-out rounded-full"
+                                            style={{ width: `${uploadProgress}%` }}
+                                        />
+                                    </div>
+                                    {file && (
+                                        <p className="text-[10px] text-muted-foreground text-center">
+                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             <Button
                                 type="submit"
                                 className="w-full py-6 text-lg font-black uppercase tracking-widest shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:shadow-[0_0_40px_rgba(16,185,129,0.5)] disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
@@ -404,7 +477,7 @@ export default function UploadPage() {
                                         <span className="w-2 h-2 rounded-full bg-white animate-bounce" />
                                         <span className="w-2 h-2 rounded-full bg-white animate-bounce delay-100" />
                                         <span className="w-2 h-2 rounded-full bg-white animate-bounce delay-200" />
-                                        Yükleniyor...
+                                        {uploadProgress > 0 ? `Yükleniyor... ${uploadProgress}%` : "Yükleniyor..."}
                                     </span>
                                 ) : "Onaya Gönder 🚀"}
                             </Button>
