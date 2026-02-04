@@ -37,12 +37,13 @@ export async function POST(request: Request) {
                     throw new Error('Geçersiz dosya tipi. Sadece PDF, JPG ve PNG dosyaları kabul edilir.');
                 }
 
-                // Generate unique filename
-                const uniqueFilename = `${uuidv4()}.${ext}`;
+                // Generate unique filename with UUID + timestamp to ensure uniqueness
+                const timestamp = Date.now();
+                const uniqueFilename = `${uuidv4()}-${timestamp}.${ext}`;
 
                 return {
                     allowedContentTypes: ['application/pdf', 'image/jpeg', 'image/png'],
-                    addRandomSuffix: false, // We already added UUID
+                    addRandomSuffix: true, // Extra safety: Vercel will add random suffix even if UUID collision occurs
                     maximumSizeInBytes: 25 * 1024 * 1024, // 25MB
                     pathname: uniqueFilename,
                     tokenPayload: JSON.stringify({
