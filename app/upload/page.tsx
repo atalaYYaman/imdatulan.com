@@ -36,13 +36,32 @@ export default function UploadPage() {
         e.stopPropagation();
         setDragActive(false);
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            setFile(e.dataTransfer.files[0]);
+            const droppedFile = e.dataTransfer.files[0];
+            const MAX_SIZE = 25 * 1024 * 1024; // 25MB (Vercel Pro limit)
+            
+            if (droppedFile.size > MAX_SIZE) {
+                alert(`Dosya boyutu çok büyük! Maksimum 25MB yükleyebilirsiniz. Seçilen dosya: ${(droppedFile.size / 1024 / 1024).toFixed(2)}MB`);
+                setFile(null);
+                return;
+            }
+            
+            setFile(droppedFile);
         }
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
+            const selectedFile = e.target.files[0];
+            const MAX_SIZE = 25 * 1024 * 1024; // 25MB (Vercel Pro limit)
+            
+            if (selectedFile.size > MAX_SIZE) {
+                alert(`Dosya boyutu çok büyük! Maksimum 25MB yükleyebilirsiniz. Seçilen dosya: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB`);
+                e.target.value = "";
+                setFile(null);
+                return;
+            }
+            
+            setFile(selectedFile);
         }
     };
 
@@ -55,11 +74,57 @@ export default function UploadPage() {
         e.preventDefault();
         if (!file || !formData.courseName) return;
 
+        // Double-check file size before upload
+        const MAX_SIZE = 25 * 1024 * 1024; // 25MB
+        if (file.size > MAX_SIZE) {
+            alert(`Dosya boyutu çok büyük! Maksimum 25MB yükleyebilirsiniz. Seçilen dosya: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+            return;
+        }
+
         setLoading(true);
 
         try {
+            const SMALL_FILE_THRESHOLD = 4 * 1024 * 1024; // 4MB
+            let blobUrl: string | null = null;
+
+            // For large files (>4MB), upload directly to blob first
+            if (file.size > SMALL_FILE_THRESHOLD) {
+                const blobFormData = new FormData();
+                blobFormData.append("file", file);
+
+                const blobRes = await fetch("/api/upload-blob-direct", {
+                    method: "POST",
+                    body: blobFormData,
+                });
+
+                if (!blobRes.ok) {
+                    let errorMessage = "Dosya yükleme başarısız";
+                    try {
+                        const contentType = blobRes.headers.get("content-type");
+                        if (contentType && contentType.includes("application/json")) {
+                            const err = await blobRes.json();
+                            errorMessage = err.message || errorMessage;
+                        } else {
+                            const text = await blobRes.text();
+                            errorMessage = text || `${blobRes.status} ${blobRes.statusText}`;
+                        }
+                    } catch (parseError) {
+                        errorMessage = `${blobRes.status} ${blobRes.statusText || "Bilinmeyen hata"}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const blobResult = await blobRes.json();
+                blobUrl = blobResult.url;
+            }
+
+            // Now send metadata to server (with blob URL for large files, or file for small files)
             const data = new FormData();
-            data.append("file", file);
+            if (blobUrl) {
+                data.append("blobUrl", blobUrl);
+            } else {
+                data.append("file", file);
+            }
             data.append("courseName", formData.courseName);
             data.append("term", formData.term);
             data.append("description", formData.description);
@@ -207,7 +272,7 @@ export default function UploadPage() {
                                         <span className="px-2 py-1 bg-muted rounded">PDF</span>
                                         <span className="px-2 py-1 bg-muted rounded">JPG</span>
                                         <span className="px-2 py-1 bg-muted rounded">PNG</span>
-                                        <span>(MAX 10MB)</span>
+                                        <span>(MAX 25MB)</span>
                                     </div>
                                 </div>
                             )}

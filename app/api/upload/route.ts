@@ -13,7 +13,8 @@ export async function POST(req: Request) {
 
     try {
         const formData = await req.formData()
-        const file = formData.get("file") as File
+        const file = formData.get("file") as File | null
+        const blobUrl = formData.get("blobUrl") as string | null
         const courseName = formData.get("courseName") as string
         const term = formData.get("term") as string
         const noteType = formData.get("noteType") as string
@@ -28,8 +29,33 @@ export async function POST(req: Request) {
         }
 
         // 2. Input Validation
-        if (!file || !courseName) {
+        if ((!file && !blobUrl) || !courseName) {
             return NextResponse.json({ message: "Dosya ve Ders Adı zorunludur." }, { status: 400 })
+        }
+
+        let finalBlobUrl: string;
+
+        // If blobUrl is provided (from direct blob upload), use it
+        // Otherwise, upload the file directly (for small files < 4MB)
+        if (blobUrl) {
+            finalBlobUrl = blobUrl;
+        } else if (file) {
+            // File size validation for direct upload (small files only)
+            const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB (safe limit below 4.5MB)
+            if (file.size > MAX_FILE_SIZE) {
+                return NextResponse.json({ 
+                    message: `Dosya boyutu çok büyük! Büyük dosyalar için lütfen tekrar deneyin. Seçilen dosya: ${(file.size / 1024 / 1024).toFixed(2)}MB` 
+                }, { status: 413 })
+            }
+
+            // Vercel Blob Storage (for small files)
+            const blob = await put(file.name, file, {
+                access: 'public',
+                addRandomSuffix: true
+            });
+            finalBlobUrl = blob.url;
+        } else {
+            return NextResponse.json({ message: "Dosya bulunamadı." }, { status: 400 });
         }
 
         let price = priceStr ? parseInt(priceStr) : 1;
@@ -37,12 +63,6 @@ export async function POST(req: Request) {
         // Schema: min 1, max 50
         if (price < 1) price = 1;
         if (price > 50) return NextResponse.json({ message: "Fiyat en fazla 50 süt olabilir." }, { status: 400 });
-
-        // Vercel Blob Storage
-        const blob = await put(file.name, file, {
-            access: 'public',
-            addRandomSuffix: true
-        });
 
         // DB Record
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
@@ -58,7 +78,7 @@ export async function POST(req: Request) {
                 type: noteType,
                 term: term,
                 description: description,
-                fileUrl: blob.url, // URL from Vercel Blob
+                fileUrl: finalBlobUrl, // URL from Vercel Blob
                 uploaderId: user.id,
                 price: price,
                 status: "PENDING",
