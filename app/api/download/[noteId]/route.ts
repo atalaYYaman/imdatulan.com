@@ -184,9 +184,13 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
                     });
                     
                     // Note: Watermark is handled client-side in NoteViewer component
-                    // Convert Uint8Array to ArrayBuffer
+                    // Convert Uint8Array to ArrayBuffer (ensure type safety - avoid SharedArrayBuffer)
                     const previewBytes = await previewPdf.save();
-                    finalFileBuffer = previewBytes.buffer.slice(previewBytes.byteOffset, previewBytes.byteOffset + previewBytes.byteLength);
+                    // Create a new ArrayBuffer by copying the data (ensures pure ArrayBuffer, not SharedArrayBuffer)
+                    const previewArray = new Uint8Array(previewBytes);
+                    const newBuffer = new ArrayBuffer(previewArray.length);
+                    new Uint8Array(newBuffer).set(previewArray);
+                    finalFileBuffer = newBuffer;
                 }
             } catch (error) {
                 console.error("Preview processing failed:", error);
@@ -213,12 +217,8 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
             headers.set("X-Preview-Mode", "true");
         }
 
-        // Zero Trust: Ensure we're returning the correct buffer type
-        const responseBuffer = finalFileBuffer instanceof ArrayBuffer 
-            ? finalFileBuffer 
-            : finalFileBuffer.buffer.slice(finalFileBuffer.byteOffset, finalFileBuffer.byteOffset + finalFileBuffer.byteLength);
-
-        return new NextResponse(responseBuffer, {
+        // Zero Trust: finalFileBuffer is always ArrayBuffer at this point
+        return new NextResponse(finalFileBuffer, {
             status: 200,
             headers: headers
         });
