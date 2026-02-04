@@ -266,6 +266,31 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                                     </div>
                                 )}
 
+                                {/* Sayfa Sayısı Bilgisi */}
+                                {note.pageCount && note.pageCount > 0 && (
+                                    <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                                        <span className="px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
+                                            📄 {note.pageCount} sayfa
+                                        </span>
+                                        {!optimisticUnlocked && (() => {
+                                            // Dynamic preview info based on page count
+                                            let previewText = "";
+                                            if (note.pageCount <= 5) {
+                                                previewText = "(İlk sayfa önizleme)";
+                                            } else if (note.pageCount <= 10) {
+                                                previewText = "(İlk 2 sayfa önizleme)";
+                                            } else {
+                                                previewText = "(İlk 3 sayfa önizleme)";
+                                            }
+                                            return (
+                                                <span className="text-[10px] opacity-60">
+                                                    {previewText}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
+
                                 <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
                                     <div className='flex items-center gap-2'>
                                         <div className='w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[10px] text-white font-bold'>

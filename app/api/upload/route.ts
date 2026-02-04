@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { put } from '@vercel/blob';
 import { checkRateLimit } from "@/lib/rate-limit";
+import { PDFDocument } from "pdf-lib";
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions)
@@ -64,6 +65,26 @@ export async function POST(req: Request) {
         if (price < 1) price = 1;
         if (price > 50) return NextResponse.json({ message: "Fiyat en fazla 50 süt olabilir." }, { status: 400 });
 
+        // Extract page count from PDF if it's a PDF file
+        let pageCount: number | null = null;
+        try {
+            const fileToCheck = file || (blobUrl ? await (await fetch(blobUrl)).blob() : null);
+            if (fileToCheck) {
+                const fileName = fileToCheck instanceof File ? fileToCheck.name : blobUrl || '';
+                const isPdf = fileName.toLowerCase().endsWith('.pdf') || 
+                             (fileToCheck instanceof File && fileToCheck.type === 'application/pdf');
+                
+                if (isPdf) {
+                    const arrayBuffer = await (fileToCheck instanceof File ? fileToCheck.arrayBuffer() : fileToCheck.arrayBuffer());
+                    const pdfDoc = await PDFDocument.load(arrayBuffer);
+                    pageCount = pdfDoc.getPageCount();
+                }
+            }
+        } catch (error) {
+            console.error("Error extracting page count:", error);
+            // Continue without page count if extraction fails
+        }
+
         // DB Record
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
         if (!user) return NextResponse.json({ message: "User not found" }, { status: 404 })
@@ -83,6 +104,7 @@ export async function POST(req: Request) {
                 price: price,
                 status: "PENDING",
                 isAI: formData.get("isAI") === "true",
+                pageCount: pageCount,
             }
         })
 

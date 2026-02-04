@@ -142,6 +142,7 @@ model Note {
   description String? // User description
   isAI        Boolean @default(false) // İçerikte AI desteği var mı?
   viewCount   Int     @default(0)
+  pageCount   Int?    // PDF sayfa sayısı (sadece PDF'ler için)
 
   uploaderId String
   uploader   User     @relation(fields: [uploaderId], references: [id])

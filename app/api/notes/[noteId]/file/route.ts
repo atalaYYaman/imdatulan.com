@@ -36,6 +36,7 @@ export async function GET(
                 uploaderId: true,
                 status: true,
                 rejectionReason: true,
+                pageCount: true, // For dynamic preview calculation
             }
         });
 
@@ -89,27 +90,39 @@ export async function GET(
         const isPdf = contentType.includes("pdf") || note.fileUrl.toLowerCase().endsWith(".pdf");
 
         if (isPdf) {
-            const pdfDoc = await PDFDocument.load(fileArrayBuffer);
+            let pdfDoc = await PDFDocument.load(fileArrayBuffer);
 
-            // If LOCKED: Only keep first page
+            // If LOCKED: Show dynamic preview based on total page count
             if (!isUnlocked) {
-                // If it has more than 1 page, remove others
-                const pageCount = pdfDoc.getPageCount();
-                if (pageCount > 1) {
-                    // Indices are 0-based. Keep 0. Remove 1..N
-                    // removePage is usually safe from end to start to avoid index shift, 
-                    // or just copy first page to new doc.
-                    // Copying is safer.
-                    const newPdf = await PDFDocument.create();
-                    const [firstPage] = await newPdf.copyPages(pdfDoc, [0]);
-                    newPdf.addPage(firstPage);
-                    // work with simple new doc
-                    // Re-assign pdfDoc variable? referencing might be tricky with types.
-                    // Let's just modify the original if easier, or save the new one.
-                    // Easier: Delete pages from end.
-                    for (let i = pageCount - 1; i > 0; i--) {
-                        pdfDoc.removePage(i);
-                    }
+                const totalPageCount = note.pageCount || pdfDoc.getPageCount();
+                
+                // Dynamic preview logic:
+                // - 1-5 pages: Show only 1 page (to prevent free access to most content)
+                // - 6+ pages: Show 2-3 pages (enough to evaluate quality without revealing too much)
+                let PREVIEW_PAGE_COUNT: number;
+                if (totalPageCount <= 5) {
+                    PREVIEW_PAGE_COUNT = 1; // Short notes: only first page
+                } else if (totalPageCount <= 10) {
+                    PREVIEW_PAGE_COUNT = 2; // Medium notes: first 2 pages
+                } else {
+                    PREVIEW_PAGE_COUNT = 3; // Long notes: first 3 pages
+                }
+                
+                PREVIEW_PAGE_COUNT = Math.min(PREVIEW_PAGE_COUNT, totalPageCount);
+                
+                if (totalPageCount > PREVIEW_PAGE_COUNT) {
+                    // Create new PDF with only preview pages
+                    const previewPdf = await PDFDocument.create();
+                    const pagesToCopy = Array.from({ length: PREVIEW_PAGE_COUNT }, (_, i) => i);
+                    const copiedPages = await previewPdf.copyPages(pdfDoc, pagesToCopy);
+                    
+                    copiedPages.forEach((page) => {
+                        previewPdf.addPage(page);
+                    });
+                    
+                    // Replace pdfDoc with preview version
+                    const previewBytes = await previewPdf.save();
+                    pdfDoc = await PDFDocument.load(previewBytes);
                 }
             }
 
