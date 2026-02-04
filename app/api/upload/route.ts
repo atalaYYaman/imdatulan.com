@@ -17,7 +17,13 @@ export async function POST(req: Request) {
         // Zero Trust: Verify user exists in database
         const user = await prisma.user.findUnique({ 
             where: { email: session.user.email },
-            select: { id: true, approvalStatus: true }
+            select: { 
+                id: true, 
+                approvalStatus: true,
+                university: true,
+                faculty: true,
+                department: true
+            }
         })
         if (!user) {
             return NextResponse.json({ message: "User not found" }, { status: 404 })
