@@ -59,11 +59,14 @@ export async function GET(
             }
         }
 
-        // 4. Check Unlock Status
+        // 4. Check Unlock Status (Zero Trust: Only owners get full access, admins must purchase)
         let isUnlocked = false;
         if (user) {
-            if (note.uploaderId === user.id) isUnlocked = true;
-            else {
+            // Zero Trust: Only owners get full access without purchase
+            if (note.uploaderId === user.id) {
+                isUnlocked = true;
+            } else {
+                // Zero Trust: Admins and regular users must purchase (check unlock status)
                 const unlockedParams = {
                     userId_noteId: {
                         userId: user.id,

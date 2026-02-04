@@ -90,9 +90,11 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         // Check 2: Is Admin? (Zero Trust: Verify from database, not session)
         const isAdmin = user.role === 'ADMIN';
 
-        let hasAccess = isOwner || isAdmin;
+        // Zero Trust: Only owners get full access without purchase
+        // Admins and regular users must purchase to see full content (preview mode for non-owners)
+        let hasAccess = isOwner;
 
-        // Check 3: Is Unlocked? (If not owner/admin)
+        // Check 3: Is Unlocked? (For non-owners, including admins)
         if (!hasAccess) {
             const unlocked = await prisma.unlockedNote.findUnique({
                 where: {
@@ -106,6 +108,9 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
                 hasAccess = true;
             }
         }
+
+        // Note: Admins can access but still see preview unless they purchase
+        // This ensures fair usage and prevents admin abuse
 
         // 3. Analytics (Record View) - Only for full access
         if (hasAccess) {
