@@ -10,12 +10,28 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
     const { noteId } = params;
 
     try {
+        // Zero Trust: Always verify session first
         const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
+        if (!session?.user?.email) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        const userId = session.user.id;
+        // Zero Trust: Validate noteId format to prevent injection
+        if (!noteId || typeof noteId !== 'string' || noteId.length > 100 || !/^[a-zA-Z0-9_-]+$/.test(noteId)) {
+            return new NextResponse("Invalid note ID", { status: 400 });
+        }
+
+        // Zero Trust: Fetch user from database to verify existence and get role
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            select: { id: true, role: true }
+        });
+
+        if (!user) {
+            return new NextResponse("User not found", { status: 404 });
+        }
+
+        const userId = user.id;
 
         // --- RATE LIMIT CHECK ---
         // 10 requests / 1 minute
@@ -24,7 +40,7 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
             return new NextResponse(limitCheck.message || "Too Many Requests", { status: 429 });
         }
 
-        // 1. Fetch Note & Verify Existence
+        // 1. Fetch Note & Verify Existence (Zero Trust: Always verify)
         const note = await prisma.note.findUnique({
             where: { id: noteId, deletedAt: null },
             select: {
@@ -33,6 +49,7 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
                 uploaderId: true,
                 title: true,
                 pageCount: true, // For preview calculation
+                status: true, // Zero Trust: Check status
             }
         });
 
@@ -40,12 +57,38 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
             return new NextResponse("Note file not found", { status: 404 });
         }
 
-        // 2. Access Control (Zero Trust)
+        // Zero Trust: Check note status
+        if (note.status === 'PENDING' || note.status === 'REJECTED') {
+            // Only owner or admin can access pending/rejected notes
+            if (note.uploaderId !== userId && user.role !== 'ADMIN') {
+                return new NextResponse("Note not available", { status: 403 });
+            }
+        }
+
+        // Zero Trust: SUSPENDED notes - only owner, admin, or previous buyers
+        if (note.status === 'SUSPENDED') {
+            if (note.uploaderId !== userId && user.role !== 'ADMIN') {
+                // Check if user previously unlocked this note
+                const wasUnlocked = await prisma.unlockedNote.findUnique({
+                    where: {
+                        userId_noteId: {
+                            userId: userId,
+                            noteId: noteId
+                        }
+                    }
+                });
+                if (!wasUnlocked) {
+                    return new NextResponse("Note suspended", { status: 403 });
+                }
+            }
+        }
+
+        // 2. Access Control (Zero Trust: Multiple verification layers)
         // Check 1: Is Owner?
         const isOwner = note.uploaderId === userId;
 
-        // Check 2: Is Admin?
-        const isAdmin = session.user.role === 'ADMIN';
+        // Check 2: Is Admin? (Zero Trust: Verify from database, not session)
+        const isAdmin = user.role === 'ADMIN';
 
         let hasAccess = isOwner || isAdmin;
 
@@ -88,7 +131,20 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
             }
         }
 
-        // 4. Fetch File
+        // 4. Fetch File (Zero Trust: Validate fileUrl)
+        // Validate fileUrl format to prevent SSRF attacks
+        if (!note.fileUrl || typeof note.fileUrl !== 'string') {
+            return new NextResponse("Invalid file URL", { status: 500 });
+        }
+
+        // Zero Trust: Ensure fileUrl is from trusted source (Vercel Blob)
+        const trustedDomains = ['blob.vercel-storage.com', 'pub-'];
+        const isTrustedUrl = trustedDomains.some(domain => note.fileUrl.includes(domain));
+        if (!isTrustedUrl) {
+            console.error(`[DownloadProxy] Untrusted file URL: ${note.fileUrl}`);
+            return new NextResponse("Invalid file source", { status: 403 });
+        }
+
         const fileResponse = await fetch(note.fileUrl);
         if (!fileResponse.ok) {
             console.error(`[DownloadProxy] Upstream fetch failed: ${fileResponse.status}`);
@@ -99,14 +155,14 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         const contentType = fileResponse.headers.get("content-type") || "application/pdf";
         const isPdf = contentType.includes("pdf") || note.fileUrl.toLowerCase().endsWith(".pdf");
 
-        // 5. Process PDF for preview if locked
+        // 5. Process PDF for preview if locked (Zero Trust: Always verify access)
         let finalFileBuffer: ArrayBuffer = fileArrayBuffer;
         if (isPdf && !hasAccess) {
             try {
                 let pdfDoc = await PDFDocument.load(fileArrayBuffer);
                 const totalPageCount = note.pageCount || pdfDoc.getPageCount();
                 
-                // Dynamic preview logic
+                // Dynamic preview logic (Zero Trust: Limit preview to prevent abuse)
                 let PREVIEW_PAGE_COUNT: number;
                 if (totalPageCount <= 5) {
                     PREVIEW_PAGE_COUNT = 1;
@@ -128,11 +184,14 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
                     });
                     
                     // Note: Watermark is handled client-side in NoteViewer component
-                    finalFileBuffer = await previewPdf.save();
+                    // Convert Uint8Array to ArrayBuffer
+                    const previewBytes = await previewPdf.save();
+                    finalFileBuffer = previewBytes.buffer.slice(previewBytes.byteOffset, previewBytes.byteOffset + previewBytes.byteLength);
                 }
             } catch (error) {
                 console.error("Preview processing failed:", error);
-                // Fallback to full file if preview fails
+                // Zero Trust: On error, deny access rather than showing full file
+                return new NextResponse("Preview processing failed", { status: 500 });
             }
         }
 
@@ -154,7 +213,12 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
             headers.set("X-Preview-Mode", "true");
         }
 
-        return new NextResponse(finalFileBuffer, {
+        // Zero Trust: Ensure we're returning the correct buffer type
+        const responseBuffer = finalFileBuffer instanceof ArrayBuffer 
+            ? finalFileBuffer 
+            : finalFileBuffer.buffer.slice(finalFileBuffer.byteOffset, finalFileBuffer.byteOffset + finalFileBuffer.byteLength);
+
+        return new NextResponse(responseBuffer, {
             status: 200,
             headers: headers
         });

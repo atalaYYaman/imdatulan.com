@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { put } from '@vercel/blob';
 import { checkRateLimit } from "@/lib/rate-limit";
 import { v4 as uuidv4 } from 'uuid';
@@ -14,12 +15,28 @@ import { v4 as uuidv4 } from 'uuid';
  * Large files should use the client-side upload flow with progress tracking.
  */
 export async function POST(req: Request) {
+    // Zero Trust: Always verify session first
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     try {
+        // Zero Trust: Verify user exists in database
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            select: { id: true, approvalStatus: true }
+        });
+
+        if (!user) {
+            return NextResponse.json({ message: "User not found" }, { status: 404 });
+        }
+
+        // Zero Trust: Check user approval status
+        if (user.approvalStatus === 'BANNED' || user.approvalStatus === 'REJECTED') {
+            return NextResponse.json({ message: "Account not authorized" }, { status: 403 });
+        }
+
         // Rate limit check
         const limitCheck = await checkRateLimit(`upload_blob_${session.user.email}`, 5, 3600);
         if (!limitCheck.success) {

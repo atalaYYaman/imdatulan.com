@@ -11,12 +11,29 @@ import { v4 as uuidv4 } from 'uuid';
  * Files are uploaded directly from client to Vercel Blob, bypassing serverless function body limits
  */
 export async function POST(request: Request) {
+    // Zero Trust: Always verify session first
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     try {
+        // Zero Trust: Verify user exists in database
+        const { prisma } = await import("@/lib/prisma");
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            select: { id: true, approvalStatus: true }
+        });
+
+        if (!user) {
+            return NextResponse.json({ message: "User not found" }, { status: 404 });
+        }
+
+        // Zero Trust: Check user approval status
+        if (user.approvalStatus === 'BANNED' || user.approvalStatus === 'REJECTED') {
+            return NextResponse.json({ message: "Account not authorized" }, { status: 403 });
+        }
+
         // Rate limit check
         const limitCheck = await checkRateLimit(`upload_handler_${session.user.email}`, 10, 3600);
         if (!limitCheck.success) {
@@ -25,11 +42,21 @@ export async function POST(request: Request) {
 
         const body = (await request.json()) as HandleUploadBody;
 
+        // Zero Trust: Validate request body
+        if (!body || typeof body !== 'object') {
+            return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
+        }
+
         const jsonResponse = await handleUpload({
             body,
             request,
             onBeforeGenerateToken: async (pathname) => {
-                // Validate file extension
+                // Zero Trust: Validate pathname to prevent path traversal
+                if (!pathname || typeof pathname !== 'string' || pathname.length > 255) {
+                    throw new Error('Geçersiz dosya adı.');
+                }
+
+                // Zero Trust: Validate file extension (prevent executable files)
                 const ext = pathname.split('.').pop()?.toLowerCase();
                 const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
                 
@@ -37,9 +64,13 @@ export async function POST(request: Request) {
                     throw new Error('Geçersiz dosya tipi. Sadece PDF, JPG ve PNG dosyaları kabul edilir.');
                 }
 
+                // Zero Trust: Sanitize filename (remove any path components)
+                const sanitizedBasename = pathname.split('/').pop() || pathname;
+                const sanitizedExt = sanitizedBasename.split('.').pop()?.toLowerCase() || ext;
+
                 // Generate unique filename with UUID + timestamp to ensure uniqueness
                 const timestamp = Date.now();
-                const uniqueFilename = `${uuidv4()}-${timestamp}.${ext}`;
+                const uniqueFilename = `${uuidv4()}-${timestamp}.${sanitizedExt}`;
 
                 return {
                     allowedContentTypes: ['application/pdf', 'image/jpeg', 'image/png'],
@@ -47,8 +78,8 @@ export async function POST(request: Request) {
                     maximumSizeInBytes: 25 * 1024 * 1024, // 25MB
                     pathname: uniqueFilename,
                     tokenPayload: JSON.stringify({
-                        userId: session.user?.email,
-                        originalFilename: pathname,
+                        userId: user.id, // Use database ID, not email
+                        originalFilename: sanitizedBasename,
                     }),
                 };
             },

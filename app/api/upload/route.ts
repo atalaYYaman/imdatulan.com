@@ -7,12 +7,27 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { PDFDocument } from "pdf-lib";
 
 export async function POST(req: Request) {
+    // Zero Trust: Always verify session first
     const session = await getServerSession(authOptions)
     if (!session || !session.user?.email) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
     }
 
     try {
+        // Zero Trust: Verify user exists in database
+        const user = await prisma.user.findUnique({ 
+            where: { email: session.user.email },
+            select: { id: true, approvalStatus: true }
+        })
+        if (!user) {
+            return NextResponse.json({ message: "User not found" }, { status: 404 })
+        }
+
+        // Zero Trust: Check user approval status
+        if (user.approvalStatus === 'BANNED' || user.approvalStatus === 'REJECTED') {
+            return NextResponse.json({ message: "Account not authorized" }, { status: 403 });
+        }
+
         const formData = await req.formData()
         const file = formData.get("file") as File | null
         const blobUrl = formData.get("blobUrl") as string | null
@@ -22,16 +37,34 @@ export async function POST(req: Request) {
         const description = formData.get("description") as string
         const priceStr = formData.get("price") as string
 
-        // --- VALIDATION (Sentinel) ---
+        // --- VALIDATION (Zero Trust) ---
         // 1. Rate Limit
         const limitCheck = await checkRateLimit(`upload_${session.user.email}`, 5, 3600); // 5 uploads per hour
         if (!limitCheck.success) {
             return NextResponse.json({ message: limitCheck.message }, { status: 429 });
         }
 
-        // 2. Input Validation
+        // 2. Input Validation (Zero Trust: Validate all inputs)
         if ((!file && !blobUrl) || !courseName) {
             return NextResponse.json({ message: "Dosya ve Ders Adı zorunludur." }, { status: 400 })
+        }
+
+        // Zero Trust: Validate blobUrl format if provided (prevent SSRF)
+        if (blobUrl) {
+            if (typeof blobUrl !== 'string' || blobUrl.length > 500) {
+                return NextResponse.json({ message: "Invalid blob URL" }, { status: 400 });
+            }
+            // Ensure blobUrl is from trusted source
+            const trustedDomains = ['blob.vercel-storage.com', 'pub-'];
+            const isTrustedUrl = trustedDomains.some(domain => blobUrl.includes(domain));
+            if (!isTrustedUrl) {
+                return NextResponse.json({ message: "Invalid file source" }, { status: 403 });
+            }
+        }
+
+        // Zero Trust: Validate courseName (prevent injection)
+        if (typeof courseName !== 'string' || courseName.length > 200 || courseName.length < 1) {
+            return NextResponse.json({ message: "Invalid course name" }, { status: 400 });
         }
 
         let finalBlobUrl: string;
@@ -85,9 +118,7 @@ export async function POST(req: Request) {
             // Continue without page count if extraction fails
         }
 
-        // DB Record
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-        if (!user) return NextResponse.json({ message: "User not found" }, { status: 404 })
+        // DB Record (user already fetched above for zero trust verification)
 
         const note = await prisma.note.create({
             data: {
