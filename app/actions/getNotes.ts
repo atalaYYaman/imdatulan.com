@@ -1,15 +1,36 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export async function getNotes() {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) throw new Error("Unauthorized")
+
     try {
         const notes = await prisma.note.findMany({
             where: {
-                status: 'APPROVED', // Only fetch approved notes
-                deletedAt: null    // Exclude soft-deleted notes
+                status: 'APPROVED',
+                deletedAt: null
             },
-            include: {
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                courseName: true,
+                university: true,
+                faculty: true,
+                department: true,
+                term: true,
+                type: true,
+                price: true,
+                createdAt: true,
+                uploaderId: true,
+                viewCount: true,
+                pageCount: true,
+                status: true,
+                // fileUrl is NEVER returned in list view (Zero Trust: prevent IDOR / leakage)
                 uploader: {
                     select: {
                         id: true,
@@ -19,7 +40,6 @@ export async function getNotes() {
                         role: true,
                         university: true,
                         department: true,
-                        // We don't have avatar/stats in DB yet, will map to dummy or defaults
                     }
                 }
             },

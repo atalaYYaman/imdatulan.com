@@ -9,10 +9,32 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 export async function getNoteDetail(noteId: string) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) throw new Error("Unauthorized")
+
     try {
         const note = await prisma.note.findUnique({
             where: { id: noteId },
-            include: {
+            select: {
+                id: true,
+                title: true,
+                university: true,
+                faculty: true,
+                department: true,
+                price: true,
+                status: true,
+                rejectionReason: true,
+                courseName: true,
+                type: true,
+                term: true,
+                description: true,
+                isAI: true,
+                viewCount: true,
+                pageCount: true,
+                uploaderId: true,
+                createdAt: true,
+                updatedAt: true,
+                deletedAt: true,
                 uploader: {
                     select: {
                         id: true,
@@ -20,7 +42,6 @@ export async function getNoteDetail(noteId: string) {
                         lastName: true,
                         university: true,
                         department: true,
-                        // fileUrl MUST NEVER be exposed here.
                     }
                 },
                 _count: {
@@ -45,42 +66,25 @@ export async function getNoteDetail(noteId: string) {
             }
         })
 
-        // --- Access Control Logic ---
         if (!note) return null
+        if (note.deletedAt) return null
 
-        if (note.deletedAt) return null; // Soft Delete Check
+        if (note.status === 'PENDING') return null
 
-        // 1. PENDING Notlar: Kimse erişemez (Owner dahil)
-        if (note.status === 'PENDING') {
-            return null
-        }
-
-        // 2. SUSPENDED Notlar: Sadece Owner ve Satın Alanlar
         if (note.status === 'SUSPENDED') {
-            const session = await getServerSession(authOptions)
-            if (!session?.user?.email) return null
-
-            const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+            const user = await prisma.user.findUnique({ where: { email: session.user.email! } })
             if (!user) return null
-
-            // Owner check
             if (note.uploaderId === user.id) {
-                // Allow
+                // Allow owner
             } else {
-                // Purchase check
                 const isUnlocked = await prisma.unlockedNote.findUnique({
                     where: {
-                        userId_noteId: {
-                            userId: user.id,
-                            noteId: noteId
-                        }
+                        userId_noteId: { userId: user.id, noteId: noteId }
                     }
                 })
-
                 if (!isUnlocked) return null
             }
         }
-        // ---------------------------
 
         return note
     } catch (error) {
@@ -139,7 +143,7 @@ export async function incrementView(noteId: string) {
 
 export async function addComment(noteId: string, text: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return { success: false, message: "Unauthorized" }
+    if (!session?.user) throw new Error("Unauthorized")
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
@@ -173,7 +177,7 @@ import { UnlockNoteSchema } from "@/lib/schemas";
 
 export async function unlockNote(noteId: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return { success: false, message: "Unauthorized" }
+    if (!session?.user) throw new Error("Unauthorized")
 
     try {
         // 1. Input Validation
@@ -304,7 +308,7 @@ export async function isNoteUnlocked(noteId: string) {
 
 export async function toggleLike(noteId: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return { success: false, message: "Unauthorized" }
+    if (!session?.user) throw new Error("Unauthorized")
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
@@ -382,7 +386,7 @@ export async function isLikedByUser(noteId: string) {
 // REPORT ACTIONS
 export async function createReport(noteId: string, reason: string, details: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return { success: false, message: "Şikayet etmek için giriş yapmalısınız." }
+    if (!session?.user) throw new Error("Unauthorized")
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
@@ -426,7 +430,7 @@ export async function createReport(noteId: string, reason: string, details: stri
 // DELETE ACTION
 export async function deleteNote(noteId: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return { success: false, message: "Yetkisiz işlem." }
+    if (!session?.user) throw new Error("Unauthorized")
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })

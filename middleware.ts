@@ -39,8 +39,12 @@ export default withAuth(
     },
     {
         callbacks: {
-            // Allow public access; apply role checks only when token exists.
-            authorized: () => true,
+            // /notes ve /api/download: sadece giriş yapmış kullanıcılar erişebilir (Zero Trust)
+            authorized: ({ req, token }) => {
+                const path = req.nextUrl.pathname;
+                if (path.startsWith("/notes") || path.startsWith("/api/download")) return !!token;
+                return true;
+            },
         },
     }
 );
@@ -50,6 +54,7 @@ export const config = {
         "/admin/:path*",
         "/partner/:path*",
         "/profile/:path*",
+        "/notes",
         "/notes/:path*",
         "/note/:path*",
         "/chat/:path*",
@@ -59,5 +64,6 @@ export const config = {
         "/store/:path*",
         "/top-noder/:path*",
         "/support/:path*",
+        "/api/download/:path*",
     ],
 };

@@ -304,7 +304,7 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                             price: note.price || 0,
                             uploaderId: note.uploader.id,
                             previewUrl: "/doc.png",
-                            fileUrl: note.fileUrl,
+                            fileUrl: `/api/download/${note.id}`,
                             description: note.description,
                             type: note.type ?? '',
                         };
