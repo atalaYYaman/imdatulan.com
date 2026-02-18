@@ -10,7 +10,7 @@ import { z } from "zod";
 
 export async function getNoteDetail(noteId: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
 
     try {
         const note = await prisma.note.findUnique({
@@ -72,7 +72,7 @@ export async function getNoteDetail(noteId: string) {
         if (note.status === 'PENDING') return null
 
         if (note.status === 'SUSPENDED') {
-            const user = await prisma.user.findUnique({ where: { email: session.user.email! } })
+            const user = await prisma.user.findUnique({ where: { email: session.user.email } })
             if (!user) return null
             if (note.uploaderId === user.id) {
                 // Allow owner
@@ -143,7 +143,7 @@ export async function incrementView(noteId: string) {
 
 export async function addComment(noteId: string, text: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
@@ -177,7 +177,9 @@ import { UnlockNoteSchema } from "@/lib/schemas";
 
 export async function unlockNote(noteId: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
+
+    const userEmail = session.user.email as string
 
     try {
         // 1. Input Validation
@@ -187,7 +189,7 @@ export async function unlockNote(noteId: string) {
         const result = await prisma.$transaction(async (tx) => {
             // 2. Fetch & Lock (Zero Trust)
             // Fetch User
-            const user = await tx.user.findUnique({ where: { email: session.user.email! } });
+            const user = await tx.user.findUnique({ where: { email: userEmail } });
             if (!user) throw new Error("Kullanıcı bulunamadı");
 
             // Fetch Note
@@ -308,7 +310,7 @@ export async function isNoteUnlocked(noteId: string) {
 
 export async function toggleLike(noteId: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
@@ -386,7 +388,7 @@ export async function isLikedByUser(noteId: string) {
 // REPORT ACTIONS
 export async function createReport(noteId: string, reason: string, details: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
@@ -430,7 +432,7 @@ export async function createReport(noteId: string, reason: string, details: stri
 // DELETE ACTION
 export async function deleteNote(noteId: string) {
     const session = await getServerSession(authOptions)
-    if (!session?.user) throw new Error("Unauthorized")
+    if (!session?.user?.email) throw new Error("Unauthorized")
 
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } })
