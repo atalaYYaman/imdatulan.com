@@ -7,8 +7,8 @@ import { Comment } from '@prisma/client';
 
 type CommentWithUser = Comment & {
     user: {
-        firstName: string | null;
-        lastName: string | null;
+        id: string;
+        displayName: string;
     };
 };
 
@@ -56,12 +56,12 @@ export default function CommentSection({ noteId, initialComments }: CommentSecti
                         <div key={comment.id} className="group animate-in slide-in-from-bottom-2 duration-300">
                             <div className="flex items-start gap-3">
                                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-xs font-bold ring-2 ring-background text-primary">
-                                    {comment.user.firstName?.[0] || <User className="w-4 h-4" />}
+                                    {comment.user.displayName?.[0] || <User className="w-4 h-4" />}
                                 </div>
                                 <div className="flex-1 bg-muted/30 p-3 rounded-xl rounded-tl-none border border-border/50">
                                     <div className="flex items-center justify-between gap-2 mb-1">
                                         <span className="text-sm font-bold text-foreground">
-                                            {comment.user.firstName} {comment.user.lastName}
+                                            {comment.user.displayName}
                                         </span>
                                         <span className="text-[10px] text-muted-foreground">
                                             {new Date(comment.createdAt).toLocaleDateString('tr-TR')}

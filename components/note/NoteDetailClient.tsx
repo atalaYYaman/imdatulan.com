@@ -15,10 +15,8 @@ import { Note, Comment, User } from '@prisma/client';
 type NoteWithDetails = Note & {
     uploader: {
         id: string;
-        firstName: string | null;
-        lastName: string | null;
-        university: string | null;
         department: string | null;
+        displayName: string;
     };
     rejectionReason: string | null;
     status: string;
@@ -28,8 +26,8 @@ type NoteWithDetails = Note & {
     };
     comments: (Comment & {
         user: {
-            firstName: string | null;
-            lastName: string | null;
+            id: string;
+            displayName: string;
         };
     })[];
 };
@@ -294,10 +292,10 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                                 <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
                                     <div className='flex items-center gap-2'>
                                         <div className='w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-[10px] text-white font-bold'>
-                                            {note.uploader.firstName ? note.uploader.firstName[0] : 'U'}
+                                            {note.uploader.displayName?.[0] || 'U'}
                                         </div>
                                         <p className="font-medium">
-                                            {note.uploader.firstName} {note.uploader.lastName}
+                                            {note.uploader.displayName}
                                         </p>
                                     </div>
                                     <span className='text-[10px] opacity-50'>{new Date(note.createdAt).toLocaleDateString('tr-TR')}</span>

@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache"
 import xss from 'xss';
 import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+import { getAnonymousNameByDepartment } from "@/lib/anonymization";
 
 export async function getNoteDetail(noteId: string) {
     const session = await getServerSession(authOptions)
@@ -38,9 +39,6 @@ export async function getNoteDetail(noteId: string) {
                 uploader: {
                     select: {
                         id: true,
-                        firstName: true,
-                        lastName: true,
-                        university: true,
                         department: true,
                     }
                 },
@@ -54,8 +52,8 @@ export async function getNoteDetail(noteId: string) {
                     include: {
                         user: {
                             select: {
-                                firstName: true,
-                                lastName: true,
+                                id: true,
+                                department: true,
                             }
                         }
                     },
@@ -86,7 +84,23 @@ export async function getNoteDetail(noteId: string) {
             }
         }
 
-        return note
+        // UI'ye gerçek isim gönderilmez; sadece anonim displayName
+        const uploaderDisplayName = getAnonymousNameByDepartment(note.uploader.department);
+        return {
+            ...note,
+            uploader: {
+                id: note.uploader.id,
+                department: note.uploader.department,
+                displayName: uploaderDisplayName,
+            },
+            comments: note.comments.map((c) => ({
+                ...c,
+                user: {
+                    id: c.user.id,
+                    displayName: getAnonymousNameByDepartment(c.user.department),
+                },
+            })),
+        };
     } catch (error) {
         console.error("Error fetching note detail:", error)
         return null
