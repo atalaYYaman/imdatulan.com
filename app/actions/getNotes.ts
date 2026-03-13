@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { getAnonymousNameByDepartment } from "@/lib/anonymization"
 
 export async function getNotes() {
     const session = await getServerSession(authOptions)
@@ -30,15 +31,9 @@ export async function getNotes() {
                 viewCount: true,
                 pageCount: true,
                 status: true,
-                // fileUrl is NEVER returned in list view (Zero Trust: prevent IDOR / leakage)
                 uploader: {
                     select: {
                         id: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        role: true,
-                        university: true,
                         department: true,
                     }
                 }
@@ -47,7 +42,16 @@ export async function getNotes() {
                 createdAt: 'desc'
             }
         })
-        return notes
+
+        // UI'ye sadece anonim isim ve temel uploader bilgisi gönderilir.
+        return notes.map(note => ({
+            ...note,
+            uploader: {
+                id: note.uploader.id,
+                department: note.uploader.department,
+                anonymousName: getAnonymousNameByDepartment(note.uploader.department),
+            },
+        }))
     } catch (error) {
         console.error("Failed to fetch notes:", error)
         return []

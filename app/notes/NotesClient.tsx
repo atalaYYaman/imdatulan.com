@@ -23,12 +23,8 @@ interface Note {
     price: number;
     uploader: {
         id: string;
-        firstName: string | null;
-        lastName: string | null;
-        email: string;
-        role?: string;
-        university?: string | null;
         department?: string | null;
+        anonymousName: string;
     };
 }
 
@@ -280,16 +276,10 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
 
             {filteredNotes.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6">
-                    {filteredNotes.map((note, index) => {
+                    {filteredNotes.map((note) => {
                         const author = {
-                            name: `${note.uploader.firstName || ''} ${note.uploader.lastName || ''}`.trim() || 'Anonim',
+                            name: note.uploader.anonymousName,
                             avatar: '',
-                            stats: { followers: 0, rating: 0, following: 0, totalNotes: 0 },
-                            email: note.uploader.email,
-                            role: note.uploader.role,
-                            university: note.uploader.university,
-                            department: note.uploader.department,
-                            wallet: 0
                         };
 
                         const mappedNote = {
