@@ -38,10 +38,10 @@ export async function POST(req: Request) {
             data: { status: 'APPROVED' }
         })
 
-        // Give Credits to Uploader
+        // Give Credits to Uploader: note.price + 5 Süt paylaşım hediyesi
         await prisma.user.update({
             where: { id: note.uploaderId },
-            data: { credits: { increment: note.price } }
+            data: { credits: { increment: note.price + 5 } }
         })
 
         // Send Email

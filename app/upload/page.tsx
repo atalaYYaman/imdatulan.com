@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from "react";
-import { UploadCloud, FileText, CheckCircle, AlertCircle, X, Sparkles, ChevronRight, Info } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle, Sparkles, ChevronRight, Info, Gift } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -265,13 +265,24 @@ export default function UploadPage() {
                 <div className="bg-card/70 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
 
                     {/* Header Info Alert */}
-                    <div className="mb-8 bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4 flex gap-4">
-                        <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-                            <Info className="h-5 w-5 text-blue-500" />
+                    <div className="mb-6 space-y-4">
+                        <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4 flex gap-4">
+                            <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                                <Info className="h-5 w-5 text-blue-500" />
+                            </div>
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-bold text-foreground">Dikkat Edilmesi Gerekenler</h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">Topluluğun faydalanabilmesi için lütfen tüm bilgileri doğru giriniz. Yanlış veya yanıltıcı içerikler moderatör ekibimiz tarafından kaldırılacaktır.</p>
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <h3 className="text-sm font-bold text-foreground">Dikkat Edilmesi Gerekenler</h3>
-                            <p className="text-xs text-muted-foreground leading-relaxed">Topluluğun faydalanabilmesi için lütfen tüm bilgileri doğru giriniz. Yanlış veya yanıltıcı içerikler moderatör ekibimiz tarafından kaldırılacaktır.</p>
+                        <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 flex gap-4">
+                            <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                                <Gift className="h-5 w-5 text-emerald-500" />
+                            </div>
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-bold text-foreground">5 Süt Hediye</h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">Her içerik paylaşımınız onaylandığında hesabınıza <span className="font-bold text-foreground">5 Süt/Kredi</span> hediye edilir (içerik türünden bağımsız).</p>
+                            </div>
                         </div>
                     </div>
 
@@ -413,33 +424,41 @@ export default function UploadPage() {
                             </div>
                         </div>
 
-                        {/* Note Type & Price */}
-                        <div className="space-y-4">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Not Türü ve Fiyatı</label>
+                        {/* Content Type */}
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">İçerik Türü</label>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 {['Ders Notu', 'Otlak Sorular', 'Ödev', 'Slayt'].map(type => (
                                     <button
                                         key={type}
                                         type="button"
-                                        onClick={() => {
-                                            let newPrice = 1;
-                                            if (type === 'Otlak Sorular') newPrice = 3;
-                                            else if (type === 'Ders Notu') newPrice = 2;
-                                            else if (type === 'Slayt') newPrice = 1;
-                                            setFormData(prev => ({ ...prev, noteType: type, price: newPrice }))
-                                        }}
-                                        className={`px-3 py-3 rounded-xl text-sm font-medium border-2 transition-all duration-200 flex flex-col items-center gap-1 ${formData.noteType === type
+                                        onClick={() => setFormData(prev => ({ ...prev, noteType: type }))}
+                                        className={`px-3 py-3 rounded-xl text-sm font-medium border-2 transition-all duration-200 ${formData.noteType === type
                                             ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]"
                                             : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
                                             }`}
                                     >
-                                        <span>{type}</span>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${formData.noteType === type ? 'bg-white/20' : 'bg-muted'}`}>
-                                            {
-                                                type === 'Otlak Sorular' ? 3 :
-                                                    type === 'Ders Notu' ? 2 : 1
-                                            } Süt
-                                        </span>
+                                        {type}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Price (independent of content type) */}
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Satış Fiyatı (Süt/Kredi)</label>
+                            <div className="flex flex-wrap gap-2">
+                                {[1, 2, 3, 4, 5].map(n => (
+                                    <button
+                                        key={n}
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, price: n }))}
+                                        className={`flex-1 min-w-[60px] px-4 py-3 rounded-xl text-sm font-bold border-2 transition-all duration-200 ${formData.price === n
+                                            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]"
+                                            : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                                            }`}
+                                    >
+                                        {n} Süt
                                     </button>
                                 ))}
                             </div>

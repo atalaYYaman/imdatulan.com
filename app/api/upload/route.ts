@@ -99,10 +99,8 @@ export async function POST(req: Request) {
         }
 
         let price = priceStr ? parseInt(priceStr) : 1;
-        // Validate Price using Schema manually (or just logic)
-        // Schema: min 1, max 50
         if (price < 1) price = 1;
-        if (price > 50) return NextResponse.json({ message: "Fiyat en fazla 50 süt olabilir." }, { status: 400 });
+        if (price > 5) return NextResponse.json({ message: "Fiyat 1-5 Süt arasında olmalıdır." }, { status: 400 });
 
         // Extract page count from PDF if it's a PDF file
         let pageCount: number | null = null;
