@@ -32,6 +32,7 @@ export async function getNoteDetail(noteId: string) {
                 isAI: true,
                 viewCount: true,
                 pageCount: true,
+                fileExtension: true,
                 uploaderId: true,
                 createdAt: true,
                 updatedAt: true,

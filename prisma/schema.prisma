@@ -143,6 +143,7 @@ model Note {
   isAI        Boolean @default(false) // İçerikte AI desteği var mı?
   viewCount   Int     @default(0)
   pageCount   Int?    // PDF sayfa sayısı (sadece PDF'ler için)
+  fileExtension String? // pdf, png, jpg, etc. - for correct viewer selection
 
   uploaderId String
   uploader   User     @relation(fields: [uploaderId], references: [id])

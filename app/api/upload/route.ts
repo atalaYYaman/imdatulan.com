@@ -37,6 +37,7 @@ export async function POST(req: Request) {
         const formData = await req.formData()
         const file = formData.get("file") as File | null
         const blobUrl = formData.get("blobUrl") as string | null
+        const fileName = formData.get("fileName") as string | null // For blobUrl case: original filename for extension
         const courseName = formData.get("courseName") as string
         const term = formData.get("term") as string
         const noteType = formData.get("noteType") as string
@@ -122,6 +123,23 @@ export async function POST(req: Request) {
             // Continue without page count if extraction fails
         }
 
+        // Extract file extension for correct viewer selection
+        const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png']);
+        let fileExtension = 'pdf';
+        if (file) {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            if (ext && ALLOWED_EXT.has(ext)) fileExtension = ext;
+        } else if (fileName && typeof fileName === 'string') {
+            const ext = fileName.split('.').pop()?.toLowerCase();
+            if (ext && ALLOWED_EXT.has(ext)) fileExtension = ext;
+        } else if (blobUrl) {
+            try {
+                const pathname = new URL(blobUrl).pathname;
+                const ext = pathname.split('.').pop()?.toLowerCase();
+                if (ext && ALLOWED_EXT.has(ext)) fileExtension = ext;
+            } catch { /* keep pdf */ }
+        }
+
         // DB Record (user already fetched above for zero trust verification)
 
         const note = await prisma.note.create({
@@ -140,6 +158,7 @@ export async function POST(req: Request) {
                 status: "PENDING",
                 isAI: formData.get("isAI") === "true",
                 pageCount: pageCount,
+                fileExtension: fileExtension,
             }
         })
 

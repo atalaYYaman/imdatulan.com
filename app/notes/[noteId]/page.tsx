@@ -67,7 +67,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
         }
 
         // SECURITY: fileUrl is never exposed from getNoteDetail. Use proxy as the only client-facing URL.
-        const originalExtension = "pdf";
+        const originalExtension = (note.fileExtension ?? 'pdf').toLowerCase();
 
         const secureNote = {
             ...note,

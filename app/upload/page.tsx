@@ -165,6 +165,7 @@ export default function UploadPage() {
             const data = new FormData();
             if (blobUrl) {
                 data.append("blobUrl", blobUrl);
+                data.append("fileName", file.name); // For fileExtension extraction on server
             } else {
                 data.append("file", file);
             }

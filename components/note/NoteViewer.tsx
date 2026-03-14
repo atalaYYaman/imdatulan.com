@@ -31,13 +31,56 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const [isLoading, setIsLoading] = useState(true);
     const [pageWidth, setPageWidth] = useState<number | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [retryKey, setRetryKey] = useState(0);
+    const [blobObjectUrl, setBlobObjectUrl] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const handleRetry = useCallback(() => {
+        setLoadError(null);
+        setIsLoading(true);
+        setRetryKey(k => k + 1);
+    }, []);
 
     // Reset state when fileUrl changes or lock state changes
     useEffect(() => {
         setIsLoading(true);
         setLoadError(null);
     }, [fileUrl, isLocked]);
+
+    // Fetch file and create blob URL for in-viewer display (no external URL exposure)
+    useEffect(() => {
+        const ext = fileExtension ? fileExtension.toLowerCase() : (fileUrl.split('.').pop()?.toLowerCase() || '');
+        const pdf = ext === 'pdf' || (!fileExtension && fileUrl.toLowerCase().endsWith('.pdf'));
+        const img = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || (!fileExtension && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl));
+        if (!pdf && !img) return;
+
+        let revoked = false;
+        fetch(fileUrl, { credentials: 'include' })
+            .then((res) => {
+                if (!res.ok) throw new Error('Dosya yüklenemedi');
+                return res.blob();
+            })
+            .then((blob) => {
+                if (revoked) return;
+                const url = URL.createObjectURL(blob);
+                setBlobObjectUrl(url);
+            })
+            .catch((err) => {
+                if (!revoked) {
+                    console.error('Blob fetch error:', err);
+                    setLoadError('İçerik yüklenirken bir hata oluştu.');
+                    setIsLoading(false);
+                }
+            });
+
+        return () => {
+            revoked = true;
+            setBlobObjectUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return null;
+            });
+        };
+    }, [fileUrl, fileExtension, isLocked]);
 
     // Handle Resize Logic
     useEffect(() => {
@@ -226,8 +269,10 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
 
                     <div className="relative shadow-2xl min-h-[500px] min-w-[300px] bg-white transition-all duration-500 animate-in fade-in" id="content-container">
                         {isPdf ? (
+                            blobObjectUrl ? (
                             <Document
-                                file={fileUrl}
+                                key={retryKey}
+                                file={blobObjectUrl}
                                 onLoadSuccess={onDocumentLoadSuccess}
                                 onLoadError={onDocumentLoadError}
                                 loading={null}
@@ -236,7 +281,13 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                     <div className="p-10 text-center text-red-500 bg-red-50/50 rounded-xl">
                                         <p className="font-bold">PDF Açılmadı</p>
                                         <p className="text-sm mt-2 max-w-xs mx-auto text-muted-foreground">{loadError || "Bilinmeyen bir hata oluştu."}</p>
-                                        <a href={fileUrl} target="_blank" className="mt-4 inline-block text-xs text-primary underline">Dosyayı İndirip Açmayı Dene</a>
+                                        <button
+                                            type="button"
+                                            onClick={handleRetry}
+                                            className="mt-4 inline-block text-sm text-primary font-medium underline hover:no-underline focus:outline-none"
+                                        >
+                                            Tekrar Dene
+                                        </button>
                                     </div>
                                 }
                             >
@@ -250,9 +301,11 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                     />
                                 ))}
                             </Document>
+                            ) : null
                         ) : isImage ? (
+                            blobObjectUrl ? (
                             <SecureImage
-                                fileUrl={fileUrl}
+                                fileUrl={blobObjectUrl}
                                 scale={scale}
                                 drawWatermark={drawWatermark}
                                 onLoad={() => setIsLoading(false)}
@@ -261,18 +314,11 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                     setLoadError("Resim yüklenemedi");
                                 }}
                             />
+                            ) : null
                         ) : (
                             <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
                                 <p className="text-xl font-bold mb-4">Önizleme Kullanılamıyor</p>
-                                <p className="text-muted-foreground mb-6">Bu dosya formatı ({fileUrl.split('.').pop()}) şu an için tarayıcıda görüntülenemez.</p>
-                                <a
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
-                                >
-                                    Dosyayı İndir
-                                </a>
+                                <p className="text-muted-foreground">Bu dosya formatı ({ext || "bilinmiyor"}) şu an için tarayıcıda görüntülenemiyor. Desteklenen formatlar: PDF, JPG, PNG.</p>
                             </div>
                         )}
                     </div>

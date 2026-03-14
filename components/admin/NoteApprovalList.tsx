@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 // import { approveNote, rejectNote } from '@/app/actions/adminActions'; // Deprecated in favor of API routes
-import { FileText, Download, User, Check, X, Loader2, School, BookOpen, AlertCircle } from 'lucide-react';
+import { FileText, User, Check, X, Loader2, School, BookOpen } from 'lucide-react';
 
 type NoteData = {
     id: string;
@@ -148,15 +149,13 @@ export default function NoteApprovalList({ notes }: { notes: NoteData[] }) {
 
                         {/* Right Actions */}
                         <div className="flex flex-row md:flex-col justify-between gap-3 md:w-48 shrink-0">
-                            <a
-                                href={`/api/files/${note.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <Link
+                                href={`/notes/${note.id}`}
                                 className="flex-1 md:flex-none flex items-center justify-center gap-2 w-full py-3 bg-background border border-border hover:border-primary/50 text-foreground rounded-xl font-bold transition-all hover:shadow-lg group/btn"
                             >
                                 <FileText className="w-4 h-4 group-hover/btn:scale-110 transition-transform text-primary" />
                                 Önizle
-                            </a>
+                            </Link>
 
                             <div className="h-px bg-border w-full hidden md:block" />
 
