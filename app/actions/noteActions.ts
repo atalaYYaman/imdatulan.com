@@ -33,6 +33,7 @@ export async function getNoteDetail(noteId: string) {
                 viewCount: true,
                 pageCount: true,
                 fileExtension: true,
+                fileUrl: true, // Used only for extension fallback when fileExtension is null (old notes)
                 uploaderId: true,
                 createdAt: true,
                 updatedAt: true,
@@ -85,10 +86,24 @@ export async function getNoteDetail(noteId: string) {
             }
         }
 
-        // UI'ye gerçek isim gönderilmez; sadece anonim displayName
+        // Fallback: Eski notlar (migration öncesi) fileExtension=null; blob URL'den uzantı parse et
+        const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png']);
+        let effectiveFileExtension = note.fileExtension;
+        if (!effectiveFileExtension && note.fileUrl) {
+            try {
+                const pathname = new URL(note.fileUrl).pathname;
+                const ext = pathname.split('.').pop()?.toLowerCase();
+                if (ext && ALLOWED_EXT.has(ext)) effectiveFileExtension = ext;
+            } catch { /* ignore */ }
+        }
+        effectiveFileExtension = effectiveFileExtension ?? 'pdf';
+
+        // UI'ye gerçek isim gönderilmez; fileUrl ASLA client'a gönderilmez
+        const { fileUrl: _omitUrl, ...noteSafe } = note;
         const uploaderDisplayName = getAnonymousNameByDepartment(note.uploader.department);
         return {
-            ...note,
+            ...noteSafe,
+            fileExtension: effectiveFileExtension,
             uploader: {
                 id: note.uploader.id,
                 department: note.uploader.department,
