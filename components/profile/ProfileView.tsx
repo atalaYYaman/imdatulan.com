@@ -183,7 +183,7 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {purchasedNotes.length > 0 ? (
                                     purchasedNotes.map((note: any) => {
-                                        const authorName = note.uploader ? `${note.uploader.firstName || ''} ${note.uploader.lastName || ''}`.trim() : 'Bilinmiyor';
+                                        const authorName = note.uploader?.anonymousName || 'Anonim İnek';
                                         return (
                                             <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-[1.02] active:scale-95 duration-300">
                                                 <div className="relative h-full">

@@ -11,6 +11,7 @@ export default function MobileHeader() {
     const [isOpen, setIsOpen] = useState(false);
     const { theme, setTheme } = useTheme();
     const { data: session } = useSession();
+    const anonymousDisplayName = "Anonim Üye";
 
     // Prevent scrolling when menu is open
     useEffect(() => {
@@ -96,10 +97,10 @@ export default function MobileHeader() {
                         <div className="bg-muted/50 rounded-2xl p-4 border border-border/50">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg ring-2 ring-background">
-                                    {(session.user?.name || 'K').substring(0, 2).toUpperCase()}
+                                    {anonymousDisplayName.substring(0, 2).toUpperCase()}
                                 </div>
                                 <div className="flex flex-col min-w-0">
-                                    <span className="font-bold text-foreground truncate">{session.user.name}</span>
+                                    <span className="font-bold text-foreground truncate">{anonymousDisplayName}</span>
                                     <span className="text-sm text-muted-foreground truncate">{session.user.email}</span>
                                 </div>
                             </div>

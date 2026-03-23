@@ -10,6 +10,7 @@ export default function Header() {
     const { data: session } = useSession();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const anonymousDisplayName = "Anonim Üye";
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -35,7 +36,7 @@ export default function Header() {
                     >
                         <div className="text-right hidden md:block">
                             <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                                {session.user.name || 'Kullanıcı'}
+                                {anonymousDisplayName}
                             </p>
                             <p className="text-xs font-medium text-primary flex items-center justify-end gap-1">
                                 Mevcut Süt: {session.user.credits !== undefined ? session.user.credits : '-'} <span className="text-sm">🥛</span>
@@ -43,7 +44,7 @@ export default function Header() {
                         </div>
                         <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold ring-2 ring-border group-hover:ring-primary transition-all shadow-lg overflow-hidden">
                             {/* Initials */}
-                            {(session.user.name || 'K').split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                            {anonymousDisplayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                     </button>
 
@@ -52,7 +53,7 @@ export default function Header() {
                         <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-2xl overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="px-4 py-3 border-b border-border md:hidden">
                                 <p className="text-sm font-medium text-foreground truncate">
-                                    {session.user?.name || 'Kullanıcı'}
+                                    {anonymousDisplayName}
                                 </p>
                                 <p className="text-xs text-muted-foreground truncate">
                                     {session.user?.email}

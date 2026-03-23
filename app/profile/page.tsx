@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import ProfileView from "@/components/profile/ProfileView";
 
 import { maskStudentNumber } from "@/lib/masking";
+import { getAnonymousNameByDepartment } from "@/lib/anonymization";
 
 // Server Component
 export const dynamic = 'force-dynamic';
@@ -35,8 +36,8 @@ export default async function ProfilePage() {
                         include: {
                             uploader: {
                                 select: {
-                                    firstName: true,
-                                    lastName: true
+                                    id: true,
+                                    department: true
                                 }
                             },
                             _count: {
@@ -83,7 +84,11 @@ export default async function ProfilePage() {
     // We need to shape them like the 'notes' array for the view
     const purchasedNotes = user.unlockedNotes.map(unlocked => ({
         ...unlocked.note,
-        uploader: unlocked.note.uploader
+        uploader: {
+            id: unlocked.note.uploader.id,
+            department: unlocked.note.uploader.department,
+            anonymousName: getAnonymousNameByDepartment(unlocked.note.uploader.department),
+        }
     }));
 
     return <ProfileView user={profileUser} notes={user.notes} purchasedNotes={purchasedNotes} stats={stats} />;
