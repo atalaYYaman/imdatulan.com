@@ -73,7 +73,14 @@ export async function getNoteDetail(noteId: string) {
         if (!note) return null
         if (note.deletedAt) return null
 
-        if (note.status === 'PENDING') return null
+        if (note.status === 'PENDING') {
+            const user = await prisma.user.findUnique({
+                where: { email: session.user.email },
+                select: { id: true, role: true }
+            })
+            if (!user) return null
+            if (note.uploaderId !== user.id && user.role !== 'ADMIN') return null
+        }
 
         if (note.status === 'SUSPENDED') {
             const user = await prisma.user.findUnique({ where: { email: session.user.email } })
