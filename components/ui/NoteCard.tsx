@@ -1,7 +1,23 @@
 'use client';
 
-import { FileText, Star, User } from 'lucide-react';
+import { FileText, User } from 'lucide-react';
 import Image from 'next/image';
+import type { NoteLetterGrade } from '@prisma/client';
+import {
+    bannerStripClasses,
+    tierForAverageScore,
+    tierForGrade,
+    formatRatingSummary,
+    unratedMessage,
+    cardGlowClasses,
+    type GradeTier,
+} from '@/lib/noteGrades';
+
+export interface NoteCardRatingSummary {
+    count: number;
+    averageScore: number | null;
+    letter: NoteLetterGrade | null;
+}
 
 interface NoteCardProps {
     note: {
@@ -18,32 +34,64 @@ interface NoteCardProps {
         name: string;
         avatar?: string;
     };
+    rating?: NoteCardRatingSummary;
 }
 
-export function NoteCard({ note, author }: NoteCardProps) {
+export function NoteCard({ note, author, rating }: NoteCardProps) {
+    const showRated =
+        rating &&
+        rating.count > 0 &&
+        rating.averageScore != null &&
+        rating.letter != null;
+
+    const tier: GradeTier =
+        showRated && rating!.averageScore != null
+            ? tierForAverageScore(rating!.averageScore)
+            : 'unratedGray';
+
+    const glow = cardGlowClasses(tier);
+
     return (
         <div className="group relative h-full">
-            {/* Hover Glow Effect */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-emerald-500/30 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500" />
+            <div
+                className={`absolute -inset-0.5 bg-gradient-to-r ${glow} rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500`}
+            />
 
             <div className="relative h-full bg-card/90 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300 flex flex-col shadow-sm group-hover:shadow-xl dark:group-hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-
-                {/* Visual Header / Type Indicator */}
-                <div className="h-2 bg-gradient-to-r from-primary to-emerald-500 opacity-80" />
+                <div className={`h-2 ${bannerStripClasses(tier)} opacity-90`} />
 
                 <div className="p-5 flex flex-col flex-1 gap-4">
                     <div className="flex items-start justify-between gap-3">
-                        {/* Icon */}
                         <div className="flex-shrink-0 h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
                             <FileText className="h-5 w-5 text-primary" />
                         </div>
-                        {/* Type Badge */}
-                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-secondary/70 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border border-border">
-                            {note.type ? note.type.split(' ')[0] : 'NOT'}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-secondary/70 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border border-border">
+                                {note.type ? note.type.split(' ')[0] : 'NOT'}
+                            </span>
+                            {showRated && rating!.letter ? (
+                                <span
+                                    className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${
+                                        tierForGrade(rating!.letter) === 'positiveGreen'
+                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                                            : tierForGrade(rating!.letter) === 'warmYellow'
+                                              ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/20'
+                                              : 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/20'
+                                    }`}
+                                >
+                                    {formatRatingSummary(
+                                        rating!.averageScore!,
+                                        rating!.letter
+                                    )}
+                                </span>
+                            ) : (
+                                <span className="text-[9px] font-semibold italic text-muted-foreground px-1.5 py-0.5 rounded border border-border/60 bg-muted/30">
+                                    {unratedMessage()}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 space-y-2">
                         <h3 className="line-clamp-2 text-lg font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
                             {note.title}
@@ -60,23 +108,28 @@ export function NoteCard({ note, author }: NoteCardProps) {
                     </div>
                 </div>
 
-                {/* Footer */}
                 <div className="mt-auto border-t border-border/50 bg-muted/20 px-5 py-3 flex items-center justify-between">
-                    {/* Author */}
                     <div className="flex items-center gap-2 max-w-[60%]">
                         <div className="h-6 w-6 rounded-full bg-muted border border-border overflow-hidden flex-shrink-0">
                             {author.avatar ? (
-                                <Image src={author.avatar} alt={author.name} width={24} height={24} className="h-full w-full object-cover" />
+                                <Image
+                                    src={author.avatar}
+                                    alt={author.name}
+                                    width={24}
+                                    height={24}
+                                    className="h-full w-full object-cover"
+                                />
                             ) : (
                                 <div className="h-full w-full flex items-center justify-center bg-secondary">
                                     <User className="h-3 w-3 text-muted-foreground" />
                                 </div>
                             )}
                         </div>
-                        <span className="text-xs font-medium text-muted-foreground truncate">{author.name}</span>
+                        <span className="text-xs font-medium text-muted-foreground truncate">
+                            {author.name}
+                        </span>
                     </div>
 
-                    {/* Price */}
                     <div className="flex items-center gap-1.5 bg-primary/10 px-2.5 py-1 rounded-full border border-primary/10">
                         <span className="text-xs font-bold text-primary">{note.price}</span>
                         <span className="text-sm leading-none">🥛</span>

@@ -9,6 +9,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { getAnonymousNameByDepartment } from "@/lib/anonymization";
 import { IMAGE_EXTENSIONS, PDF_EXTENSIONS } from "@/lib/fileType";
+import { NoteLetterGrade } from "@prisma/client";
+import { averageScoreToLetter, gradeToScore } from "@/lib/noteGrades";
 
 export async function getNoteDetail(noteId: string) {
     const session = await getServerSession(authOptions)
@@ -51,7 +53,6 @@ export async function getNoteDetail(noteId: string) {
                 },
                 _count: {
                     select: {
-                        likes: true,
                         comments: true
                     }
                 },
@@ -117,12 +118,57 @@ export async function getNoteDetail(noteId: string) {
             : [effectiveFileExtension];
         const fileCount = fileExtensions.length;
         const uploaderDisplayName = getAnonymousNameByDepartment(note.uploader.department);
+
+        const [gradeAgg, gradeGroups, viewer] = await Promise.all([
+            prisma.noteGrade.aggregate({
+                where: { noteId },
+                _avg: { score: true },
+                _count: true,
+            }),
+            prisma.noteGrade.groupBy({
+                by: ["grade"],
+                where: { noteId },
+                _count: true,
+            }),
+            prisma.user.findUnique({
+                where: { email: session.user.email },
+                select: { id: true },
+            }),
+        ]);
+
+        let myGrade: NoteLetterGrade | null = null;
+        if (viewer) {
+            const row = await prisma.noteGrade.findUnique({
+                where: {
+                    userId_noteId: { userId: viewer.id, noteId },
+                },
+                select: { grade: true },
+            });
+            myGrade = row?.grade ?? null;
+        }
+
+        const ratingCount = gradeAgg._count;
+        const averageScore =
+            ratingCount > 0 && gradeAgg._avg.score != null ? gradeAgg._avg.score : null;
+        const letter =
+            averageScore != null ? averageScoreToLetter(averageScore) : null;
+        const distribution = Object.fromEntries(
+            gradeGroups.map((g) => [g.grade, g._count])
+        ) as Partial<Record<NoteLetterGrade, number>>;
+
         return {
             ...noteSafe,
             fileExtension: effectiveFileExtension,
             fileExtensions,
             fileCount,
             _count: note._count,
+            rating: {
+                count: ratingCount,
+                averageScore,
+                letter,
+                distribution,
+            },
+            myGrade,
             uploader: {
                 id: note.uploader.id,
                 department: note.uploader.department,
@@ -357,80 +403,79 @@ export async function isNoteUnlocked(noteId: string) {
     }
 }
 
-export async function toggleLike(noteId: string) {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) throw new Error("Unauthorized")
+const submitGradeSchema = z.object({
+    noteId: z.string().min(1),
+    grade: z.nativeEnum(NoteLetterGrade),
+});
+
+export async function submitNoteGrade(noteId: string, grade: NoteLetterGrade) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) throw new Error("Unauthorized");
+
+    const parsed = submitGradeSchema.safeParse({ noteId, grade });
+    if (!parsed.success) {
+        return { success: false, message: "Geçersiz not veya ID" };
+    }
 
     try {
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-        if (!user) return { success: false, message: "User not found" }
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+        });
+        if (!user) return { success: false, message: "Kullanıcı bulunamadı" };
 
-        const existingLike = await prisma.like.findUnique({
-            where: {
-                userId_noteId: {
-                    userId: user.id,
-                    noteId: noteId
-                }
-            }
-        })
-
-        if (existingLike) {
-            await prisma.like.delete({
-                where: { id: existingLike.id }
-            })
-        } else {
-            await prisma.like.create({
-                data: {
-                    userId: user.id,
-                    noteId: noteId
-                }
-            })
-
-            // ÖDÜL SİSTEMİ: Her 10. beğenide not yükleyicisine 1 Süt ver
-            // 1. Notun güncel beğeni sayısını (transaction dışında ama create sonrası) alalım
-            // Veya daha güvenli: count yapalım.
-            const likeCount = await prisma.like.count({ where: { noteId } })
-
-            if (likeCount % 10 === 0) {
-                const note = await prisma.note.findUnique({ where: { id: noteId } })
-                if (note) {
-                    await prisma.user.update({
-                        where: { id: note.uploaderId },
-                        data: { credits: { increment: 1 } }
-                    })
-                }
-            }
+        const limitCheck = await checkRateLimit(`grade_${user.id}`, 30, 60);
+        if (!limitCheck.success) {
+            return {
+                success: false,
+                message: limitCheck.message || "Çok hızlı değerlendirme gönderiyorsunuz.",
+            };
         }
 
-        revalidatePath(`/notes/${noteId}`)
-        return { success: true }
-    } catch (error) {
-        console.error("Error toggling like:", error)
-        return { success: false, message: "Error" }
-    }
-}
+        const note = await prisma.note.findUnique({
+            where: { id: noteId },
+            select: { id: true, uploaderId: true, status: true, deletedAt: true },
+        });
+        if (!note || note.deletedAt) {
+            return { success: false, message: "Not bulunamadı." };
+        }
+        if (note.status !== "APPROVED") {
+            return { success: false, message: "Bu not değerlendirmeye kapalı." };
+        }
+        if (note.uploaderId === user.id) {
+            return { success: false, message: "Kendi notunuza harf notu veremezsiniz." };
+        }
 
-export async function isLikedByUser(noteId: string) {
-    try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.email) return false
+        const unlocked = await prisma.unlockedNote.findUnique({
+            where: { userId_noteId: { userId: user.id, noteId } },
+        });
+        if (!unlocked) {
+            return {
+                success: false,
+                message: "Değerlendirmek için notu satın almalısınız.",
+            };
+        }
 
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-        if (!user) return false
-
-        const like = await prisma.like.findUnique({
+        const score = gradeToScore(grade);
+        await prisma.noteGrade.upsert({
             where: {
-                userId_noteId: {
-                    userId: user.id,
-                    noteId: noteId
-                }
-            }
-        })
+                userId_noteId: { userId: user.id, noteId },
+            },
+            create: {
+                userId: user.id,
+                noteId,
+                grade,
+                score,
+            },
+            update: { grade, score },
+        });
 
-        return !!like
+        revalidatePath(`/notes/${noteId}`);
+        revalidatePath("/notes");
+        revalidatePath("/profile");
+        return { success: true };
     } catch (error) {
-        console.error("isLikedByUser error:", error);
-        return false;
+        console.error("submitNoteGrade error:", error);
+        return { success: false, message: "Değerlendirme kaydedilemedi." };
     }
 }
 
@@ -495,8 +540,7 @@ export async function deleteNote(noteId: string) {
             return { success: false, message: "Bu notu silme yetkiniz yok." }
         }
 
-        // Hard Delete (Cascades will handle related records like Likes, Comments, Views if configured in schema, 
-        // but let's trust Prisma cascade or do manual cleanup if needed. Schema says onDelete: Cascade for relations)
+        // Soft delete; ilişkili NoteGrade / Comment / View kayıtları şema ile not silinince (hard delete) veya cascade ile yönetilir
         // SOFT DELETE
         await prisma.note.update({
             where: { id: noteId },

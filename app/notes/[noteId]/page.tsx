@@ -1,4 +1,4 @@
-import { getNoteDetail, incrementView, isLikedByUser, isNoteUnlocked } from "@/app/actions/noteActions";
+import { getNoteDetail, incrementView, isNoteUnlocked } from "@/app/actions/noteActions";
 import NoteDetailClient from "@/components/note/NoteDetailClient";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
@@ -38,9 +38,6 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
             console.error("View increment error:", e);
         }
 
-        // Check if current user liked this note
-        const isLiked = await isLikedByUser(noteId);
-
         // Kilit Kontrolü (Süt Sistemi)
         const isUnlocked = await isNoteUnlocked(noteId);
 
@@ -79,7 +76,6 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
         return (
             <NoteDetailClient
                 note={secureNote}
-                initialIsLiked={isLiked}
                 viewerUser={viewerUser}
                 isUnlocked={isUnlocked}
                 currentUserId={currentUserId}

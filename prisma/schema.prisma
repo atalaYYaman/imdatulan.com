@@ -38,7 +38,7 @@ model User {
   updatedAt            DateTime  @updatedAt
   notes                Note[]
   comments             Comment[]
-  likes                Like[]
+  noteGrades           NoteGrade[]
   views                View[]
   credits              Int       @default(0) // Süt Bakiyesi (Başlangıç 0 Süt)
   unlockedNotes        UnlockedNote[]
@@ -150,7 +150,7 @@ model Note {
   
   files      NoteFile[]  // Multi-file support (ordered by sortOrder)
   comments   Comment[]
-  likes      Like[]
+  grades     NoteGrade[]
   views      View[]
   reports    Report[]
   unlockedBy UnlockedNote[]
@@ -203,18 +203,32 @@ model Comment {
   createdAt DateTime @default(now())
 }
 
-model Like {
-  id        String   @id @default(cuid())
-  
+enum NoteLetterGrade {
+  AA
+  BA
+  BB
+  CB
+  CC
+  DC
+  DD
+  FD
+  FF
+}
+
+model NoteGrade {
+  id        String          @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   noteId    String
-  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  note      Note            @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  grade     NoteLetterGrade
+  score     Float           // 10 luk skor (AA=10 … FF=1), ortalama için
 
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
-  @@unique([userId, noteId]) // Bir kullanıcı bir notu sadece bir kez beğenebilir
+  @@unique([userId, noteId])
+  @@index([noteId])
 }
 
 model View {

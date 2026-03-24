@@ -10,7 +10,12 @@ const NoteViewer = dynamic(() => import('./NoteViewer'), {
 import InteractionBar from './InteractionBar';
 import CommentSection from './CommentSection';
 import LegalWarningModal from './LegalWarningModal';
-import { Note, Comment, User } from '@prisma/client';
+import { Note, Comment, NoteLetterGrade } from '@prisma/client';
+import {
+    bannerStripClasses,
+    tierForAverageScore,
+    type GradeTier,
+} from '@/lib/noteGrades';
 
 type NoteWithDetails = Note & {
     uploader: {
@@ -21,9 +26,15 @@ type NoteWithDetails = Note & {
     rejectionReason: string | null;
     status: string;
     _count: {
-        likes: number;
         comments: number;
     };
+    rating: {
+        count: number;
+        averageScore: number | null;
+        letter: NoteLetterGrade | null;
+        distribution: Partial<Record<NoteLetterGrade, number>>;
+    };
+    myGrade: NoteLetterGrade | null;
     comments: (Comment & {
         user: {
             id: string;
@@ -39,7 +50,6 @@ import ReportModal from "./ReportModal";
 
 interface NoteDetailClientProps {
     note: NoteWithDetails;
-    initialIsLiked: boolean;
     viewerUser: {
         name: string;
         studentNumber: string;
@@ -51,7 +61,15 @@ interface NoteDetailClientProps {
     fileExtensions?: string[];
 }
 
-export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked, currentUserId, fileExtension, fileCount = 1, fileExtensions }: NoteDetailClientProps) {
+export default function NoteDetailClient({
+    note,
+    viewerUser,
+    isUnlocked: initialIsUnlocked,
+    currentUserId,
+    fileExtension,
+    fileCount = 1,
+    fileExtensions,
+}: NoteDetailClientProps) {
     const [isWarningAccepted, setIsWarningAccepted] = useState(false);
 
     // Optimistic UI for Instant Unlock
@@ -65,6 +83,12 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
     const [isReportModalOpen, setIsReportModalOpen] = useState(false); // Modal State
 
     const isOwner = currentUserId === note.uploaderId;
+    const canRate = optimisticUnlocked && !isOwner;
+
+    const gradeBannerTier: GradeTier =
+        note.rating.count > 0 && note.rating.averageScore != null
+            ? tierForAverageScore(note.rating.averageScore)
+            : 'unratedGray';
 
     const [mobileTab, setMobileTab] = useState<'note' | 'details'>('note');
 
@@ -245,6 +269,10 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
 
                         {/* Üst Bilgi */}
                         <div className="p-6 border-b border-border/50">
+                            <div
+                                className={`h-1 w-full rounded-full mb-4 ${bannerStripClasses(gradeBannerTier)}`}
+                                aria-hidden
+                            />
                             <div className='flex items-start justify-between mb-4'>
                                 <h1 className="text-lg font-bold text-foreground leading-tight line-clamp-2">{note.title}</h1>
                                 <span className='px-2 py-0.5 rounded text-[10px] bg-primary/10 text-primary font-bold uppercase tracking-wider border border-primary/10 whitespace-nowrap'>
@@ -313,10 +341,11 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                         <div className="p-4 border-b border-border/50">
                             <InteractionBar
                                 noteId={note.id}
-                                initialLikeCount={note._count.likes}
-                                initialIsLiked={initialIsLiked}
+                                rating={note.rating}
+                                initialMyGrade={note.myGrade}
                                 viewCount={note.viewCount}
                                 isOwner={isOwner}
+                                canRate={canRate}
                                 onReport={() => setIsReportModalOpen(true)}
                             />
                         </div>

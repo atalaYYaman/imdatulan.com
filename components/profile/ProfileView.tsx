@@ -17,7 +17,7 @@ interface ProfileViewProps {
     notes: any[];
     purchasedNotes?: any[];
     stats: {
-        totalLikes: number;
+        totalRatingsReceived: number;
         totalViews: number;
         totalNotes: number;
     };
@@ -77,8 +77,8 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                             {/* Stats Grid */}
                             <div className="grid grid-cols-3 gap-4 pt-4 md:max-w-md">
                                 <div className="bg-background/50 backdrop-blur-sm rounded-2xl p-3 border border-border/50 text-center md:text-left group/stat hover:border-primary/30 transition-colors">
-                                    <div className="text-2xl font-black text-foreground group-hover/stat:text-primary transition-colors">{stats.totalLikes}</div>
-                                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Beğeni</div>
+                                    <div className="text-2xl font-black text-foreground group-hover/stat:text-primary transition-colors">{stats.totalRatingsReceived}</div>
+                                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Değerlendirme</div>
                                 </div>
                                 <div className="bg-background/50 backdrop-blur-sm rounded-2xl p-3 border border-border/50 text-center md:text-left group/stat hover:border-primary/30 transition-colors">
                                     <div className="text-2xl font-black text-foreground group-hover/stat:text-primary transition-colors">{stats.totalViews}</div>
@@ -148,7 +148,7 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                                 {notes.map(note => (
                                     <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-[1.02] active:scale-95 duration-300">
                                         <div className="relative h-full">
-                                            <NoteCard note={note} author={{ name: user.name, avatar: '' } as any} />
+                                            <NoteCard note={note} author={{ name: user.name, avatar: '' } as any} rating={note.rating} />
 
                                             {/* Status Overlay Badges */}
                                             {note.status === 'PENDING' && (
@@ -187,7 +187,7 @@ export default function ProfileView({ user, notes, purchasedNotes = [], stats }:
                                         return (
                                             <Link key={note.id} href={`/notes/${note.id}`} className="block transition-transform hover:scale-[1.02] active:scale-95 duration-300">
                                                 <div className="relative h-full">
-                                                    <NoteCard note={note} author={{ name: authorName, avatar: '' } as any} />
+                                                    <NoteCard note={note} author={{ name: authorName, avatar: '' } as any} rating={note.rating} />
                                                     <div className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg ring-1 ring-white/20 z-20 flex items-center gap-1">
                                                         <span>SATIN ALINDI</span>
                                                         <span>✓</span>

@@ -75,9 +75,9 @@ async function cleanDatabase() {
     await prisma.feedback.deleteMany();
     await prisma.report.deleteMany();
 
-    console.log('Deleting Analytics & Interactions (View, Like, Comment, UnlockedNote)...');
+    console.log('Deleting Analytics & Interactions (View, NoteGrade, Comment, UnlockedNote)...');
     await prisma.view.deleteMany();
-    await prisma.like.deleteMany();
+    await prisma.noteGrade.deleteMany();
     await prisma.comment.deleteMany();
     await prisma.unlockedNote.deleteMany();
 

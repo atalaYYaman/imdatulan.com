@@ -306,8 +306,7 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                             university: note.university,
                             department: note.department,
                             instructor: "",
-                            views: 0,
-                            likes: 0,
+                            views: note.viewCount ?? 0,
                             price: note.price || 0,
                             uploaderId: note.uploader.id,
                             previewUrl: "/doc.png",
@@ -322,7 +321,11 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                                 key={note.id}
                                 className="block transition-transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background rounded-2xl"
                             >
-                                <NoteCard note={mappedNote} author={author} />
+                                <NoteCard
+                                    note={mappedNote}
+                                    author={author}
+                                    rating={note.rating}
+                                />
                             </Link>
                         );
                         })}

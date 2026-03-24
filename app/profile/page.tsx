@@ -6,6 +6,8 @@ import ProfileView from "@/components/profile/ProfileView";
 
 import { maskStudentNumber } from "@/lib/masking";
 import { getAnonymousNameByDepartment } from "@/lib/anonymization";
+import type { NoteLetterGrade } from "@prisma/client";
+import { averageScoreToLetter } from "@/lib/noteGrades";
 
 // Server Component
 export const dynamic = 'force-dynamic';
@@ -17,18 +19,17 @@ export default async function ProfilePage() {
         redirect("/auth/signin");
     }
 
-    // Fetch User Data with Notes and Like Counts in a single query
     const user = await prisma.user.findUnique({
         where: { email: session.user.email },
         include: {
             notes: {
-                where: { deletedAt: null }, // Soft Delete Filter
+                where: { deletedAt: null },
                 include: {
                     _count: {
-                        select: { likes: true }
-                    }
+                        select: { grades: true },
+                    },
                 },
-                orderBy: { createdAt: 'desc' }
+                orderBy: { createdAt: 'desc' },
             },
             unlockedNotes: {
                 include: {
@@ -37,36 +38,76 @@ export default async function ProfilePage() {
                             uploader: {
                                 select: {
                                     id: true,
-                                    department: true
-                                }
+                                    department: true,
+                                },
                             },
-                            _count: {
-                                select: { likes: true }
-                            }
-                        }
-                    }
+                        },
+                    },
                 },
-                orderBy: { createdAt: 'desc' }
-            }
-        }
+                orderBy: { createdAt: 'desc' },
+            },
+        },
     });
 
     if (!user) {
         redirect("/auth/signin");
     }
 
-    // Calculate Stats
     const totalNotes = user.notes.length;
-    // Note: viewCount is an Int field on Note model, so it's directly accessible.
-    // _count.likes comes from the include above.
-    const totalViews = user.notes.reduce((acc, note) => acc + (note.viewCount || 0), 0);
-    // @ts-ignore: _count property exists due to include, but basic Note type might not reflect it without generated types update
-    const totalLikes = user.notes.reduce((acc, note) => acc + (note._count?.likes || 0), 0);
+    const totalViews = user.notes.reduce(
+        (acc, note) => acc + (note.viewCount || 0),
+        0
+    );
+    const totalRatingsReceived = user.notes.reduce(
+        (acc, note) => acc + (note._count?.grades || 0),
+        0
+    );
+
+    const allNoteIds = [
+        ...new Set([
+            ...user.notes.map((n) => n.id),
+            ...user.unlockedNotes.map((u) => u.note.id),
+        ]),
+    ];
+    const gradeAggs =
+        allNoteIds.length === 0
+            ? []
+            : await prisma.noteGrade.groupBy({
+                  by: ['noteId'],
+                  where: { noteId: { in: allNoteIds } },
+                  _avg: { score: true },
+                  _count: true,
+              });
+    const gradeByNote = new Map<
+        string,
+        { count: number; averageScore: number | null; letter: NoteLetterGrade | null }
+    >();
+    for (const g of gradeAggs) {
+        const count = g._count;
+        const avg = count > 0 && g._avg.score != null ? g._avg.score : null;
+        gradeByNote.set(g.noteId, {
+            count,
+            averageScore: avg,
+            letter: avg != null ? averageScoreToLetter(avg) : null,
+        });
+    }
+
+    function attachRating<T extends { id: string }>(note: T) {
+        const r = gradeByNote.get(note.id);
+        return {
+            ...note,
+            rating: r ?? {
+                count: 0,
+                averageScore: null,
+                letter: null as NoteLetterGrade | null,
+            },
+        };
+    }
 
     const stats = {
-        totalLikes,
+        totalRatingsReceived,
         totalViews,
-        totalNotes
+        totalNotes,
     };
 
     // Format data for View
@@ -82,14 +123,24 @@ export default async function ProfilePage() {
 
     // Extract purchased notes from the relation
     // We need to shape them like the 'notes' array for the view
-    const purchasedNotes = user.unlockedNotes.map(unlocked => ({
-        ...unlocked.note,
+    const notesWithRating = user.notes.map((n) => attachRating(n));
+    const purchasedNotes = user.unlockedNotes.map((unlocked) => ({
+        ...attachRating(unlocked.note),
         uploader: {
             id: unlocked.note.uploader.id,
             department: unlocked.note.uploader.department,
-            anonymousName: getAnonymousNameByDepartment(unlocked.note.uploader.department),
-        }
+            anonymousName: getAnonymousNameByDepartment(
+                unlocked.note.uploader.department
+            ),
+        },
     }));
 
-    return <ProfileView user={profileUser} notes={user.notes} purchasedNotes={purchasedNotes} stats={stats} />;
+    return (
+        <ProfileView
+            user={profileUser}
+            notes={notesWithRating}
+            purchasedNotes={purchasedNotes}
+            stats={stats}
+        />
+    );
 }
