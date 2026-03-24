@@ -37,6 +37,8 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const [loadError, setLoadError] = useState<string | null>(null);
     const [retryKey, setRetryKey] = useState(0);
     const [blobObjectUrl, setBlobObjectUrl] = useState<string | null>(null);
+    /** Server returned SVG placeholder (e.g. locked single-page PDF); render as image, not react-pdf */
+    const [servedAsSvgPlaceholder, setServedAsSvgPlaceholder] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -55,6 +57,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     useEffect(() => {
         setIsLoading(true);
         setLoadError(null);
+        setServedAsSvgPlaceholder(false);
     }, [effectiveFileUrl, isLocked]);
 
     // Fetch file and create blob URL for in-viewer display (no external URL exposure)
@@ -63,13 +66,17 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         if (!isPdfFile(input) && !isImageFile(input)) return;
 
         let revoked = false;
+        setServedAsSvgPlaceholder(false);
         fetch(effectiveFileUrl, { credentials: 'include' })
             .then((res) => {
                 if (!res.ok) throw new Error('Dosya yüklenemedi');
-                return res.blob();
+                const ct = res.headers.get('content-type') ?? '';
+                const isLockedSvg = ct.includes('image/svg+xml');
+                return res.blob().then((blob) => ({ blob, isLockedSvg }));
             })
-            .then((blob) => {
+            .then(({ blob, isLockedSvg }) => {
                 if (revoked) return;
+                setServedAsSvgPlaceholder(isLockedSvg);
                 const url = URL.createObjectURL(blob);
                 setBlobObjectUrl(url);
             })
@@ -83,6 +90,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
 
         return () => {
             revoked = true;
+            setServedAsSvgPlaceholder(false);
             setBlobObjectUrl((prev) => {
                 if (prev) URL.revokeObjectURL(prev);
                 return null;
@@ -118,6 +126,8 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const fileTypeInput = { extension: effectiveFileExtension, url: effectiveFileUrl };
     const isPdf = isPdfFile(fileTypeInput);
     const isImage = isImageFile(fileTypeInput);
+    const showPdfViewer = isPdf && !servedAsSvgPlaceholder;
+    const showImageViewer = isImage || servedAsSvgPlaceholder;
 
     const canGoPrev = fileCount > 1 && fileIndex > 0;
     const canGoNext = fileCount > 1 && fileIndex < fileCount - 1;
@@ -308,7 +318,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                     )}
 
                     <div className="relative shadow-2xl min-h-[500px] min-w-[300px] bg-white transition-all duration-500 animate-in fade-in" id="content-container">
-                        {isPdf ? (
+                        {showPdfViewer ? (
                             blobObjectUrl ? (
                             <Document
                                 key={`${retryKey}-${fileIndex}`}
@@ -342,7 +352,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                                 ))}
                             </Document>
                             ) : null
-                        ) : isImage ? (
+                        ) : showImageViewer ? (
                             blobObjectUrl ? (
                             <SecureImage
                                 key={`${retryKey}-${fileIndex}`}

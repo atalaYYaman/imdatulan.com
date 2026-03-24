@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { lockedPlaceholderNextResponse } from "@/lib/lockedPlaceholderResponse";
 import { PDFDocument, rgb, degrees } from "pdf-lib";
 
 export async function GET(
@@ -104,7 +105,11 @@ export async function GET(
 
             // If LOCKED: Show dynamic preview based on total page count
             if (!isUnlocked) {
-                const totalPageCount = pageCount ?? pdfDoc.getPageCount();
+                const docPageCount = pdfDoc.getPageCount();
+                if (docPageCount === 1) {
+                    return await lockedPlaceholderNextResponse(request);
+                }
+                const totalPageCount = pageCount ?? docPageCount;
                 
                 // Dynamic preview logic:
                 // - 1-5 pages: Show only 1 page (to prevent free access to most content)

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isPdfFile } from "@/lib/fileType";
+import { lockedPlaceholderNextResponse } from "@/lib/lockedPlaceholderResponse";
 import { PDFDocument } from "pdf-lib";
 
 export async function GET(request: Request, props: { params: Promise<{ noteId: string }> }) {
@@ -185,25 +186,7 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         // 5. Locked & non-PDF (all image formats): return secure placeholder instead of original bytes
         if (!hasAccess && !isPdf) {
             try {
-                const placeholderUrl = new URL("/locked-placeholder.svg", request.url);
-                const placeholderRes = await fetch(placeholderUrl);
-                if (!placeholderRes.ok) {
-                    console.error("Placeholder fetch failed:", placeholderRes.statusText);
-                    return new NextResponse("Locked", { status: 403 });
-                }
-
-                const placeholderBuffer = await placeholderRes.arrayBuffer();
-                const headers = new Headers();
-                headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-                headers.set("Pragma", "no-cache");
-                headers.set("Expires", "0");
-                headers.set("Content-Type", "image/svg+xml");
-                headers.set("X-Preview-Mode", "true");
-
-                return new NextResponse(placeholderBuffer, {
-                    status: 200,
-                    headers,
-                });
+                return await lockedPlaceholderNextResponse(request);
             } catch (e) {
                 console.error("Locked image placeholder error:", e);
                 return new NextResponse("Locked", { status: 403 });
@@ -215,7 +198,12 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         if (isPdf && !hasAccess) {
             try {
                 let pdfDoc = await PDFDocument.load(fileArrayBuffer);
-                const totalPageCount = pageCount ?? pdfDoc.getPageCount();
+                const docPageCount = pdfDoc.getPageCount();
+                // Single-page PDF: no "first page only" preview — would leak full content; use placeholder like images
+                if (docPageCount === 1) {
+                    return await lockedPlaceholderNextResponse(request);
+                }
+                const totalPageCount = pageCount ?? docPageCount;
                 
                 // Dynamic preview logic (Zero Trust: Limit preview to prevent abuse)
                 let PREVIEW_PAGE_COUNT: number;
