@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { upload } from '@vercel/blob/client';
+import { universities } from "@/lib/universityData";
 
 const MAX_SIZE = 25 * 1024 * 1024; // 25MB (Vercel Pro limit)
 const MAX_FILES = 20;
@@ -35,6 +36,9 @@ export default function UploadPage() {
     const [formData, setFormData] = useState({
         courseName: "",
         term: "",
+        university: "",
+        faculty: "",
+        department: "",
         description: "",
         noteType: "Ders Notu",
         price: 2,
@@ -112,10 +116,19 @@ export default function UploadPage() {
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+            ...(name === "university" ? { faculty: "", department: "" } : {}),
+            ...(name === "faculty" ? { department: "" } : {}),
+        }));
     };
 
     const totalSize = files.reduce((s, f) => s + f.file.size, 0);
+    const selectedUniversity = universities.find((u) => u.name === formData.university);
+    const availableFaculties = selectedUniversity?.faculties ?? [];
+    const selectedFaculty = availableFaculties.find((f) => f.name === formData.faculty);
+    const availableDepartments = selectedFaculty?.departments ?? [];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -193,6 +206,9 @@ export default function UploadPage() {
             data.append("fileNames", JSON.stringify(fileNames));
             data.append("courseName", formData.courseName);
             data.append("term", formData.term);
+            data.append("university", formData.university);
+            data.append("faculty", formData.faculty);
+            data.append("department", formData.department);
             data.append("description", formData.description);
             data.append("noteType", formData.noteType);
             data.append("price", formData.price.toString());
@@ -386,6 +402,73 @@ export default function UploadPage() {
                                                 <option value={`${year} Güz`}>{year} Güz</option>
                                                 <option value={`${year} Bahar`}>{year} Bahar</option>
                                             </React.Fragment>
+                                        ))}
+                                    </select>
+                                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rotate-90 pointer-events-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Üniversite</label>
+                                <div className="relative">
+                                    <select
+                                        name="university"
+                                        value={formData.university}
+                                        onChange={handleFormChange}
+                                        required
+                                        className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none appearance-none cursor-pointer transition-all"
+                                    >
+                                        <option value="">Seçiniz</option>
+                                        {universities.map((university) => (
+                                            <option key={university.id} value={university.name}>
+                                                {university.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rotate-90 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Fakülte</label>
+                                <div className="relative">
+                                    <select
+                                        name="faculty"
+                                        value={formData.faculty}
+                                        onChange={handleFormChange}
+                                        required
+                                        disabled={!formData.university}
+                                        className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <option value="">Seçiniz</option>
+                                        {availableFaculties.map((faculty) => (
+                                            <option key={faculty.name} value={faculty.name}>
+                                                {faculty.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rotate-90 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Bölüm</label>
+                                <div className="relative">
+                                    <select
+                                        name="department"
+                                        value={formData.department}
+                                        onChange={handleFormChange}
+                                        required
+                                        disabled={!formData.faculty}
+                                        className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <option value="">Seçiniz</option>
+                                        {availableDepartments.map((department) => (
+                                            <option key={department} value={department}>
+                                                {department}
+                                            </option>
                                         ))}
                                     </select>
                                     <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground rotate-90 pointer-events-none" />

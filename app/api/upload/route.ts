@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { put } from '@vercel/blob';
 import { checkRateLimit } from "@/lib/rate-limit";
 import { PDFDocument } from "pdf-lib";
+import { universities } from "@/lib/universityData";
 
 const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png']);
 const TRUSTED_DOMAINS = ['blob.vercel-storage.com', 'pub-'];
@@ -17,6 +18,14 @@ function getExtensionFromFileName(fileName: string): string {
 function isTrustedBlobUrl(url: string): boolean {
     if (typeof url !== 'string' || url.length > 500) return false;
     return TRUSTED_DOMAINS.some(domain => url.includes(domain));
+}
+
+function isValidAcademicSelection(universityName: string, facultyName: string, departmentName: string): boolean {
+    const university = universities.find((item) => item.name === universityName);
+    if (!university) return false;
+    const faculty = university.faculties.find((item) => item.name === facultyName);
+    if (!faculty) return false;
+    return faculty.departments.includes(departmentName);
 }
 
 export async function POST(req: Request) {
@@ -55,6 +64,9 @@ export async function POST(req: Request) {
 
         const courseName = formData.get("courseName") as string
         const term = formData.get("term") as string
+        const selectedUniversity = formData.get("university") as string | null
+        const selectedFaculty = formData.get("faculty") as string | null
+        const selectedDepartment = formData.get("department") as string | null
         const noteType = formData.get("noteType") as string
         const description = formData.get("description") as string
         const priceStr = formData.get("price") as string
@@ -66,6 +78,16 @@ export async function POST(req: Request) {
 
         if (typeof courseName !== 'string' || courseName.length > 200 || courseName.length < 1) {
             return NextResponse.json({ message: "Invalid course name" }, { status: 400 });
+        }
+
+        if (selectedUniversity || selectedFaculty || selectedDepartment) {
+            if (!selectedUniversity || !selectedFaculty || !selectedDepartment) {
+                return NextResponse.json({ message: "Üniversite, fakülte ve bölüm birlikte seçilmelidir." }, { status: 400 });
+            }
+
+            if (!isValidAcademicSelection(selectedUniversity, selectedFaculty, selectedDepartment)) {
+                return NextResponse.json({ message: "Geçersiz üniversite/fakülte/bölüm seçimi." }, { status: 400 });
+            }
         }
 
         let blobUrls: string[];
@@ -151,9 +173,9 @@ export async function POST(req: Request) {
             data: {
                 title: courseName,
                 courseName: courseName,
-                university: user.university || "Bilinmiyor",
-                faculty: user.faculty || "Bilinmiyor",
-                department: user.department || "Bilinmiyor",
+                university: selectedUniversity || user.university || "Bilinmiyor",
+                faculty: selectedFaculty || user.faculty || "Bilinmiyor",
+                department: selectedDepartment || user.department || "Bilinmiyor",
                 type: noteType,
                 term: term,
                 description: description,

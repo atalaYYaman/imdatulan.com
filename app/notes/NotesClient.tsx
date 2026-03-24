@@ -29,9 +29,11 @@ interface Note {
 }
 
 export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
+    const PAGE_SIZE = 20;
     const { data: session } = useSession();
     const [searchQuery, setSearchQuery] = useState("");
     const [isFiltersOpen, setIsFiltersOpen] = useState(true); // Default open on desktop, controlled by effect or media query ideally, but state is fine
+    const [page, setPage] = useState(1);
 
     // Auto-collapse filters on mobile initially? We can use CSS hidden/block logic or just let user toggle.
     // Let's stick to user toggle for simplicity.
@@ -57,6 +59,7 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
             ...(name === 'university' ? { faculty: '', department: '' } : {}),
             ...(name === 'faculty' ? { department: '' } : {}),
         }));
+        setPage(1);
     };
 
     const filteredNotes = initialNotes.filter(note => {
@@ -105,7 +108,14 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
         setFilters({ university: '', faculty: '', department: '', year: '' });
         setSearchQuery('');
         setIsFiltersOpen(true);
+        setPage(1);
     };
+
+    const totalPages = Math.max(1, Math.ceil(filteredNotes.length / PAGE_SIZE));
+    const currentPage = Math.min(page, totalPages);
+    const paginatedNotes = filteredNotes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const startItem = filteredNotes.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+    const endItem = filteredNotes.length === 0 ? 0 : Math.min(currentPage * PAGE_SIZE, filteredNotes.length);
 
     return (
         <div className="flex flex-col min-h-screen bg-background p-4 md:p-6 lg:p-8 text-foreground pb-24 md:pb-8 max-w-7xl mx-auto">
@@ -120,6 +130,9 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                         <span className="ml-1">not</span>
                     </span>
                 </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                    {startItem}-{endItem} / {filteredNotes.length} not gosteriliyor
+                </p>
 
                 <label className="sr-only" htmlFor="notes-search">Notlarda ara</label>
                 <div className="relative group">
@@ -129,7 +142,10 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                         type="search"
                         placeholder="Ders adı, konu veya açıklama ara..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setPage(1);
+                        }}
                         className="w-full bg-card border border-border rounded-xl py-3 pl-12 pr-4 text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none shadow-sm transition-all placeholder:text-muted-foreground/70 relative z-10"
                         autoComplete="off"
                     />
@@ -275,8 +291,9 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
             </section>
 
             {filteredNotes.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6">
-                    {filteredNotes.map((note) => {
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6">
+                        {paginatedNotes.map((note) => {
                         const author = {
                             name: note.uploader.anonymousName,
                             avatar: '',
@@ -308,8 +325,37 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                                 <NoteCard note={mappedNote} author={author} />
                             </Link>
                         );
-                    })}
-                </div>
+                        })}
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div className="mt-8 flex items-center justify-between gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 text-sm font-medium rounded-xl border border-border bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Onceki
+                            </button>
+
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span className="font-semibold text-foreground">{currentPage}</span>
+                                <span>/</span>
+                                <span>{totalPages}</span>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 text-sm font-medium rounded-xl border border-border bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Sonraki
+                            </button>
+                        </div>
+                    )}
+                </>
             ) : (
                 <div className="flex flex-col items-center justify-center py-16 md:py-24 text-center animate-in fade-in duration-300">
                     <div className="bg-muted/50 p-6 rounded-2xl border border-border mb-5">
