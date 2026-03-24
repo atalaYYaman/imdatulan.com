@@ -1,42 +1,27 @@
 'use client';
 
-import { useState } from "react";
-import { Search, Filter, Layers, LayoutGrid, Calendar, ChevronDown, ChevronUp } from "lucide-react";
-import { universities, years } from "@/lib/universityData";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Search, Filter, Layers, LayoutGrid, Calendar, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { NOTE_FILTER_YEARS } from "@/lib/academicMaster";
+import { getUniversities, getFaculties, getAllDepartmentsForFilter } from "@/app/actions/academic";
+import { getNotes } from "@/app/actions/getNotes";
 import { NoteCard } from "@/components/ui/NoteCard";
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import { Lock } from "lucide-react";
 
-interface Note {
-    id: string;
-    title: string;
-    description: string | null;
-    courseName: string | null;
-    university: string;
-    faculty: string;
-    department: string;
-    term: string | null;
-    type: string | null;
-    fileUrl: string;
-    createdAt: Date;
-    price: number;
-    uploader: {
-        id: string;
-        department?: string | null;
-        anonymousName: string;
-    };
-}
-
 export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
     const PAGE_SIZE = 20;
     const { data: session } = useSession();
     const [searchQuery, setSearchQuery] = useState("");
-    const [isFiltersOpen, setIsFiltersOpen] = useState(true); // Default open on desktop, controlled by effect or media query ideally, but state is fine
+    const [isFiltersOpen, setIsFiltersOpen] = useState(true);
     const [page, setPage] = useState(1);
+    const [notes, setNotes] = useState(initialNotes);
+    const [listLoading, setListLoading] = useState(false);
 
-    // Auto-collapse filters on mobile initially? We can use CSS hidden/block logic or just let user toggle.
-    // Let's stick to user toggle for simplicity.
+    const [uniOpts, setUniOpts] = useState<{ label: string; value: string; disabled?: boolean }[]>([]);
+    const [facOpts, setFacOpts] = useState<{ label: string; value: string }[]>([]);
+    const [allDeptOpts, setAllDeptOpts] = useState<{ label: string; value: string; facultyId: string }[]>([]);
 
     const [filters, setFilters] = useState({
         university: "",
@@ -45,36 +30,87 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
         year: "",
     });
 
-    const selectedUni = universities.find(u => u.name === filters.university);
-    const faculties = selectedUni ? selectedUni.faculties : [];
+    const skipNextFetch = useRef(true);
 
-    const selectedFaculty = faculties.find(f => f.name === filters.faculty);
-    const departments = selectedFaculty ? selectedFaculty.departments : [];
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const [unis, facs, depts] = await Promise.all([
+                    getUniversities(),
+                    getFaculties(),
+                    getAllDepartmentsForFilter(),
+                ]);
+                if (!cancelled) {
+                    setUniOpts(unis);
+                    setFacOpts(facs);
+                    setAllDeptOpts(depts);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    const departmentOptions = useMemo(() => {
+        if (filters.faculty) {
+            return allDeptOpts.filter((d) => d.facultyId === filters.faculty);
+        }
+        return allDeptOpts;
+    }, [allDeptOpts, filters.faculty]);
+
+    useEffect(() => {
+        const empty =
+            !searchQuery.trim() &&
+            !filters.university &&
+            !filters.faculty &&
+            !filters.department &&
+            !filters.year;
+
+        if (skipNextFetch.current) {
+            skipNextFetch.current = false;
+            if (empty) return;
+        }
+
+        let cancelled = false;
+        const t = setTimeout(async () => {
+            setListLoading(true);
+            try {
+                const list = await getNotes({
+                    searchQuery: searchQuery.trim() || undefined,
+                    universityId: filters.university || undefined,
+                    facultyId: filters.faculty || undefined,
+                    departmentId: filters.department || undefined,
+                    year: filters.year || undefined,
+                });
+                if (!cancelled) {
+                    setNotes(list);
+                    setPage(1);
+                }
+            } catch (e) {
+                console.error(e);
+                if (!cancelled) setNotes([]);
+            } finally {
+                if (!cancelled) setListLoading(false);
+            }
+        }, 280);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(t);
+        };
+    }, [searchQuery, filters.university, filters.faculty, filters.department, filters.year]);
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFilters(prev => ({
+        setFilters((prev) => ({
             ...prev,
             [name]: value,
-            ...(name === 'university' ? { faculty: '', department: '' } : {}),
-            ...(name === 'faculty' ? { department: '' } : {}),
+            ...(name === "faculty" ? { department: "" } : {}),
         }));
         setPage(1);
     };
-
-    const filteredNotes = initialNotes.filter(note => {
-        const titleMatch = (note.title || "").toLowerCase().includes(searchQuery.toLowerCase());
-        const courseMatch = (note.courseName || "").toLowerCase().includes(searchQuery.toLowerCase());
-        const topicMatch = (note.description || "").toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchesSearch = titleMatch || courseMatch || topicMatch;
-        const matchesUni = filters.university ? note.university === filters.university : true;
-        const matchesFaculty = filters.faculty ? note.faculty === filters.faculty : true;
-        const matchesDept = filters.department ? note.department === filters.department : true;
-        const matchesYear = filters.year ? note.term?.includes(filters.year) : true;
-
-        return matchesSearch && matchesUni && matchesFaculty && matchesDept && matchesYear;
-    });
 
     if (!session) {
         return (
@@ -109,8 +145,11 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
         setSearchQuery('');
         setIsFiltersOpen(true);
         setPage(1);
+        skipNextFetch.current = true;
+        setNotes(initialNotes);
     };
 
+    const filteredNotes = notes;
     const totalPages = Math.max(1, Math.ceil(filteredNotes.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
     const paginatedNotes = filteredNotes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -119,15 +158,15 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
 
     return (
         <div className="flex flex-col min-h-screen bg-background p-4 md:p-6 lg:p-8 text-foreground pb-24 md:pb-8 max-w-7xl mx-auto">
-            {/* Başlık ve arama */}
             <header className="mb-6 md:mb-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
                         Notlar
                     </h1>
-                    <span className="text-sm font-medium text-muted-foreground bg-muted/80 px-3 py-1.5 rounded-lg border border-border inline-flex items-center w-fit">
+                    <span className="text-sm font-medium text-muted-foreground bg-muted/80 px-3 py-1.5 rounded-lg border border-border inline-flex items-center w-fit gap-2">
+                        {listLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />}
                         <span className="font-semibold text-foreground">{filteredNotes.length}</span>
-                        <span className="ml-1">not</span>
+                        <span>not</span>
                     </span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-4">
@@ -152,7 +191,6 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                 </div>
             </header>
 
-            {/* Filtreler bölümü */}
             <section className="mb-6 md:mb-8" aria-label="Filtreler">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <button
@@ -185,7 +223,6 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                 </div>
 
                 <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 transition-all duration-300 ease-in-out ${isFiltersOpen ? 'opacity-100 max-h-[600px]' : 'opacity-0 max-h-0 overflow-hidden md:opacity-100 md:max-h-none'}`}>
-                    {/* Üniversite */}
                     <div className="space-y-1.5">
                         <label htmlFor="filter-university" className="block text-xs font-medium text-muted-foreground">
                             Üniversite
@@ -201,13 +238,14 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                                 aria-label="Üniversite seçin"
                             >
                                 <option value="">Tümü</option>
-                                {universities.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                                {uniOpts.map((u) => (
+                                    <option key={u.value} value={u.value} disabled={u.disabled}>{u.label}</option>
+                                ))}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
                         </div>
                     </div>
 
-                    {/* Fakülte */}
                     <div className="space-y-1.5">
                         <label htmlFor="filter-faculty" className="block text-xs font-medium text-muted-foreground">
                             Fakülte
@@ -219,18 +257,18 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                                 name="faculty"
                                 value={filters.faculty}
                                 onChange={handleFilterChange}
-                                disabled={!filters.university}
-                                className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-accent/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm outline-none"
+                                className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-accent/50 transition-colors shadow-sm outline-none"
                                 aria-label="Fakülte seçin"
                             >
                                 <option value="">Tümü</option>
-                                {faculties.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+                                {facOpts.map((f) => (
+                                    <option key={f.value} value={f.value}>{f.label}</option>
+                                ))}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
                         </div>
                     </div>
 
-                    {/* Bölüm */}
                     <div className="space-y-1.5">
                         <label htmlFor="filter-department" className="block text-xs font-medium text-muted-foreground">
                             Bölüm
@@ -242,18 +280,18 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                                 name="department"
                                 value={filters.department}
                                 onChange={handleFilterChange}
-                                disabled={!filters.faculty}
-                                className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-accent/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm outline-none"
+                                className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-accent/50 transition-colors shadow-sm outline-none"
                                 aria-label="Bölüm seçin"
                             >
                                 <option value="">Tümü</option>
-                                {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                {departmentOptions.map((d) => (
+                                    <option key={d.value} value={d.value}>{d.label}</option>
+                                ))}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
                         </div>
                     </div>
 
-                    {/* Dönem */}
                     <div className="space-y-1.5">
                         <label htmlFor="filter-year" className="block text-xs font-medium text-muted-foreground">
                             Dönem
@@ -269,14 +307,15 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                                 aria-label="Dönem seçin"
                             >
                                 <option value="">Tümü</option>
-                                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                                {NOTE_FILTER_YEARS.map((y) => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
                         </div>
                     </div>
                 </div>
 
-                {/* Mobil: Filtreleri temizle */}
                 {hasActiveFilters && (
                     <div className="md:hidden mt-3">
                         <button
@@ -362,21 +401,29 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
             ) : (
                 <div className="flex flex-col items-center justify-center py-16 md:py-24 text-center animate-in fade-in duration-300">
                     <div className="bg-muted/50 p-6 rounded-2xl border border-border mb-5">
-                        <Filter className="h-12 w-12 text-muted-foreground/60" aria-hidden />
+                        {listLoading ? (
+                            <Loader2 className="h-12 w-12 text-primary animate-spin" aria-hidden />
+                        ) : (
+                            <Filter className="h-12 w-12 text-muted-foreground/60" aria-hidden />
+                        )}
                     </div>
                     <p className="text-base md:text-lg font-medium text-foreground mb-1">
-                        Bu kriterlere uygun not bulunamadı
+                        {listLoading ? "Yükleniyor..." : "Bu kriterlere uygun not bulunamadı"}
                     </p>
-                    <p className="text-sm text-muted-foreground mb-5">
-                        Filtreleri değiştirerek veya arama metnini güncelleyerek tekrar deneyin.
-                    </p>
-                    <button
-                        type="button"
-                        onClick={clearFilters}
-                        className="px-5 py-2.5 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    >
-                        Filtreleri temizle
-                    </button>
+                    {!listLoading && (
+                        <>
+                            <p className="text-sm text-muted-foreground mb-5">
+                                Filtreleri değiştirerek veya arama metnini güncelleyerek tekrar deneyin.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={clearFilters}
+                                className="px-5 py-2.5 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                            >
+                                Filtreleri temizle
+                            </button>
+                        </>
+                    )}
                 </div>
             )}
         </div>

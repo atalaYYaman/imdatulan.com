@@ -22,6 +22,8 @@ export default async function ProfilePage() {
     const user = await prisma.user.findUnique({
         where: { email: session.user.email },
         include: {
+            universityLink: { select: { name: true } },
+            departmentLink: { select: { name: true } },
             notes: {
                 where: { deletedAt: null },
                 include: {
@@ -39,6 +41,7 @@ export default async function ProfilePage() {
                                 select: {
                                     id: true,
                                     department: true,
+                                    departmentLink: { select: { name: true } },
                                 },
                             },
                         },
@@ -134,9 +137,9 @@ export default async function ProfilePage() {
     const profileUser = {
         id: user.id,
         name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Kullanıcı',
-        university: user.university || 'Belirtilmemiş',
+        university: user.universityLink?.name ?? user.university ?? 'Belirtilmemiş',
         faculty: user.faculty || '',
-        department: user.department || '',
+        department: user.departmentLink?.name ?? user.department ?? '',
         role: user.role,
         studentNumber: maskStudentNumber(user.studentNumber) // MASKED
     };
@@ -148,9 +151,12 @@ export default async function ProfilePage() {
         ...attachRating(unlocked.note),
         uploader: {
             id: unlocked.note.uploader.id,
-            department: unlocked.note.uploader.department,
+            department:
+                unlocked.note.uploader.departmentLink?.name ??
+                unlocked.note.uploader.department,
             anonymousName: getAnonymousNameByDepartment(
-                unlocked.note.uploader.department
+                unlocked.note.uploader.departmentLink?.name ??
+                    unlocked.note.uploader.department
             ),
         },
     }));

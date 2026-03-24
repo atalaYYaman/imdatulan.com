@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { put } from '@vercel/blob';
 import { checkRateLimit } from "@/lib/rate-limit";
 import { PDFDocument } from "pdf-lib";
-import { universities } from "@/lib/universityData";
+import { validateAcademicSelection } from "@/lib/academicValidation";
 
 const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png']);
 const TRUSTED_DOMAINS = ['blob.vercel-storage.com', 'pub-'];
@@ -18,14 +18,6 @@ function getExtensionFromFileName(fileName: string): string {
 function isTrustedBlobUrl(url: string): boolean {
     if (typeof url !== 'string' || url.length > 500) return false;
     return TRUSTED_DOMAINS.some(domain => url.includes(domain));
-}
-
-function isValidAcademicSelection(universityName: string, facultyName: string, departmentName: string): boolean {
-    const university = universities.find((item) => item.name === universityName);
-    if (!university) return false;
-    const faculty = university.faculties.find((item) => item.name === facultyName);
-    if (!faculty) return false;
-    return faculty.departments.includes(departmentName);
 }
 
 export async function POST(req: Request) {
@@ -42,7 +34,10 @@ export async function POST(req: Request) {
                 approvalStatus: true,
                 university: true,
                 faculty: true,
-                department: true
+                department: true,
+                universityId: true,
+                facultyId: true,
+                departmentId: true,
             }
         })
         if (!user) {
@@ -64,9 +59,9 @@ export async function POST(req: Request) {
 
         const courseName = formData.get("courseName") as string
         const term = formData.get("term") as string
-        const selectedUniversity = formData.get("university") as string | null
-        const selectedFaculty = formData.get("faculty") as string | null
-        const selectedDepartment = formData.get("department") as string | null
+        const universityIdRaw = (formData.get("universityId") as string | null)?.trim()
+        const facultyIdRaw = (formData.get("facultyId") as string | null)?.trim()
+        const departmentIdRaw = (formData.get("departmentId") as string | null)?.trim()
         const noteType = formData.get("noteType") as string
         const description = formData.get("description") as string
         const priceStr = formData.get("price") as string
@@ -80,14 +75,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Invalid course name" }, { status: 400 });
         }
 
-        if (selectedUniversity || selectedFaculty || selectedDepartment) {
-            if (!selectedUniversity || !selectedFaculty || !selectedDepartment) {
-                return NextResponse.json({ message: "Üniversite, fakülte ve bölüm birlikte seçilmelidir." }, { status: 400 });
-            }
+        const universityId = universityIdRaw || user.universityId || ""
+        const facultyId = facultyIdRaw || user.facultyId || ""
+        const departmentId = departmentIdRaw || user.departmentId || ""
 
-            if (!isValidAcademicSelection(selectedUniversity, selectedFaculty, selectedDepartment)) {
-                return NextResponse.json({ message: "Geçersiz üniversite/fakülte/bölüm seçimi." }, { status: 400 });
-            }
+        if (!universityId || !facultyId || !departmentId) {
+            return NextResponse.json({ message: "Üniversite, fakülte ve bölüm seçilmelidir." }, { status: 400 });
+        }
+
+        const academic = await validateAcademicSelection(universityId, facultyId, departmentId)
+        if (!academic) {
+            return NextResponse.json({ message: "Geçersiz üniversite/fakülte/bölüm seçimi." }, { status: 400 });
         }
 
         let blobUrls: string[];
@@ -173,9 +171,12 @@ export async function POST(req: Request) {
             data: {
                 title: courseName,
                 courseName: courseName,
-                university: selectedUniversity || user.university || "Bilinmiyor",
-                faculty: selectedFaculty || user.faculty || "Bilinmiyor",
-                department: selectedDepartment || user.department || "Bilinmiyor",
+                university: academic.university,
+                faculty: academic.faculty,
+                department: academic.department,
+                universityId: academic.universityId,
+                facultyId: academic.facultyId,
+                departmentId: academic.departmentId,
                 type: noteType,
                 term: term,
                 description: description,

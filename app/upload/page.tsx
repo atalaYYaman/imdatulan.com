@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { upload } from '@vercel/blob/client';
-import { universities } from "@/lib/universityData";
+import { getUniversities, getFaculties, getDepartments, getCurrentUserAcademic } from "@/app/actions/academic";
 
 const MAX_SIZE = 25 * 1024 * 1024; // 25MB (Vercel Pro limit)
 const MAX_FILES = 20;
@@ -36,18 +36,20 @@ export default function UploadPage() {
     const [formData, setFormData] = useState({
         courseName: "",
         term: "",
-        university: "",
-        faculty: "",
-        department: "",
+        universityId: "",
+        facultyId: "",
+        departmentId: "",
         description: "",
         noteType: "Ders Notu",
         price: 2,
         isAI: false
     });
+    const [uniOpts, setUniOpts] = useState<{ label: string; value: string; disabled?: boolean }[]>([]);
+    const [facOpts, setFacOpts] = useState<{ label: string; value: string }[]>([]);
+    const [deptOpts, setDeptOpts] = useState<{ label: string; value: string }[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Revoke object URLs on unmount or when files change
     useEffect(() => {
         return () => {
             files.forEach(f => {
@@ -55,6 +57,45 @@ export default function UploadPage() {
             });
         };
     }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const [unis, facs, academic] = await Promise.all([
+                    getUniversities(),
+                    getFaculties(),
+                    getCurrentUserAcademic(),
+                ]);
+                if (cancelled) return;
+                setUniOpts(unis);
+                setFacOpts(facs);
+                if (academic?.universityId && academic?.facultyId && academic?.departmentId) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        universityId: academic.universityId!,
+                        facultyId: academic.facultyId!,
+                        departmentId: academic.departmentId!,
+                    }));
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    useEffect(() => {
+        if (!formData.facultyId) {
+            setDeptOpts([]);
+            return;
+        }
+        let cancelled = false;
+        getDepartments(formData.facultyId).then((d) => {
+            if (!cancelled) setDeptOpts(d);
+        });
+        return () => { cancelled = true; };
+    }, [formData.facultyId]);
 
     const addFiles = useCallback((newFiles: File[]) => {
         const filtered = Array.from(newFiles).filter(f => ALLOWED_EXT.test(f.name));
@@ -119,16 +160,12 @@ export default function UploadPage() {
         setFormData(prev => ({
             ...prev,
             [name]: value,
-            ...(name === "university" ? { faculty: "", department: "" } : {}),
-            ...(name === "faculty" ? { department: "" } : {}),
+            ...(name === "universityId" ? { facultyId: "", departmentId: "" } : {}),
+            ...(name === "facultyId" ? { departmentId: "" } : {}),
         }));
     };
 
     const totalSize = files.reduce((s, f) => s + f.file.size, 0);
-    const selectedUniversity = universities.find((u) => u.name === formData.university);
-    const availableFaculties = selectedUniversity?.faculties ?? [];
-    const selectedFaculty = availableFaculties.find((f) => f.name === formData.faculty);
-    const availableDepartments = selectedFaculty?.departments ?? [];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -206,9 +243,9 @@ export default function UploadPage() {
             data.append("fileNames", JSON.stringify(fileNames));
             data.append("courseName", formData.courseName);
             data.append("term", formData.term);
-            data.append("university", formData.university);
-            data.append("faculty", formData.faculty);
-            data.append("department", formData.department);
+            data.append("universityId", formData.universityId);
+            data.append("facultyId", formData.facultyId);
+            data.append("departmentId", formData.departmentId);
             data.append("description", formData.description);
             data.append("noteType", formData.noteType);
             data.append("price", formData.price.toString());
@@ -414,16 +451,16 @@ export default function UploadPage() {
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Üniversite</label>
                                 <div className="relative">
                                     <select
-                                        name="university"
-                                        value={formData.university}
+                                        name="universityId"
+                                        value={formData.universityId}
                                         onChange={handleFormChange}
                                         required
                                         className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none appearance-none cursor-pointer transition-all"
                                     >
                                         <option value="">Seçiniz</option>
-                                        {universities.map((university) => (
-                                            <option key={university.id} value={university.name}>
-                                                {university.name}
+                                        {uniOpts.map((university) => (
+                                            <option key={university.value} value={university.value} disabled={university.disabled}>
+                                                {university.label}
                                             </option>
                                         ))}
                                     </select>
@@ -435,17 +472,16 @@ export default function UploadPage() {
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Fakülte</label>
                                 <div className="relative">
                                     <select
-                                        name="faculty"
-                                        value={formData.faculty}
+                                        name="facultyId"
+                                        value={formData.facultyId}
                                         onChange={handleFormChange}
                                         required
-                                        disabled={!formData.university}
-                                        className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                                        className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none appearance-none cursor-pointer transition-all"
                                     >
                                         <option value="">Seçiniz</option>
-                                        {availableFaculties.map((faculty) => (
-                                            <option key={faculty.name} value={faculty.name}>
-                                                {faculty.name}
+                                        {facOpts.map((faculty) => (
+                                            <option key={faculty.value} value={faculty.value}>
+                                                {faculty.label}
                                             </option>
                                         ))}
                                     </select>
@@ -457,17 +493,17 @@ export default function UploadPage() {
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Bölüm</label>
                                 <div className="relative">
                                     <select
-                                        name="department"
-                                        value={formData.department}
+                                        name="departmentId"
+                                        value={formData.departmentId}
                                         onChange={handleFormChange}
                                         required
-                                        disabled={!formData.faculty}
+                                        disabled={!formData.facultyId}
                                         className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-all"
                                     >
                                         <option value="">Seçiniz</option>
-                                        {availableDepartments.map((department) => (
-                                            <option key={department} value={department}>
-                                                {department}
+                                        {deptOpts.map((department) => (
+                                            <option key={department.value} value={department.value}>
+                                                {department.label}
                                             </option>
                                         ))}
                                     </select>

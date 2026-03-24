@@ -25,6 +25,9 @@ export async function getNoteDetail(noteId: string) {
                 university: true,
                 faculty: true,
                 department: true,
+                universityId: true,
+                facultyId: true,
+                departmentId: true,
                 price: true,
                 status: true,
                 rejectionReason: true,
@@ -45,6 +48,7 @@ export async function getNoteDetail(noteId: string) {
                     select: {
                         id: true,
                         department: true,
+                        departmentLink: { select: { name: true } },
                     }
                 },
                 files: {
@@ -62,6 +66,7 @@ export async function getNoteDetail(noteId: string) {
                             select: {
                                 id: true,
                                 department: true,
+                                departmentLink: { select: { name: true } },
                             }
                         }
                     },
@@ -117,7 +122,9 @@ export async function getNoteDetail(noteId: string) {
             ? rawFiles.map((f: { fileExtension: string }) => f.fileExtension || 'pdf')
             : [effectiveFileExtension];
         const fileCount = fileExtensions.length;
-        const uploaderDisplayName = getAnonymousNameByDepartment(note.uploader.department);
+        const uploaderDept =
+            note.uploader.departmentLink?.name ?? note.uploader.department;
+        const uploaderDisplayName = getAnonymousNameByDepartment(uploaderDept);
 
         const viewer = await prisma.user.findUnique({
             where: { email: session.user.email },
@@ -188,16 +195,19 @@ export async function getNoteDetail(noteId: string) {
             myGrade,
             uploader: {
                 id: note.uploader.id,
-                department: note.uploader.department,
+                department: uploaderDept,
                 displayName: uploaderDisplayName,
             },
-            comments: note.comments.map((c) => ({
-                ...c,
-                user: {
-                    id: c.user.id,
-                    displayName: getAnonymousNameByDepartment(c.user.department),
-                },
-            })),
+            comments: note.comments.map((c) => {
+                const cd = c.user.departmentLink?.name ?? c.user.department;
+                return {
+                    ...c,
+                    user: {
+                        id: c.user.id,
+                        displayName: getAnonymousNameByDepartment(cd),
+                    },
+                };
+            }),
         };
     } catch (error) {
         console.error("Error fetching note detail:", error)

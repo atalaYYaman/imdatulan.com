@@ -46,17 +46,25 @@ async function seedUsers() {
         console.log('Fetching faculties and departments...');
 
         // Find relevant faculties
+        const neu = await prisma.university.findFirst({
+            where: { name: 'Necmettin Erbakan Üniversitesi' },
+        });
+        if (!neu) {
+            console.error('Necmettin Erbakan Üniversitesi bulunamadı. Önce prisma db seed çalıştırın.');
+            return;
+        }
+
         const targetFaculties = await prisma.faculty.findMany({
             where: {
                 OR: [
                     { name: { contains: 'Mühendislik', mode: 'insensitive' } },
                     { name: { contains: 'Hukuk', mode: 'insensitive' } },
-                    { name: { contains: 'Tıp', mode: 'insensitive' } }
-                ]
+                    { name: { contains: 'Tıp', mode: 'insensitive' } },
+                ],
             },
             include: {
-                departments: true
-            }
+                departments: true,
+            },
         });
 
         const commonPassword = await bcrypt.hash('ImdatUlan!2025', 10);
@@ -98,10 +106,12 @@ async function seedUsers() {
                         password: commonPassword,
                         marketingConsent: true,
 
-                        // Academic Info
-                        university: 'Necmettin Erbakan Üniversitesi', // Defaulting to NEU as per context
+                        university: neu.name,
+                        universityId: neu.id,
                         faculty: faculty.name,
+                        facultyId: faculty.id,
                         department: dept.name,
+                        departmentId: dept.id,
 
                         // Identity (Dummy but Unique)
                         // TC: 11 digits

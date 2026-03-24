@@ -9,9 +9,12 @@ export type RegistrationDat = {
     lastName: string
     birthYear?: number
     tcIdentityNo?: string
+    /** University row id (cuid) */
     university: string
     programLevel: string
+    /** Faculty row id */
     faculty: string
+    /** Department row id */
     department: string
     studentClass: string
     studentNumber: string
@@ -25,6 +28,7 @@ export type RegistrationDat = {
 import { headers } from "next/headers"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { StudentNumberSchema } from "@/lib/schemas"
+import { validateAcademicSelection } from "@/lib/academicValidation"
 
 export async function registerUser(data: RegistrationDat) {
     try {
@@ -67,24 +71,25 @@ export async function registerUser(data: RegistrationDat) {
         const finalFirstName = data.firstName.trim().toLocaleUpperCase('tr-TR');
         const finalLastName = data.lastName.trim().toLocaleUpperCase('tr-TR');
 
-        let uniName = data.university;
-        let facName = data.faculty;
-        if (uniName.length === 25) {
-            const u = await prisma.university.findUnique({ where: { id: uniName } });
-            if (u) uniName = u.name;
-        }
-        if (facName.length === 25) {
-            const f = await prisma.faculty.findUnique({ where: { id: facName } });
-            if (f) facName = f.name;
+        const academic = await validateAcademicSelection(
+            data.university.trim(),
+            data.faculty.trim(),
+            data.department.trim(),
+        )
+        if (!academic) {
+            return { success: false, message: "Geçersiz üniversite, fakülte veya bölüm seçimi." }
         }
 
         const userDataPayload = {
             firstName: finalFirstName,
             lastName: finalLastName,
-            university: uniName,
+            university: academic.university,
             programLevel: data.programLevel,
-            faculty: facName,
-            department: data.department,
+            faculty: academic.faculty,
+            department: academic.department,
+            universityId: academic.universityId,
+            facultyId: academic.facultyId,
+            departmentId: academic.departmentId,
             studentClass: data.studentClass,
             studentNumber: data.studentNumber,
             password: hashedPassword,

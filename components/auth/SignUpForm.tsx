@@ -74,16 +74,17 @@ export default function SignUpForm() {
         loadUnis();
     }, []);
 
-    // Load Faculties (Dependent)
+    useEffect(() => {
+        const loadFacs = async () => {
+            const facs = await getFaculties();
+            setFaculties(facs);
+        };
+        loadFacs();
+    }, []);
+
     useEffect(() => {
         if (formData.university) {
-            const loadFacs = async () => {
-                const facs = await getFaculties(formData.university);
-                setFaculties(facs);
-                // Reset dependents
-                setFormData(prev => ({ ...prev, faculty: '', department: '' }));
-            }
-            loadFacs();
+            setFormData((prev) => ({ ...prev, faculty: '', department: '' }));
         }
     }, [formData.university]);
 
@@ -307,7 +308,7 @@ export default function SignUpForm() {
             <CustomSelect label="Üniversite" options={universities} value={formData.university} onChange={(e) => handleChange('university', e.target.value)} placeholder="Üniversite Seçiniz" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CustomSelect label="Fakülte" options={faculties} value={formData.faculty} onChange={(e) => handleChange('faculty', e.target.value)} placeholder="Fakülte Seçiniz" disabled={!formData.university} />
+                <CustomSelect label="Fakülte" options={faculties} value={formData.faculty} onChange={(e) => handleChange('faculty', e.target.value)} placeholder="Fakülte Seçiniz" />
                 <CustomSelect label="Bölüm" options={departments} value={formData.department} onChange={(e) => handleChange('department', e.target.value)} placeholder="Bölüm Seçiniz" disabled={!formData.faculty} />
             </div>
 

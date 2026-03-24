@@ -4,19 +4,52 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getAnonymousNameByDepartment } from "@/lib/anonymization"
-import type { NoteLetterGrade } from "@prisma/client"
+import type { NoteLetterGrade, Prisma } from "@prisma/client"
 import { averageScoreToLetter } from "@/lib/noteGrades"
 
-export async function getNotes() {
+export type ExploreNoteFilters = {
+    searchQuery?: string
+    universityId?: string
+    facultyId?: string
+    departmentId?: string
+    year?: string
+}
+
+export async function getNotes(filters: ExploreNoteFilters = {}) {
     const session = await getServerSession(authOptions)
     if (!session?.user) throw new Error("Unauthorized")
 
+    const where: Prisma.NoteWhereInput = {
+        status: 'APPROVED',
+        deletedAt: null,
+    }
+
+    if (filters.universityId) {
+        where.universityId = filters.universityId
+    }
+    if (filters.facultyId) {
+        where.facultyId = filters.facultyId
+    }
+    if (filters.departmentId) {
+        where.departmentId = filters.departmentId
+    }
+
+    const q = filters.searchQuery?.trim()
+    if (q) {
+        where.OR = [
+            { title: { contains: q, mode: 'insensitive' } },
+            { courseName: { contains: q, mode: 'insensitive' } },
+            { description: { contains: q, mode: 'insensitive' } },
+        ]
+    }
+
+    if (filters.year) {
+        where.term = { contains: filters.year }
+    }
+
     try {
         const notes = await prisma.note.findMany({
-            where: {
-                status: 'APPROVED',
-                deletedAt: null
-            },
+            where,
             select: {
                 id: true,
                 title: true,
@@ -25,6 +58,9 @@ export async function getNotes() {
                 university: true,
                 faculty: true,
                 department: true,
+                universityId: true,
+                facultyId: true,
+                departmentId: true,
                 term: true,
                 type: true,
                 price: true,
@@ -37,6 +73,7 @@ export async function getNotes() {
                     select: {
                         id: true,
                         department: true,
+                        departmentLink: { select: { name: true } },
                     }
                 }
             },
@@ -46,7 +83,6 @@ export async function getNotes() {
         })
 
         const ids = notes.map((n) => n.id)
-        // NoteGrade sorgusu migrasyon öncesi/başarısız olursa hata verir; not listesini boş döndürmemek için ayrı yakalanır.
         type GradeAggRow = {
             noteId: string
             _count: number | { _all: number }
@@ -94,17 +130,16 @@ export async function getNotes() {
             })
         }
 
-        // UI'ye sadece anonim isim ve temel uploader bilgisi gönderilir.
         return notes.map((note) => {
             const r = gradeByNote.get(note.id)
+            const deptLabel =
+                note.uploader.departmentLink?.name ?? note.uploader.department ?? ""
             return {
                 ...note,
                 uploader: {
                     id: note.uploader.id,
-                    department: note.uploader.department,
-                    anonymousName: getAnonymousNameByDepartment(
-                        note.uploader.department
-                    ),
+                    department: deptLabel,
+                    anonymousName: getAnonymousNameByDepartment(deptLabel),
                 },
                 rating: r ?? {
                     count: 0,

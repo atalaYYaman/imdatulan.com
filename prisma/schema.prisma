@@ -22,11 +22,17 @@ model User {
   birthYear    Int?
   tcIdentityNo String? @unique
 
-  // Academic Info
+  // Academic Info (string mirrors for display / anonymization; prefer FKs when set)
   university    String?
   programLevel  String? // "Ön Lisans", "Lisans", "Yüksek Lisans", "Doktora"
   faculty       String?
   department    String?
+  universityId  String?
+  facultyId     String?
+  departmentId  String?
+  universityLink University? @relation("UserUniversityLink", fields: [universityId], references: [id], onDelete: SetNull)
+  facultyLink    Faculty?    @relation("UserFacultyLink", fields: [facultyId], references: [id], onDelete: SetNull)
+  departmentLink Department? @relation("UserDepartmentLink", fields: [departmentId], references: [id], onDelete: SetNull)
   studentClass  String?
   studentNumber String? @unique
 
@@ -106,22 +112,27 @@ model University {
   id        String    @id @default(cuid())
   name      String    @unique
   isActive  Boolean   @default(true)
-  faculties Faculty[]
+  users     User[]    @relation("UserUniversityLink")
+  notes     Note[]    @relation("NoteUniversityLink")
 }
 
 model Faculty {
   id           String       @id @default(cuid())
-  name         String
-  universityId String
-  university   University   @relation(fields: [universityId], references: [id])
+  name         String       @unique
   departments  Department[]
+  users        User[]       @relation("UserFacultyLink")
+  notes        Note[]       @relation("NoteFacultyLink")
 }
 
 model Department {
   id        String  @id @default(cuid())
   name      String
   facultyId String
-  faculty   Faculty @relation(fields: [facultyId], references: [id])
+  faculty   Faculty @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  users     User[]  @relation("UserDepartmentLink")
+  notes     Note[]  @relation("NoteDepartmentLink")
+
+  @@unique([facultyId, name])
 }
 
 model Note {
@@ -130,6 +141,12 @@ model Note {
   university String
   faculty    String
   department String
+  universityId   String?
+  facultyId      String?
+  departmentId   String?
+  universityLink University? @relation("NoteUniversityLink", fields: [universityId], references: [id], onDelete: SetNull)
+  facultyLink    Faculty?    @relation("NoteFacultyLink", fields: [facultyId], references: [id], onDelete: SetNull)
+  departmentLink Department? @relation("NoteDepartmentLink", fields: [departmentId], references: [id], onDelete: SetNull)
   fileUrl    String  // Legacy: fallback when no NoteFile records (backward compat)
   price      Int     @default(1) // Notun Süt değeri (1-3)
   status     String  @default("PENDING") // PENDING, APPROVED, REJECTED, SUSPENDED
@@ -158,6 +175,10 @@ model Note {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   deletedAt  DateTime? // Soft Delete
+
+  @@index([universityId, departmentId])
+  @@index([departmentId])
+  @@index([facultyId])
 }
 
 model NoteFile {
