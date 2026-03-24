@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isPdfFile } from "@/lib/fileType";
 import { PDFDocument } from "pdf-lib";
 
 export async function GET(request: Request, props: { params: Promise<{ noteId: string }> }) {
@@ -179,9 +180,9 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
 
         const fileArrayBuffer = await fileResponse.arrayBuffer();
         const contentType = fileResponse.headers.get("content-type") || "application/pdf";
-        const isPdf = contentType.includes("pdf") || fileExtension === "pdf" || fileUrl.toLowerCase().endsWith(".pdf");
+        const isPdf = isPdfFile({ contentType, extension: fileExtension, url: fileUrl });
 
-        // 5. Locked & non-PDF: return secure placeholder instead of original bytes
+        // 5. Locked & non-PDF (all image formats): return secure placeholder instead of original bytes
         if (!hasAccess && !isPdf) {
             try {
                 const placeholderUrl = new URL("/locked-placeholder.svg", request.url);

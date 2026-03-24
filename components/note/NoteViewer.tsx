@@ -2,6 +2,7 @@
 
 import '@/lib/polyfills'; // Import polyfills first
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { isPdfFile, isImageFile } from '@/lib/fileType';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -58,10 +59,8 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
 
     // Fetch file and create blob URL for in-viewer display (no external URL exposure)
     useEffect(() => {
-        const ext = effectiveFileExtension ? effectiveFileExtension.toLowerCase() : (effectiveFileUrl.split('.').pop()?.toLowerCase() || '');
-        const pdf = ext === 'pdf' || effectiveFileUrl.toLowerCase().endsWith('.pdf');
-        const img = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || /\.(jpg|jpeg|png|gif|webp)$/i.test(effectiveFileUrl);
-        if (!pdf && !img) return;
+        const input = { extension: effectiveFileExtension, url: effectiveFileUrl };
+        if (!isPdfFile(input) && !isImageFile(input)) return;
 
         let revoked = false;
         fetch(effectiveFileUrl, { credentials: 'include' })
@@ -116,9 +115,9 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         setLoadError("PDF yüklenirken bir sorun oluştu. Cihazınız bu formatı desteklemiyor olabilir veya bağlantı sorunu yaşıyorsunuz.");
     }
 
-    const ext = effectiveFileExtension ? effectiveFileExtension.toLowerCase() : (effectiveFileUrl.split('.').pop()?.toLowerCase() || '');
-    const isPdf = ext === 'pdf' || effectiveFileUrl.toLowerCase().endsWith('.pdf');
-    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || /\.(jpg|jpeg|png|gif|webp)$/i.test(effectiveFileUrl);
+    const fileTypeInput = { extension: effectiveFileExtension, url: effectiveFileUrl };
+    const isPdf = isPdfFile(fileTypeInput);
+    const isImage = isImageFile(fileTypeInput);
 
     const canGoPrev = fileCount > 1 && fileIndex > 0;
     const canGoNext = fileCount > 1 && fileIndex < fileCount - 1;
@@ -360,7 +359,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                         ) : (
                             <div className="flex flex-col items-center justify-center h-96 p-8 text-center bg-card rounded-2xl border border-border">
                                 <p className="text-xl font-bold mb-4">Önizleme Kullanılamıyor</p>
-                                <p className="text-muted-foreground">Bu dosya formatı ({ext || "bilinmiyor"}) şu an için tarayıcıda görüntülenemiyor. Desteklenen formatlar: PDF, JPG, PNG.</p>
+                                <p className="text-muted-foreground">Bu dosya formatı ({effectiveFileExtension || "bilinmiyor"}) şu an için tarayıcıda görüntülenemiyor. Desteklenen formatlar: PDF, JPG, PNG, WebP, GIF.</p>
                             </div>
                         )}
                     </div>

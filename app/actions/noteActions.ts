@@ -8,6 +8,7 @@ import xss from 'xss';
 import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { getAnonymousNameByDepartment } from "@/lib/anonymization";
+import { IMAGE_EXTENSIONS, PDF_EXTENSIONS } from "@/lib/fileType";
 
 export async function getNoteDetail(noteId: string) {
     const session = await getServerSession(authOptions)
@@ -98,7 +99,7 @@ export async function getNoteDetail(noteId: string) {
         }
 
         // Fallback: Eski notlar (migration öncesi) fileExtension=null; blob URL'den uzantı parse et
-        const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png']);
+        const ALLOWED_EXT = new Set([...IMAGE_EXTENSIONS, ...PDF_EXTENSIONS]);
         let effectiveFileExtension = note.fileExtension;
         if (!effectiveFileExtension && note.fileUrl) {
             try {
