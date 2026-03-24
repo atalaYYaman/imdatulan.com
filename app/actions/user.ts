@@ -94,13 +94,16 @@ export async function registerUser(data: RegistrationDat) {
         };
 
         // 4. Duplicate / Re-registration Logic
+        // When email exists, always check approvalStatus (case-insensitive)
         if (existingUser) {
-            if (existingUser.approvalStatus === "BANNED") {
+            const status = existingUser.approvalStatus?.toUpperCase();
+
+            if (status === "BANNED") {
                 return { success: false, message: "Bu email adresi yasaklanmıştır." };
             }
 
-            if (existingUser.approvalStatus === "REJECTED") {
-                // RE-REGISTER: Update existing user
+            if (status === "REJECTED") {
+                // RE-REGISTER: Update existing user, allow same email
 
                 // Check if new student number is taken (by someone else)
                 const studentNumCheck = await prisma.user.findUnique({ where: { studentNumber: data.studentNumber.trim() } });
@@ -110,7 +113,10 @@ export async function registerUser(data: RegistrationDat) {
 
                 await prisma.user.update({
                     where: { id: existingUser.id },
-                    data: userDataPayload
+                    data: {
+                        ...userDataPayload,
+                        rejectionReason: null // Clear previous rejection reason
+                    }
                 });
 
                 return { success: true, message: "Başvurunuz güncellendi ve tekrar onaya gönderildi.", userId: existingUser.id };
@@ -176,6 +182,37 @@ export async function checkStudentNumber(studentNumber: string) {
         return { available: true };
     } catch (error) {
         console.error("Check Student Number Error:", error);
+        return { available: false, message: "Kontrol sırasında hata oluştu." };
+    }
+}
+
+export async function checkEmailAvailability(email: string) {
+    try {
+        if (!validateEmail(email)) {
+            return { available: false, message: "Geçersiz email adresi." };
+        }
+
+        const existingUser = await prisma.user.findUnique({
+            where: { email: email.trim() }
+        });
+
+        if (!existingUser) {
+            return { available: true };
+        }
+
+        const status = existingUser.approvalStatus?.toUpperCase();
+
+        if (status === "REJECTED") {
+            return { available: true, message: "Bu email ile daha önce reddedilmiş başvurunuz var. Tekrar başvuru yapabilirsiniz." };
+        }
+
+        if (status === "BANNED") {
+            return { available: false, message: "Bu email adresi yasaklanmıştır." };
+        }
+
+        return { available: false, message: "Bu email adresi ile kayıtlı bir kullanıcı zaten var." };
+    } catch (error) {
+        console.error("Check Email Availability Error:", error);
         return { available: false, message: "Kontrol sırasında hata oluştu." };
     }
 }
