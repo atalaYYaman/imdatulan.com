@@ -46,22 +46,47 @@ export async function getNotes() {
         })
 
         const ids = notes.map((n) => n.id)
-        const gradeAggs =
-            ids.length === 0
-                ? []
-                : await prisma.noteGrade.groupBy({
-                      by: ["noteId"],
-                      where: { noteId: { in: ids } },
-                      _avg: { score: true },
-                      _count: true,
-                  })
+        // NoteGrade sorgusu migrasyon öncesi/başarısız olursa hata verir; not listesini boş döndürmemek için ayrı yakalanır.
+        type GradeAggRow = {
+            noteId: string
+            _count: number | { _all: number }
+            _avg: { score: number | null } | null
+        }
+        let gradeAggs: GradeAggRow[] = []
+        if (ids.length > 0) {
+            try {
+                const gradeDelegate = prisma.noteGrade as unknown as {
+                    groupBy: (args: {
+                        by: ["noteId"]
+                        where: { noteId: { in: string[] } }
+                        _avg: { score: true }
+                        _count: true
+                    }) => Promise<GradeAggRow[]>
+                }
+                gradeAggs = await gradeDelegate.groupBy({
+                    by: ["noteId"],
+                    where: { noteId: { in: ids } },
+                    _avg: { score: true },
+                    _count: true,
+                })
+            } catch (gradeErr) {
+                console.error(
+                    "getNotes: NoteGrade groupBy başarısız (migration gerekli olabilir):",
+                    gradeErr
+                )
+            }
+        }
         const gradeByNote = new Map<
             string,
             { count: number; averageScore: number | null; letter: NoteLetterGrade | null }
         >()
         for (const g of gradeAggs) {
-            const count = g._count
-            const avg = count > 0 && g._avg.score != null ? g._avg.score : null
+            const count =
+                typeof g._count === "number"
+                    ? g._count
+                    : g._count?._all ?? 0
+            const avg =
+                count > 0 && g._avg?.score != null ? g._avg.score : null
             gradeByNote.set(g.noteId, {
                 count,
                 averageScore: avg,

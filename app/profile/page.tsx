@@ -69,15 +69,35 @@ export default async function ProfilePage() {
             ...user.unlockedNotes.map((u) => u.note.id),
         ]),
     ];
-    const gradeAggs =
-        allNoteIds.length === 0
-            ? []
-            : await prisma.noteGrade.groupBy({
-                  by: ['noteId'],
-                  where: { noteId: { in: allNoteIds } },
-                  _avg: { score: true },
-                  _count: true,
-              });
+    type ProfileGradeAgg = {
+        noteId: string
+        _count: number
+        _avg: { score: number | null }
+    }
+    let gradeAggs: ProfileGradeAgg[] = []
+    if (allNoteIds.length > 0) {
+        try {
+            const gradeDelegate = prisma.noteGrade as unknown as {
+                groupBy: (args: {
+                    by: ['noteId']
+                    where: { noteId: { in: string[] } }
+                    _avg: { score: true }
+                    _count: true
+                }) => Promise<ProfileGradeAgg[]>
+            }
+            gradeAggs = await gradeDelegate.groupBy({
+                by: ['noteId'],
+                where: { noteId: { in: allNoteIds } },
+                _avg: { score: true },
+                _count: true,
+            })
+        } catch (e) {
+            console.error(
+                'profile: NoteGrade groupBy başarısız (migration gerekli olabilir):',
+                e
+            )
+        }
+    }
     const gradeByNote = new Map<
         string,
         { count: number; averageScore: number | null; letter: NoteLetterGrade | null }

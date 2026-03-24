@@ -119,42 +119,59 @@ export async function getNoteDetail(noteId: string) {
         const fileCount = fileExtensions.length;
         const uploaderDisplayName = getAnonymousNameByDepartment(note.uploader.department);
 
-        const [gradeAgg, gradeGroups, viewer] = await Promise.all([
-            prisma.noteGrade.aggregate({
-                where: { noteId },
-                _avg: { score: true },
-                _count: true,
-            }),
-            prisma.noteGrade.groupBy({
-                by: ["grade"],
-                where: { noteId },
-                _count: true,
-            }),
-            prisma.user.findUnique({
-                where: { email: session.user.email },
-                select: { id: true },
-            }),
-        ]);
+        const viewer = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            select: { id: true },
+        });
 
+        let ratingCount = 0;
+        let averageScore: number | null = null;
+        let letter: NoteLetterGrade | null = null;
+        let distribution = {} as Partial<Record<NoteLetterGrade, number>>;
         let myGrade: NoteLetterGrade | null = null;
-        if (viewer) {
-            const row = await prisma.noteGrade.findUnique({
-                where: {
-                    userId_noteId: { userId: viewer.id, noteId },
-                },
-                select: { grade: true },
-            });
-            myGrade = row?.grade ?? null;
-        }
 
-        const ratingCount = gradeAgg._count;
-        const averageScore =
-            ratingCount > 0 && gradeAgg._avg.score != null ? gradeAgg._avg.score : null;
-        const letter =
-            averageScore != null ? averageScoreToLetter(averageScore) : null;
-        const distribution = Object.fromEntries(
-            gradeGroups.map((g) => [g.grade, g._count])
-        ) as Partial<Record<NoteLetterGrade, number>>;
+        try {
+            const [gradeAgg, gradeGroups] = await Promise.all([
+                prisma.noteGrade.aggregate({
+                    where: { noteId },
+                    _avg: { score: true },
+                    _count: true,
+                }),
+                prisma.noteGrade.groupBy({
+                    by: ["grade"],
+                    where: { noteId },
+                    _count: true,
+                }),
+            ]);
+
+            ratingCount = gradeAgg._count;
+            averageScore =
+                ratingCount > 0 && gradeAgg._avg.score != null
+                    ? gradeAgg._avg.score
+                    : null;
+            letter =
+                averageScore != null
+                    ? averageScoreToLetter(averageScore)
+                    : null;
+            distribution = Object.fromEntries(
+                gradeGroups.map((g) => [g.grade, g._count])
+            ) as Partial<Record<NoteLetterGrade, number>>;
+
+            if (viewer) {
+                const row = await prisma.noteGrade.findUnique({
+                    where: {
+                        userId_noteId: { userId: viewer.id, noteId },
+                    },
+                    select: { grade: true },
+                });
+                myGrade = row?.grade ?? null;
+            }
+        } catch (gradeErr) {
+            console.error(
+                "getNoteDetail: NoteGrade sorguları başarısız (migration gerekli olabilir):",
+                gradeErr
+            );
+        }
 
         return {
             ...noteSafe,
