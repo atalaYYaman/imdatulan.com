@@ -23,10 +23,31 @@ export async function getFaculties() {
 export async function getDepartments(facultyId: string) {
     if (!facultyId) return []
 
-    const departments = await prisma.department.findMany({
+    let departments = await prisma.department.findMany({
         where: { facultyId: facultyId },
         orderBy: { name: 'asc' }
     })
+
+    if (departments.length === 0) {
+        const faculty = await prisma.faculty.findUnique({
+            where: { id: facultyId },
+            select: { name: true },
+        })
+        if (faculty) {
+            await prisma.department.upsert({
+                where: {
+                    facultyId_name: { facultyId, name: faculty.name },
+                },
+                create: { facultyId, name: faculty.name },
+                update: {},
+            })
+            departments = await prisma.department.findMany({
+                where: { facultyId },
+                orderBy: { name: 'asc' },
+            })
+        }
+    }
+
     return departments.map(d => ({ label: d.name, value: d.id }))
 }
 

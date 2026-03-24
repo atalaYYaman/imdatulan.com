@@ -134,11 +134,11 @@ export const ACADEMIC_TREE: { faculty: string; departments: string[] }[] = [
     },
     {
         faculty: "Spor Bilimleri Fakültesi",
-        departments: [],
+        departments: ["Spor Bilimleri Fakültesi"],
     },
     {
         faculty: "Sivil Havacılık Yüksekokulu",
-        departments: [],
+        departments: ["Sivil Havacılık Yüksekokulu"],
     },
     {
         faculty: "Meslek Yüksekokulu (Önlisans Bölümleri İçin Ortak Çatı)",
