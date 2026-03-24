@@ -9,7 +9,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import { getAnonymousNameByDepartment } from "@/lib/anonymization";
 import { IMAGE_EXTENSIONS, PDF_EXTENSIONS } from "@/lib/fileType";
-import { NoteLetterGrade } from "@prisma/client";
+import { NoteLetterGrade, Prisma } from "@prisma/client";
 import { averageScoreToLetter, gradeToScore } from "@/lib/noteGrades";
 
 export async function getNoteDetail(noteId: string) {
@@ -492,7 +492,40 @@ export async function submitNoteGrade(noteId: string, grade: NoteLetterGrade) {
         return { success: true };
     } catch (error) {
         console.error("submitNoteGrade error:", error);
-        return { success: false, message: "Değerlendirme kaydedilemedi." };
+
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === "P2021") {
+                return {
+                    success: false,
+                    message:
+                        "Değerlendirme özelliği veritabanında hazır değil. Sunucuda `npx prisma migrate deploy` çalıştırılmalı.",
+                };
+            }
+            if (error.code === "P2003") {
+                return {
+                    success: false,
+                    message:
+                        "Kayıt bağlantısı başarısız. Sayfayı yenileyip tekrar deneyin.",
+                };
+            }
+        }
+
+        if (
+            process.env.NODE_ENV === "development" &&
+            error instanceof Error &&
+            error.message
+        ) {
+            return {
+                success: false,
+                message: `Değerlendirme kaydedilemedi: ${error.message}`,
+            };
+        }
+
+        return {
+            success: false,
+            message:
+                "Değerlendirme kaydedilemedi. Veritabanı migrasyonunun (NoteGrade tablosu) canlı ortamda uygulandığından emin olun.",
+        };
     }
 }
 
