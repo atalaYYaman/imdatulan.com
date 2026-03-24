@@ -12,11 +12,7 @@ export async function GET(
         const { noteId } = await params;
         const session = await getServerSession(authOptions);
 
-        // 1. Auth Check (Public notes might be allowed, but let's assume login required for now based on app logic)
-        // Adjust based on your 'guest' policy. The viewer passes dummy user if not logged in.
-        // But for *content*, usually we want at least basic tracking.
-        // If session is null, we can still serve PREVIEW (1st page) if we want?
-        // Let's mimic 'getNoteDetail' logic + unlock check.
+        const fileIndex = Math.max(0, parseInt(request.nextUrl.searchParams.get("fileIndex") || "0", 10) || 0);
 
         let user = null;
         if (session?.user?.email) {
@@ -26,7 +22,6 @@ export async function GET(
             });
         }
 
-        // 2. Fetch Note
         const note = await prisma.note.findUnique({
             where: { id: noteId },
             select: {
@@ -36,11 +31,26 @@ export async function GET(
                 uploaderId: true,
                 status: true,
                 rejectionReason: true,
-                pageCount: true, // For dynamic preview calculation
+                pageCount: true,
+                files: { orderBy: { sortOrder: "asc" }, select: { fileUrl: true, fileExtension: true, pageCount: true } }
             }
         });
 
-        if (!note || !note.fileUrl) {
+        let fileUrl: string;
+        let pageCount: number | null;
+        if (note?.files?.length) {
+            const idx = Math.min(fileIndex, note.files.length - 1);
+            const f = note.files[idx];
+            fileUrl = f?.fileUrl ?? "";
+            pageCount = f?.pageCount ?? null;
+        } else if (note?.fileUrl) {
+            fileUrl = note.fileUrl;
+            pageCount = note.pageCount;
+        } else {
+            return new NextResponse("Not Found", { status: 404 });
+        }
+
+        if (!note || !fileUrl) {
             return new NextResponse("Not Found", { status: 404 });
         }
 
@@ -79,25 +89,22 @@ export async function GET(
             }
         }
 
-        // 5. Fetch File from Blob
-        const response = await fetch(note.fileUrl);
+        const response = await fetch(fileUrl);
         if (!response.ok) {
             console.error("Blob fetch failed:", response.statusText);
             return new NextResponse("File Fetch Error", { status: 502 });
         }
         const fileArrayBuffer = await response.arrayBuffer();
 
-        // 6. Processing
-        // Check content type
         const contentType = response.headers.get("content-type") || "application/pdf";
-        const isPdf = contentType.includes("pdf") || note.fileUrl.toLowerCase().endsWith(".pdf");
+        const isPdf = contentType.includes("pdf") || fileUrl.toLowerCase().endsWith(".pdf");
 
         if (isPdf) {
             let pdfDoc = await PDFDocument.load(fileArrayBuffer);
 
             // If LOCKED: Show dynamic preview based on total page count
             if (!isUnlocked) {
-                const totalPageCount = note.pageCount || pdfDoc.getPageCount();
+                const totalPageCount = pageCount ?? pdfDoc.getPageCount();
                 
                 // Dynamic preview logic:
                 // - 1-5 pages: Show only 1 page (to prevent free access to most content)

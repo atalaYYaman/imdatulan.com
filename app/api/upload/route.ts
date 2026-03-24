@@ -6,19 +6,30 @@ import { put } from '@vercel/blob';
 import { checkRateLimit } from "@/lib/rate-limit";
 import { PDFDocument } from "pdf-lib";
 
+const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png']);
+const TRUSTED_DOMAINS = ['blob.vercel-storage.com', 'pub-'];
+
+function getExtensionFromFileName(fileName: string): string {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    return ext && ALLOWED_EXT.has(ext) ? ext : 'pdf';
+}
+
+function isTrustedBlobUrl(url: string): boolean {
+    if (typeof url !== 'string' || url.length > 500) return false;
+    return TRUSTED_DOMAINS.some(domain => url.includes(domain));
+}
+
 export async function POST(req: Request) {
-    // Zero Trust: Always verify session first
     const session = await getServerSession(authOptions)
     if (!session || !session.user?.email) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
     }
 
     try {
-        // Zero Trust: Verify user exists in database
-        const user = await prisma.user.findUnique({ 
+        const user = await prisma.user.findUnique({
             where: { email: session.user.email },
-            select: { 
-                id: true, 
+            select: {
+                id: true,
                 approvalStatus: true,
                 university: true,
                 faculty: true,
@@ -29,118 +40,112 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "User not found" }, { status: 404 })
         }
 
-        // Zero Trust: Check user approval status
         if (user.approvalStatus === 'BANNED' || user.approvalStatus === 'REJECTED') {
             return NextResponse.json({ message: "Account not authorized" }, { status: 403 });
         }
 
         const formData = await req.formData()
+        const blobUrlsRaw = formData.get("blobUrls") as string | null
+        const fileNamesRaw = formData.get("fileNames") as string | null
+
+        // Legacy single-file support
         const file = formData.get("file") as File | null
         const blobUrl = formData.get("blobUrl") as string | null
-        const fileName = formData.get("fileName") as string | null // For blobUrl case: original filename for extension
+        const fileName = formData.get("fileName") as string | null
+
         const courseName = formData.get("courseName") as string
         const term = formData.get("term") as string
         const noteType = formData.get("noteType") as string
         const description = formData.get("description") as string
         const priceStr = formData.get("price") as string
 
-        // --- VALIDATION (Zero Trust) ---
-        // 1. Rate Limit
-        const limitCheck = await checkRateLimit(`upload_${session.user.email}`, 5, 3600); // 5 uploads per hour
+        const limitCheck = await checkRateLimit(`upload_${session.user.email}`, 5, 3600);
         if (!limitCheck.success) {
             return NextResponse.json({ message: limitCheck.message }, { status: 429 });
         }
 
-        // 2. Input Validation (Zero Trust: Validate all inputs)
-        if ((!file && !blobUrl) || !courseName) {
-            return NextResponse.json({ message: "Dosya ve Ders Adı zorunludur." }, { status: 400 })
-        }
-
-        // Zero Trust: Validate blobUrl format if provided (prevent SSRF)
-        if (blobUrl) {
-            if (typeof blobUrl !== 'string' || blobUrl.length > 500) {
-                return NextResponse.json({ message: "Invalid blob URL" }, { status: 400 });
-            }
-            // Ensure blobUrl is from trusted source
-            const trustedDomains = ['blob.vercel-storage.com', 'pub-'];
-            const isTrustedUrl = trustedDomains.some(domain => blobUrl.includes(domain));
-            if (!isTrustedUrl) {
-                return NextResponse.json({ message: "Invalid file source" }, { status: 403 });
-            }
-        }
-
-        // Zero Trust: Validate courseName (prevent injection)
         if (typeof courseName !== 'string' || courseName.length > 200 || courseName.length < 1) {
             return NextResponse.json({ message: "Invalid course name" }, { status: 400 });
         }
 
-        let finalBlobUrl: string;
+        let blobUrls: string[];
+        let fileNames: string[];
 
-        // If blobUrl is provided (from direct blob upload), use it
-        // Otherwise, upload the file directly (for small files < 4MB)
-        if (blobUrl) {
-            finalBlobUrl = blobUrl;
+        if (blobUrlsRaw && fileNamesRaw) {
+            try {
+                blobUrls = JSON.parse(blobUrlsRaw) as string[];
+                fileNames = JSON.parse(fileNamesRaw) as string[];
+            } catch {
+                return NextResponse.json({ message: "Invalid blobUrls/fileNames format" }, { status: 400 });
+            }
+            if (!Array.isArray(blobUrls) || !Array.isArray(fileNames) || blobUrls.length !== fileNames.length || blobUrls.length === 0) {
+                return NextResponse.json({ message: "blobUrls and fileNames must be matching non-empty arrays" }, { status: 400 });
+            }
+            for (const url of blobUrls) {
+                if (!isTrustedBlobUrl(url)) {
+                    return NextResponse.json({ message: "Invalid file source" }, { status: 403 });
+                }
+            }
+        } else if (blobUrl && fileName) {
+            if (!isTrustedBlobUrl(blobUrl)) {
+                return NextResponse.json({ message: "Invalid file source" }, { status: 403 });
+            }
+            blobUrls = [blobUrl];
+            fileNames = [fileName];
         } else if (file) {
-            // File size validation for direct upload (small files only)
-            const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB (safe limit below 4.5MB)
+            const MAX_FILE_SIZE = 4 * 1024 * 1024;
             if (file.size > MAX_FILE_SIZE) {
-                return NextResponse.json({ 
-                    message: `Dosya boyutu çok büyük! Büyük dosyalar için lütfen tekrar deneyin. Seçilen dosya: ${(file.size / 1024 / 1024).toFixed(2)}MB` 
+                return NextResponse.json({
+                    message: `Dosya boyutu çok büyük! Seçilen dosya: ${(file.size / 1024 / 1024).toFixed(2)}MB`
                 }, { status: 413 })
             }
-
-            // Vercel Blob Storage (for small files)
-            const blob = await put(file.name, file, {
-                access: 'public',
-                addRandomSuffix: true
-            });
-            finalBlobUrl = blob.url;
+            const blob = await put(file.name, file, { access: 'public', addRandomSuffix: true });
+            blobUrls = [blob.url];
+            fileNames = [file.name];
         } else {
-            return NextResponse.json({ message: "Dosya bulunamadı." }, { status: 400 });
+            return NextResponse.json({ message: "Dosya ve Ders Adı zorunludur." }, { status: 400 })
         }
 
         let price = priceStr ? parseInt(priceStr) : 1;
         if (price < 1) price = 1;
         if (price > 5) return NextResponse.json({ message: "Fiyat 1-5 Süt arasında olmalıdır." }, { status: 400 });
 
-        // Extract page count from PDF if it's a PDF file
-        let pageCount: number | null = null;
-        try {
-            const fileToCheck = file || (blobUrl ? await (await fetch(blobUrl)).blob() : null);
-            if (fileToCheck) {
-                const fileName = fileToCheck instanceof File ? fileToCheck.name : blobUrl || '';
-                const isPdf = fileName.toLowerCase().endsWith('.pdf') || 
-                             (fileToCheck instanceof File && fileToCheck.type === 'application/pdf');
-                
-                if (isPdf) {
-                    const arrayBuffer = await (fileToCheck instanceof File ? fileToCheck.arrayBuffer() : fileToCheck.arrayBuffer());
-                    const pdfDoc = await PDFDocument.load(arrayBuffer);
-                    pageCount = pdfDoc.getPageCount();
+        const noteFilesData: { fileUrl: string; fileName: string; fileExtension: string; sortOrder: number; pageCount: number | null }[] = [];
+        let firstFileUrl = blobUrls[0];
+        let firstFileExtension = getExtensionFromFileName(fileNames[0]);
+        let firstPageCount: number | null = null;
+
+        for (let i = 0; i < blobUrls.length; i++) {
+            const url = blobUrls[i];
+            const name = fileNames[i] || `file-${i}`;
+            const ext = getExtensionFromFileName(name);
+
+            let pageCount: number | null = null;
+            if (ext === 'pdf') {
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const buf = await res.arrayBuffer();
+                        const pdfDoc = await PDFDocument.load(buf);
+                        pageCount = pdfDoc.getPageCount();
+                    }
+                } catch (e) {
+                    console.error("Error extracting PDF page count:", e);
                 }
             }
-        } catch (error) {
-            console.error("Error extracting page count:", error);
-            // Continue without page count if extraction fails
-        }
 
-        // Extract file extension for correct viewer selection
-        const ALLOWED_EXT = new Set(['pdf', 'jpg', 'jpeg', 'png']);
-        let fileExtension = 'pdf';
-        if (file) {
-            const ext = file.name.split('.').pop()?.toLowerCase();
-            if (ext && ALLOWED_EXT.has(ext)) fileExtension = ext;
-        } else if (fileName && typeof fileName === 'string') {
-            const ext = fileName.split('.').pop()?.toLowerCase();
-            if (ext && ALLOWED_EXT.has(ext)) fileExtension = ext;
-        } else if (blobUrl) {
-            try {
-                const pathname = new URL(blobUrl).pathname;
-                const ext = pathname.split('.').pop()?.toLowerCase();
-                if (ext && ALLOWED_EXT.has(ext)) fileExtension = ext;
-            } catch { /* keep pdf */ }
-        }
+            noteFilesData.push({
+                fileUrl: url,
+                fileName: name,
+                fileExtension: ext,
+                sortOrder: i,
+                pageCount
+            });
 
-        // DB Record (user already fetched above for zero trust verification)
+            if (i === 0) {
+                firstPageCount = pageCount;
+            }
+        }
 
         const note = await prisma.note.create({
             data: {
@@ -152,20 +157,20 @@ export async function POST(req: Request) {
                 type: noteType,
                 term: term,
                 description: description,
-                fileUrl: finalBlobUrl, // URL from Vercel Blob
+                fileUrl: firstFileUrl,
                 uploaderId: user.id,
                 price: price,
                 status: "PENDING",
                 isAI: formData.get("isAI") === "true",
-                pageCount: pageCount,
-                fileExtension: fileExtension,
+                pageCount: firstPageCount,
+                fileExtension: firstFileExtension,
+                files: {
+                    create: noteFilesData
+                }
             }
         })
 
-        // Credits are now awarded upon Admin Approval, not upload.
-
         return NextResponse.json({ message: "Upload successful", note }, { status: 201 })
-
     } catch (error) {
         console.error("Upload error details:", error)
         return NextResponse.json({

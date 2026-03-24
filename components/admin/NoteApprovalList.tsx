@@ -9,7 +9,7 @@ type NoteData = {
     id: string;
     title: string;
     description: string | null;
-    firstName?: string; // Mapped from uploader manually if needed? No, include uploader object
+    firstName?: string;
     uploader: {
         firstName: string | null;
         lastName: string | null;
@@ -22,6 +22,7 @@ type NoteData = {
     department: string;
     courseName?: string | null;
     createdAt: Date;
+    fileCount?: number;
 };
 
 export default function NoteApprovalList({ notes }: { notes: NoteData[] }) {
@@ -111,6 +112,11 @@ export default function NoteApprovalList({ notes }: { notes: NoteData[] }) {
                                     <div className="bg-cyan-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-cyan-500/20">
                                         {note.price} Süt
                                     </div>
+                                    {note.fileCount && note.fileCount > 1 && (
+                                        <span className="text-[10px] text-muted-foreground font-medium">
+                                            {note.fileCount} dosya
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 

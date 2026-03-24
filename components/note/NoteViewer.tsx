@@ -3,7 +3,7 @@
 import '@/lib/polyfills'; // Import polyfills first
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -23,9 +23,12 @@ interface NoteViewerProps {
     price?: number;
     fileExtension?: string;
     errorMessage?: string | null;
+    fileCount?: number;
+    fileExtensions?: string[];
 }
 
-export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking, price = 1, errorMessage, fileExtension }: NoteViewerProps) {
+export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, isUnlocking, price = 1, errorMessage, fileExtension, fileCount = 1, fileExtensions }: NoteViewerProps) {
+    const [fileIndex, setFileIndex] = useState(0);
     const [numPages, setNumPages] = useState<number>(0);
     const [scale, setScale] = useState<number>(1.0);
     const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +37,12 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
     const [retryKey, setRetryKey] = useState(0);
     const [blobObjectUrl, setBlobObjectUrl] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    const effectiveFileUrl = fileCount > 1
+        ? `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}fileIndex=${fileIndex}`
+        : fileUrl;
+    const effectiveFileExtension = (fileExtensions && fileExtensions[fileIndex]) ?? fileExtension ?? 'pdf';
 
     const handleRetry = useCallback(() => {
         setLoadError(null);
@@ -41,21 +50,21 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         setRetryKey(k => k + 1);
     }, []);
 
-    // Reset state when fileUrl changes or lock state changes
+    // Reset state when effectiveFileUrl or lock state changes
     useEffect(() => {
         setIsLoading(true);
         setLoadError(null);
-    }, [fileUrl, isLocked]);
+    }, [effectiveFileUrl, isLocked]);
 
     // Fetch file and create blob URL for in-viewer display (no external URL exposure)
     useEffect(() => {
-        const ext = fileExtension ? fileExtension.toLowerCase() : (fileUrl.split('.').pop()?.toLowerCase() || '');
-        const pdf = ext === 'pdf' || (!fileExtension && fileUrl.toLowerCase().endsWith('.pdf'));
-        const img = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || (!fileExtension && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl));
+        const ext = effectiveFileExtension ? effectiveFileExtension.toLowerCase() : (effectiveFileUrl.split('.').pop()?.toLowerCase() || '');
+        const pdf = ext === 'pdf' || effectiveFileUrl.toLowerCase().endsWith('.pdf');
+        const img = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || /\.(jpg|jpeg|png|gif|webp)$/i.test(effectiveFileUrl);
         if (!pdf && !img) return;
 
         let revoked = false;
-        fetch(fileUrl, { credentials: 'include' })
+        fetch(effectiveFileUrl, { credentials: 'include' })
             .then((res) => {
                 if (!res.ok) throw new Error('Dosya yüklenemedi');
                 return res.blob();
@@ -80,7 +89,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                 return null;
             });
         };
-    }, [fileUrl, fileExtension, isLocked]);
+    }, [effectiveFileUrl, effectiveFileExtension, isLocked]);
 
     // Handle Resize Logic
     useEffect(() => {
@@ -107,12 +116,20 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
         setLoadError("PDF yüklenirken bir sorun oluştu. Cihazınız bu formatı desteklemiyor olabilir veya bağlantı sorunu yaşıyorsunuz.");
     }
 
-    // Dosya uzantısı kontrolü
-    const getExtension = (url: string) => url.split('.').pop()?.toLowerCase() || '';
-    const ext = fileExtension ? fileExtension.toLowerCase() : getExtension(fileUrl);
+    const ext = effectiveFileExtension ? effectiveFileExtension.toLowerCase() : (effectiveFileUrl.split('.').pop()?.toLowerCase() || '');
+    const isPdf = ext === 'pdf' || effectiveFileUrl.toLowerCase().endsWith('.pdf');
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || /\.(jpg|jpeg|png|gif|webp)$/i.test(effectiveFileUrl);
 
-    const isPdf = ext === 'pdf' || (!fileExtension && fileUrl.toLowerCase().endsWith('.pdf'));
-    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) || (!fileExtension && /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl));
+    const canGoPrev = fileCount > 1 && fileIndex > 0;
+    const canGoNext = fileCount > 1 && fileIndex < fileCount - 1;
+    const goPrev = () => {
+        setFileIndex(i => Math.max(0, i - 1));
+        scrollAreaRef.current?.scrollTo({ top: 0 });
+    };
+    const goNext = () => {
+        setFileIndex(i => Math.min(fileCount - 1, i + 1));
+        scrollAreaRef.current?.scrollTo({ top: 0 });
+    };
 
     // Zoom Handlers - Kilitliyse devre dışı
     const zoomIn = () => !isLocked && setScale(prev => Math.min(prev + 0.2, 3.0));
@@ -234,20 +251,44 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                 </div>
             )}
 
-            {/* Toolbar - Floating Zoom Controls (shown for both locked and unlocked, but zoom disabled when locked) */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-6 bg-card/80 backdrop-blur-md px-8 py-4 rounded-full border border-primary/20 shadow-2xl transition-transform hover:scale-105 select-none ring-1 ring-black/5">
-                <button 
-                    onClick={zoomOut} 
+            {/* Toolbar - File navigation + Zoom Controls */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 bg-card/80 backdrop-blur-md px-6 py-3 rounded-full border border-primary/20 shadow-2xl transition-transform hover:scale-105 select-none ring-1 ring-black/5">
+                {fileCount > 1 && (
+                    <>
+                        <button
+                            onClick={goPrev}
+                            disabled={!canGoPrev}
+                            className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label="Önceki dosya"
+                        >
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <span className="text-sm font-bold text-muted-foreground min-w-[4rem] text-center">
+                            {fileIndex + 1} / {fileCount}
+                        </span>
+                        <button
+                            onClick={goNext}
+                            disabled={!canGoNext}
+                            className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label="Sonraki dosya"
+                        >
+                            <ChevronRight className="w-6 h-6" />
+                        </button>
+                        <div className="w-px h-6 bg-border" />
+                    </>
+                )}
+                <button
+                    onClick={zoomOut}
                     disabled={isLocked}
                     className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <ZoomOut className="w-6 h-6" />
                 </button>
-                <div className="w-px h-8 bg-border"></div>
+                <div className="w-px h-8 bg-border" />
                 <span className="text-base font-bold text-primary min-w-[3.5rem] text-center font-mono">{Math.round(scale * 100)}%</span>
-                <div className="w-px h-8 bg-border"></div>
-                <button 
-                    onClick={zoomIn} 
+                <div className="w-px h-8 bg-border" />
+                <button
+                    onClick={zoomIn}
                     disabled={isLocked}
                     className="p-2 hover:bg-primary/10 text-foreground hover:text-primary rounded-full transition-colors active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -256,7 +297,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
             </div>
 
             {/* Main Scrollable Area - Always show content (preview for locked, full for unlocked) */}
-            <div className="flex-1 w-full overflow-y-auto bg-muted/20 scroll-smooth">
+            <div ref={scrollAreaRef} className="flex-1 w-full overflow-y-auto bg-muted/20 scroll-smooth">
                 <div className="max-w-max mx-auto px-4 py-20 min-h-full flex flex-col items-center gap-8 relative">
                     {isLoading && (
                         <div className="absolute inset-0 flex items-center justify-center text-primary z-40 pointer-events-none">
@@ -271,7 +312,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                         {isPdf ? (
                             blobObjectUrl ? (
                             <Document
-                                key={retryKey}
+                                key={`${retryKey}-${fileIndex}`}
                                 file={blobObjectUrl}
                                 onLoadSuccess={onDocumentLoadSuccess}
                                 onLoadError={onDocumentLoadError}
@@ -305,6 +346,7 @@ export default function NoteViewer({ fileUrl, viewerUser, isLocked, onUnlock, is
                         ) : isImage ? (
                             blobObjectUrl ? (
                             <SecureImage
+                                key={`${retryKey}-${fileIndex}`}
                                 fileUrl={blobObjectUrl}
                                 scale={scale}
                                 drawWatermark={drawWatermark}

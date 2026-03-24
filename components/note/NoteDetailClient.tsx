@@ -30,6 +30,8 @@ type NoteWithDetails = Note & {
             displayName: string;
         };
     })[];
+    fileCount?: number;
+    fileExtensions?: string[];
 };
 
 import Link from "next/link";
@@ -43,11 +45,13 @@ interface NoteDetailClientProps {
         studentNumber: string;
     };
     isUnlocked: boolean;
-    currentUserId?: string; // New Prop
+    currentUserId?: string;
     fileExtension?: string;
+    fileCount?: number;
+    fileExtensions?: string[];
 }
 
-export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked, currentUserId, fileExtension }: NoteDetailClientProps) {
+export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isUnlocked: initialIsUnlocked, currentUserId, fileExtension, fileCount = 1, fileExtensions }: NoteDetailClientProps) {
     const [isWarningAccepted, setIsWarningAccepted] = useState(false);
 
     // Optimistic UI for Instant Unlock
@@ -217,6 +221,8 @@ export default function NoteDetailClient({ note, initialIsLiked, viewerUser, isU
                         price={note.price}
                         errorMessage={errorMessage}
                         fileExtension={fileExtension}
+                        fileCount={fileCount}
+                        fileExtensions={fileExtensions}
                     />
                 </div>
 

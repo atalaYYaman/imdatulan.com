@@ -130,9 +130,9 @@ model Note {
   university String
   faculty    String
   department String
-  fileUrl    String
-  price      Int    @default(1) // Notun Süt değeri (1-3)
-  status     String @default("PENDING") // PENDING, APPROVED, REJECTED, SUSPENDED
+  fileUrl    String  // Legacy: fallback when no NoteFile records (backward compat)
+  price      Int     @default(1) // Notun Süt değeri (1-3)
+  status     String  @default("PENDING") // PENDING, APPROVED, REJECTED, SUSPENDED
   rejectionReason String? // Red veya askıya alma sebebi
 
   // Metadata
@@ -142,12 +142,13 @@ model Note {
   description String? // User description
   isAI        Boolean @default(false) // İçerikte AI desteği var mı?
   viewCount   Int     @default(0)
-  pageCount   Int?    // PDF sayfa sayısı (sadece PDF'ler için)
-  fileExtension String? // pdf, png, jpg, etc. - for correct viewer selection
+  pageCount   Int?    // PDF sayfa sayısı (sadece PDF'ler için) - legacy, first PDF's pageCount
+  fileExtension String? // pdf, png, jpg - legacy, first file's extension
 
   uploaderId String
   uploader   User     @relation(fields: [uploaderId], references: [id])
   
+  files      NoteFile[]  // Multi-file support (ordered by sortOrder)
   comments   Comment[]
   likes      Like[]
   views      View[]
@@ -157,6 +158,20 @@ model Note {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   deletedAt  DateTime? // Soft Delete
+}
+
+model NoteFile {
+  id             String   @id @default(cuid())
+  noteId         String
+  note           Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  fileUrl        String   // Vercel Blob URL
+  fileName       String   // Original filename (for extension)
+  fileExtension  String   // pdf, jpg, jpeg, png
+  sortOrder      Int      @default(0) // Upload order
+  pageCount      Int?     // PDF page count only
+  createdAt      DateTime @default(now())
+
+  @@index([noteId])
 }
 
 model Report {

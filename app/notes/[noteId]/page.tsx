@@ -68,6 +68,8 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
 
         // SECURITY: fileUrl is never exposed from getNoteDetail. Use proxy as the only client-facing URL.
         const originalExtension = (note.fileExtension ?? 'pdf').toLowerCase();
+        const fileCount = note.fileCount ?? 1;
+        const fileExtensions = note.fileExtensions ?? [originalExtension];
 
         const secureNote = {
             ...note,
@@ -82,6 +84,8 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ not
                 isUnlocked={isUnlocked}
                 currentUserId={currentUserId}
                 fileExtension={originalExtension}
+                fileCount={fileCount}
+                fileExtensions={fileExtensions}
             />
         );
     } catch (error: any) {

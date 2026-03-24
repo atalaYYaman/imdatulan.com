@@ -5,29 +5,41 @@ import { prisma } from "@/lib/prisma";
 import { isNoteUnlocked } from "@/app/actions/noteActions";
 
 export async function GET(request: Request, props: { params: Promise<{ noteId: string }> }) {
-    const params = await props.params;
+    const { noteId } = await props.params;
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { noteId } = params;
-
     try {
         const user = await prisma.user.findUnique({ where: { email: session.user.email } });
         if (!user) return new NextResponse("User not found", { status: 404 });
 
+        const fileIndex = Math.max(0, parseInt(new URL(request.url).searchParams.get("fileIndex") || "0", 10) || 0);
+
         const note = await prisma.note.findUnique({
-            where: { id: noteId, deletedAt: null } // Ensure not deleted
+            where: { id: noteId, deletedAt: null },
+            select: {
+                fileUrl: true,
+                uploaderId: true,
+                files: { orderBy: { sortOrder: "asc" }, select: { fileUrl: true } }
+            }
         });
 
-        if (!note || !note.fileUrl) {
+        let fileUrl: string | null = null;
+        if (note?.files?.length) {
+            const idx = Math.min(fileIndex, note.files.length - 1);
+            fileUrl = note.files[idx]?.fileUrl ?? null;
+        } else if (note?.fileUrl) {
+            fileUrl = note.fileUrl;
+        }
+
+        if (!note || !fileUrl) {
             return new NextResponse("Note text not found", { status: 404 });
         }
 
         // --- ACCESS CONTROL ---
-        // 1. Owner can always access
         if (note.uploaderId === user.id) {
             // Allow
         }
@@ -44,8 +56,7 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         }
 
         // --- PROXY STREAMING ---
-        // Fetch from Blob Storage (Public but hidden URL)
-        const fileResponse = await fetch(note.fileUrl);
+        const fileResponse = await fetch(fileUrl);
         if (!fileResponse.ok) {
             return new NextResponse("File fetch error", { status: 502 });
         }

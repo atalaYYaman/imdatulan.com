@@ -40,6 +40,10 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
             return new NextResponse(limitCheck.message || "Too Many Requests", { status: 429 });
         }
 
+        // Parse fileIndex from query (default 0)
+        const { searchParams } = new URL(request.url);
+        const fileIndex = Math.max(0, parseInt(searchParams.get("fileIndex") || "0", 10) || 0);
+
         // 1. Fetch Note & Verify Existence (Zero Trust: Always verify)
         const note = await prisma.note.findUnique({
             where: { id: noteId, deletedAt: null },
@@ -48,12 +52,31 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
                 fileUrl: true,
                 uploaderId: true,
                 title: true,
-                pageCount: true, // For preview calculation
-                status: true, // Zero Trust: Check status
+                pageCount: true,
+                status: true,
+                files: {
+                    orderBy: { sortOrder: "asc" },
+                    select: { fileUrl: true, fileExtension: true, pageCount: true, fileName: true }
+                }
             }
         });
 
-        if (!note || !note.fileUrl) {
+        // Resolve which file to serve: NoteFile at fileIndex, or legacy note.fileUrl
+        let fileUrl: string;
+        let fileExtension: string;
+        let pageCount: number | null;
+
+        if (note?.files?.length) {
+            const idx = Math.min(fileIndex, note.files.length - 1);
+            const f = note.files[idx];
+            fileUrl = f.fileUrl;
+            fileExtension = f.fileExtension || "pdf";
+            pageCount = f.pageCount;
+        } else if (note?.fileUrl) {
+            fileUrl = note.fileUrl;
+            fileExtension = "pdf";
+            pageCount = note.pageCount;
+        } else {
             return new NextResponse("Note file not found", { status: 404 });
         }
 
@@ -137,20 +160,18 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         }
 
         // 4. Fetch File (Zero Trust: Validate fileUrl)
-        // Validate fileUrl format to prevent SSRF attacks
-        if (!note.fileUrl || typeof note.fileUrl !== 'string') {
+        if (!fileUrl || typeof fileUrl !== 'string') {
             return new NextResponse("Invalid file URL", { status: 500 });
         }
 
-        // Zero Trust: Ensure fileUrl is from trusted source (Vercel Blob)
         const trustedDomains = ['blob.vercel-storage.com', 'pub-'];
-        const isTrustedUrl = trustedDomains.some(domain => note.fileUrl.includes(domain));
+        const isTrustedUrl = trustedDomains.some(domain => fileUrl.includes(domain));
         if (!isTrustedUrl) {
-            console.error(`[DownloadProxy] Untrusted file URL: ${note.fileUrl}`);
+            console.error(`[DownloadProxy] Untrusted file URL: ${fileUrl}`);
             return new NextResponse("Invalid file source", { status: 403 });
         }
 
-        const fileResponse = await fetch(note.fileUrl);
+        const fileResponse = await fetch(fileUrl);
         if (!fileResponse.ok) {
             console.error(`[DownloadProxy] Upstream fetch failed: ${fileResponse.status}`);
             return new NextResponse("File fetch error", { status: 502 });
@@ -158,7 +179,7 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
 
         const fileArrayBuffer = await fileResponse.arrayBuffer();
         const contentType = fileResponse.headers.get("content-type") || "application/pdf";
-        const isPdf = contentType.includes("pdf") || note.fileUrl.toLowerCase().endsWith(".pdf");
+        const isPdf = contentType.includes("pdf") || fileExtension === "pdf" || fileUrl.toLowerCase().endsWith(".pdf");
 
         // 5. Locked & non-PDF: return secure placeholder instead of original bytes
         if (!hasAccess && !isPdf) {
@@ -193,7 +214,7 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         if (isPdf && !hasAccess) {
             try {
                 let pdfDoc = await PDFDocument.load(fileArrayBuffer);
-                const totalPageCount = note.pageCount || pdfDoc.getPageCount();
+                const totalPageCount = pageCount ?? pdfDoc.getPageCount();
                 
                 // Dynamic preview logic (Zero Trust: Limit preview to prevent abuse)
                 let PREVIEW_PAGE_COUNT: number;
@@ -242,8 +263,10 @@ export async function GET(request: Request, props: { params: Promise<{ noteId: s
         headers.set("Expires", "0");
         headers.set("Content-Type", contentType);
 
-        // Force inline display but with correct filename
-        headers.set("Content-Disposition", `inline; filename="${note.title.replace(/[^a-z0-9]/gi, '_').substring(0, 50)}.pdf"`);
+        // Force inline display but with correct filename and extension
+        const safeTitle = note!.title.replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+        const ext = fileExtension || (isPdf ? "pdf" : "bin");
+        headers.set("Content-Disposition", `inline; filename="${safeTitle}.${ext}"`);
         
         // Add preview indicator header
         if (!hasAccess && isPdf) {

@@ -44,6 +44,10 @@ export async function getNoteDetail(noteId: string) {
                         department: true,
                     }
                 },
+                files: {
+                    orderBy: { sortOrder: 'asc' },
+                    select: { fileExtension: true }
+                },
                 _count: {
                     select: {
                         likes: true,
@@ -99,11 +103,18 @@ export async function getNoteDetail(noteId: string) {
         effectiveFileExtension = effectiveFileExtension ?? 'pdf';
 
         // UI'ye gerçek isim gönderilmez; fileUrl ASLA client'a gönderilmez
-        const { fileUrl: _omitUrl, ...noteSafe } = note;
+        const { fileUrl: _omitUrl, files: rawFiles, ...noteSafe } = note;
+        const fileExtensions = rawFiles?.length
+            ? rawFiles.map((f: { fileExtension: string }) => f.fileExtension || 'pdf')
+            : [effectiveFileExtension];
+        const fileCount = fileExtensions.length;
         const uploaderDisplayName = getAnonymousNameByDepartment(note.uploader.department);
         return {
             ...noteSafe,
             fileExtension: effectiveFileExtension,
+            fileExtensions,
+            fileCount,
+            _count: note._count,
             uploader: {
                 id: note.uploader.id,
                 department: note.uploader.department,

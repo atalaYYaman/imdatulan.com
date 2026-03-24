@@ -208,10 +208,17 @@ export async function getPendingNotes() {
     try {
         const notes = await prisma.note.findMany({
             where: { status: "PENDING" },
-            include: { uploader: true },
+            include: {
+                uploader: true,
+                _count: { select: { files: true } }
+            },
             orderBy: { createdAt: 'desc' }
         });
-        return { success: true, data: notes };
+        const data = notes.map(({ _count, ...n }) => ({
+            ...n,
+            fileCount: _count.files > 0 ? _count.files : 1
+        }));
+        return { success: true, data };
     } catch (error) {
         return { success: false, message: "Error fetching notes" };
     }
