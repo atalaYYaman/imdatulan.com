@@ -4,6 +4,8 @@ import { getChatMessages } from "@/app/actions/chatActions";
 import { prisma } from "@/lib/prisma";
 import ChatBox from "@/components/Chat/ChatBox";
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { CHAT_ENABLED } from "@/lib/chatEnabled";
 
 export const metadata: Metadata = {
     title: "Sohbet | Otlak",
@@ -11,6 +13,10 @@ export const metadata: Metadata = {
 };
 
 export default async function ChatPage() {
+    if (!CHAT_ENABLED) {
+        redirect("/");
+    }
+
     const session = await getServerSession(authOptions);
     const messages = await getChatMessages();
 

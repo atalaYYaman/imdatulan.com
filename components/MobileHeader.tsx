@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
+import { CHAT_ENABLED } from '@/lib/chatEnabled';
 
 export default function MobileHeader() {
     const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +37,7 @@ export default function MobileHeader() {
         : [
             { name: 'Ana Sayfa', href: '/', icon: Home },
             { name: 'Notlar', href: '/notes', icon: FolderOpen },
-            { name: 'Sohbet', href: '/chat', icon: MessageSquare },
+            ...(CHAT_ENABLED ? [{ name: 'Sohbet', href: '/chat', icon: MessageSquare }] : []),
             ...(role === 'ADMIN' ? [{ name: 'Admin Paneli', href: '/admin', icon: Landmark }] : []),
             { name: 'Mağaza', href: '/store', icon: ShoppingBag },
             { name: 'Geliştirme', href: '/updates', icon: ScrollText },

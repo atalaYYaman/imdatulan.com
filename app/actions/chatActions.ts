@@ -12,6 +12,7 @@ import { checkRateLimit } from "@/lib/rate-limit"
 import { cleanText } from "@/lib/text-filter"
 import { ChatMessageSchema, BulkDeleteSchema } from "@/lib/schemas"
 import { pusherServer } from "@/lib/pusher-server"
+import { CHAT_ENABLED } from "@/lib/chatEnabled"
 
 // --- Types ---
 export type ChatMessageDto = {
@@ -26,6 +27,9 @@ export type ChatMessageDto = {
 }
 
 export async function sendMessage(content: string, parentId?: string) {
+    if (!CHAT_ENABLED) {
+        return { success: false, message: "Sohbet şu anda kapalı." }
+    }
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
         return { success: false, message: "Mesaj göndermek için giriş yapmalısınız." }
@@ -146,6 +150,9 @@ export async function sendMessage(content: string, parentId?: string) {
 }
 
 export async function deleteMessage(messageId: string) {
+    if (!CHAT_ENABLED) {
+        return { success: false, message: "Sohbet şu anda kapalı." }
+    }
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return { success: false, message: "Yetkisiz işlem." };
 
@@ -184,6 +191,9 @@ export async function deleteMessage(messageId: string) {
 
 
 export async function bulkDeleteMessages(count: number) {
+    if (!CHAT_ENABLED) {
+        return { success: false, message: "Sohbet şu anda kapalı." }
+    }
     const session = await getServerSession(authOptions);
 
     // 1. Authorization Guard (Strict)
@@ -236,6 +246,9 @@ export async function bulkDeleteMessages(count: number) {
 }
 
 export async function getChatMessages() {
+    if (!CHAT_ENABLED) {
+        return []
+    }
     try {
         const session = await getServerSession(authOptions);
         const isLoggedIn = !!session?.user?.id;

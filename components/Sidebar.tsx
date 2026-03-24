@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Home, User, Upload, Landmark, FolderOpen, ShoppingBag, MessageSquare, ScrollText, Send, Briefcase, Ticket } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { CHAT_ENABLED } from '@/lib/chatEnabled';
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -25,7 +26,7 @@ export default function Sidebar() {
             { name: 'Notlar', href: '/notes', icon: FolderOpen },
             ...(session ? [{ name: 'Profilim', href: '/profile', icon: User }] : []),
             ...((role === 'ADMIN') ? [{ name: 'Admin Paneli', href: '/admin', icon: Landmark }] : []),
-            { name: 'Sohbet', href: '/chat', icon: MessageSquare },
+            ...(CHAT_ENABLED ? [{ name: 'Sohbet', href: '/chat', icon: MessageSquare }] : []),
             { name: 'Store', href: '/store', icon: ShoppingBag },
             { name: 'Geliştirme', href: '/updates', icon: ScrollText },
             { name: 'Bize Yazın', href: '/feedback', icon: Send },

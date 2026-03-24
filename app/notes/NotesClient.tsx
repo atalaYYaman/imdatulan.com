@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, Filter, Layers, LayoutGrid, Calendar, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Search, Filter, Layers, LayoutGrid, Calendar, ChevronDown, ChevronUp, Loader2, Sparkles, Milk, Tag } from "lucide-react";
 import { NOTE_FILTER_YEARS } from "@/lib/academicMaster";
+import { NOTE_CONTENT_TYPES, NOTE_PRICE_OPTIONS } from "@/lib/noteMetadata";
 import { getUniversities, getFaculties, getAllDepartmentsForFilter } from "@/app/actions/academic";
 import { getNotes } from "@/app/actions/getNotes";
 import { NoteCard } from "@/components/ui/NoteCard";
@@ -28,6 +29,9 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
         faculty: "",
         department: "",
         year: "",
+        noteType: "",
+        isAI: "" as "" | "yes" | "no",
+        price: "",
     });
 
     const skipNextFetch = useRef(true);
@@ -66,7 +70,10 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
             !filters.university &&
             !filters.faculty &&
             !filters.department &&
-            !filters.year;
+            !filters.year &&
+            !filters.noteType &&
+            !filters.isAI &&
+            !filters.price;
 
         if (skipNextFetch.current) {
             skipNextFetch.current = false;
@@ -77,12 +84,24 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
         const t = setTimeout(async () => {
             setListLoading(true);
             try {
+                const priceNum = filters.price ? parseInt(filters.price, 10) : NaN;
                 const list = await getNotes({
                     searchQuery: searchQuery.trim() || undefined,
                     universityId: filters.university || undefined,
                     facultyId: filters.faculty || undefined,
                     departmentId: filters.department || undefined,
                     year: filters.year || undefined,
+                    noteType: filters.noteType || undefined,
+                    isAI:
+                        filters.isAI === "yes"
+                            ? true
+                            : filters.isAI === "no"
+                              ? false
+                              : undefined,
+                    price:
+                        Number.isFinite(priceNum) && priceNum >= 1 && priceNum <= 5
+                            ? priceNum
+                            : undefined,
                 });
                 if (!cancelled) {
                     setNotes(list);
@@ -100,7 +119,16 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
             cancelled = true;
             clearTimeout(t);
         };
-    }, [searchQuery, filters.university, filters.faculty, filters.department, filters.year]);
+    }, [
+        searchQuery,
+        filters.university,
+        filters.faculty,
+        filters.department,
+        filters.year,
+        filters.noteType,
+        filters.isAI,
+        filters.price,
+    ]);
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -139,9 +167,26 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
         );
     }
 
-    const hasActiveFilters = Boolean(filters.university || filters.faculty || filters.department || filters.year || searchQuery.trim());
+    const hasActiveFilters = Boolean(
+        filters.university ||
+            filters.faculty ||
+            filters.department ||
+            filters.year ||
+            filters.noteType ||
+            filters.isAI ||
+            filters.price ||
+            searchQuery.trim()
+    );
     const clearFilters = () => {
-        setFilters({ university: '', faculty: '', department: '', year: '' });
+        setFilters({
+            university: "",
+            faculty: "",
+            department: "",
+            year: "",
+            noteType: "",
+            isAI: "",
+            price: "",
+        });
         setSearchQuery('');
         setIsFiltersOpen(true);
         setPage(1);
@@ -222,7 +267,7 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                     </div>
                 </div>
 
-                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 transition-all duration-300 ease-in-out ${isFiltersOpen ? 'opacity-100 max-h-[600px]' : 'opacity-0 max-h-0 overflow-hidden md:opacity-100 md:max-h-none'}`}>
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 transition-all duration-300 ease-in-out ${isFiltersOpen ? "opacity-100 max-h-[2000px] md:max-h-none" : "opacity-0 max-h-0 overflow-hidden md:opacity-100 md:max-h-none"}`}>
                     <div className="space-y-1.5">
                         <label htmlFor="filter-university" className="block text-xs font-medium text-muted-foreground">
                             Üniversite
@@ -309,6 +354,74 @@ export default function NotesClient({ initialNotes }: { initialNotes: any[] }) {
                                 <option value="">Tümü</option>
                                 {NOTE_FILTER_YEARS.map((y) => (
                                     <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label htmlFor="filter-note-type" className="block text-xs font-medium text-muted-foreground">
+                            İçerik türü
+                        </label>
+                        <div className="relative">
+                            <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
+                            <select
+                                id="filter-note-type"
+                                name="noteType"
+                                value={filters.noteType}
+                                onChange={handleFilterChange}
+                                className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-accent/50 transition-colors shadow-sm outline-none"
+                                aria-label="İçerik türü"
+                            >
+                                <option value="">Tümü</option>
+                                {NOTE_CONTENT_TYPES.map((t) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label htmlFor="filter-is-ai" className="block text-xs font-medium text-muted-foreground">
+                            AI desteği
+                        </label>
+                        <div className="relative">
+                            <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
+                            <select
+                                id="filter-is-ai"
+                                name="isAI"
+                                value={filters.isAI}
+                                onChange={handleFilterChange}
+                                className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-accent/50 transition-colors shadow-sm outline-none"
+                                aria-label="Yapay zeka filtresi"
+                            >
+                                <option value="">Tümü</option>
+                                <option value="yes">Evet (AI var)</option>
+                                <option value="no">Hayır (orijinal)</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label htmlFor="filter-price" className="block text-xs font-medium text-muted-foreground">
+                            Süt (açılış)
+                        </label>
+                        <div className="relative">
+                            <Milk className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />
+                            <select
+                                id="filter-price"
+                                name="price"
+                                value={filters.price}
+                                onChange={handleFilterChange}
+                                className="w-full bg-card border border-border rounded-xl py-2.5 pl-9 pr-8 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer hover:bg-accent/50 transition-colors shadow-sm outline-none"
+                                aria-label="Süt fiyatı"
+                            >
+                                <option value="">Tümü</option>
+                                {NOTE_PRICE_OPTIONS.map((n) => (
+                                    <option key={n} value={String(n)}>{n} süt</option>
                                 ))}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden />

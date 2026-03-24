@@ -1,10 +1,15 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { CHAT_ENABLED } from "@/lib/chatEnabled";
 
 export default withAuth(
     function middleware(req) {
         const token = req.nextauth.token;
         const path = req.nextUrl.pathname;
+
+        if (!CHAT_ENABLED && path.startsWith("/chat")) {
+            return NextResponse.redirect(new URL("/", req.url));
+        }
 
         // Admin Route Protection
         if (path.startsWith("/admin")) {

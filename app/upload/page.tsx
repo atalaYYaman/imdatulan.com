@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { upload } from '@vercel/blob/client';
 import { getUniversities, getFaculties, getDepartments, getCurrentUserAcademic } from "@/app/actions/academic";
+import { NOTE_CONTENT_TYPES, NOTE_PRICE_OPTIONS } from "@/lib/noteMetadata";
 
 const MAX_SIZE = 25 * 1024 * 1024; // 25MB (Vercel Pro limit)
 const MAX_FILES = 20;
@@ -545,7 +546,7 @@ export default function UploadPage() {
                         <div className="space-y-3">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">İçerik Türü</label>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {['Ders Notu', 'Otlak Sorular', 'Ödev', 'Slayt'].map(type => (
+                                {NOTE_CONTENT_TYPES.map((type) => (
                                     <button
                                         key={type}
                                         type="button"
@@ -563,7 +564,7 @@ export default function UploadPage() {
                         <div className="space-y-3">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Satış Fiyatı (Süt/Kredi)</label>
                             <div className="flex flex-wrap gap-2">
-                                {[1, 2, 3, 4, 5].map(n => (
+                                {NOTE_PRICE_OPTIONS.map((n) => (
                                     <button
                                         key={n}
                                         type="button"
