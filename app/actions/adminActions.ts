@@ -18,6 +18,211 @@ async function isAdmin() {
     return true;
 }
 
+function buildDisplayName(firstName?: string | null, lastName?: string | null) {
+    const fullName = `${firstName ?? ''} ${lastName ?? ''}`.trim();
+    return fullName || "Bilinmiyor";
+}
+
+export type PurchaseLogsAdminFilters = {
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+    minCredit?: number;
+    maxCredit?: number;
+    page?: number;
+    pageSize?: number;
+}
+
+export async function getPurchaseLogsAdmin(filters: PurchaseLogsAdminFilters = {}) {
+    if (!await isAdmin()) return { success: false, message: "Unauthorized" };
+
+    try {
+        const page = Math.max(1, Number(filters.page || 1));
+        const pageSizeRaw = Number(filters.pageSize || 20);
+        const pageSize = Math.min(Math.max(pageSizeRaw, 5), 100);
+
+        const search = (filters.search || "").trim().toLocaleLowerCase('tr-TR');
+        const minCredit = typeof filters.minCredit === "number" && Number.isFinite(filters.minCredit)
+            ? Math.max(0, Math.floor(filters.minCredit))
+            : undefined;
+        const maxCredit = typeof filters.maxCredit === "number" && Number.isFinite(filters.maxCredit)
+            ? Math.max(0, Math.floor(filters.maxCredit))
+            : undefined;
+
+        const startDate = filters.startDate ? new Date(filters.startDate) : undefined;
+        const endDate = filters.endDate ? new Date(filters.endDate) : undefined;
+
+        if (startDate && Number.isNaN(startDate.getTime())) {
+            return { success: false, message: "Geçersiz başlangıç tarihi" };
+        }
+        if (endDate && Number.isNaN(endDate.getTime())) {
+            return { success: false, message: "Geçersiz bitiş tarihi" };
+        }
+        if (startDate && endDate && startDate > endDate) {
+            return { success: false, message: "Başlangıç tarihi bitişten büyük olamaz" };
+        }
+
+        const amountWhere: { gte?: number; lte?: number } = {};
+        if (typeof minCredit === "number") amountWhere.lte = -minCredit;
+        if (typeof maxCredit === "number") amountWhere.gte = -maxCredit;
+
+        const buyerTransactions = await prisma.transaction.findMany({
+            where: {
+                type: "NOTE_UNLOCK",
+                ...(startDate || endDate
+                    ? {
+                        createdAt: {
+                            ...(startDate ? { gte: startDate } : {}),
+                            ...(endDate ? { lte: endDate } : {}),
+                        }
+                    }
+                    : {}),
+                ...(Object.keys(amountWhere).length > 0 ? { amount: amountWhere } : {})
+            },
+            select: {
+                id: true,
+                userId: true,
+                amount: true,
+                balanceAfter: true,
+                referenceId: true,
+                createdAt: true,
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true
+                    }
+                }
+            },
+            orderBy: { createdAt: "desc" }
+        });
+
+        const noteIds = Array.from(
+            new Set(
+                buyerTransactions
+                    .map((tx) => tx.referenceId)
+                    .filter((id): id is string => !!id)
+            )
+        );
+
+        const notes = noteIds.length > 0
+            ? await prisma.note.findMany({
+                where: { id: { in: noteIds } },
+                select: {
+                    id: true,
+                    title: true,
+                    uploaderId: true,
+                    uploader: {
+                        select: {
+                            id: true,
+                            email: true,
+                            firstName: true,
+                            lastName: true
+                        }
+                    }
+                }
+            })
+            : [];
+
+        const noteById = new Map(notes.map((note) => [note.id, note]));
+        const sellerTransactions = noteIds.length > 0
+            ? await prisma.transaction.findMany({
+                where: {
+                    type: "UPLOAD_REWARD",
+                    referenceId: { in: noteIds }
+                },
+                select: {
+                    userId: true,
+                    referenceId: true,
+                    amount: true,
+                    balanceAfter: true,
+                    createdAt: true
+                }
+            })
+            : [];
+
+        const rows = buyerTransactions.map((tx) => {
+            const note = tx.referenceId ? noteById.get(tx.referenceId) : null;
+            const buyerName = buildDisplayName(tx.user.firstName, tx.user.lastName);
+            const sellerName = note?.uploader
+                ? buildDisplayName(note.uploader.firstName, note.uploader.lastName)
+                : "Bilinmiyor";
+
+            const candidateSellerTx = note
+                ? sellerTransactions
+                    .filter((sellerTx) => (
+                        sellerTx.referenceId === note.id &&
+                        sellerTx.userId === note.uploaderId &&
+                        sellerTx.amount === Math.abs(tx.amount)
+                    ))
+                    .sort((a, b) => (
+                        Math.abs(new Date(a.createdAt).getTime() - new Date(tx.createdAt).getTime()) -
+                        Math.abs(new Date(b.createdAt).getTime() - new Date(tx.createdAt).getTime())
+                    ))[0]
+                : undefined;
+
+            return {
+                id: tx.id,
+                purchasedAt: tx.createdAt,
+                noteId: note?.id ?? tx.referenceId ?? null,
+                noteTitle: note?.title ?? "Silinmiş/Eski Not",
+                creditAmount: Math.abs(tx.amount),
+                buyer: {
+                    id: tx.user.id,
+                    email: tx.user.email,
+                    name: buyerName,
+                    balanceAfter: tx.balanceAfter,
+                },
+                seller: {
+                    id: note?.uploader.id ?? null,
+                    email: note?.uploader.email ?? null,
+                    name: sellerName,
+                    balanceAfter: candidateSellerTx?.balanceAfter ?? null,
+                }
+            };
+        });
+
+        const filteredRows = search
+            ? rows.filter((row) => {
+                const haystack = [
+                    row.noteTitle,
+                    row.buyer.name,
+                    row.buyer.email,
+                    row.seller.name,
+                    row.seller.email ?? "",
+                ]
+                    .join(" ")
+                    .toLocaleLowerCase('tr-TR');
+
+                return haystack.includes(search);
+            })
+            : rows;
+
+        const total = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const safePage = Math.min(page, totalPages);
+        const startIndex = (safePage - 1) * pageSize;
+        const items = filteredRows.slice(startIndex, startIndex + pageSize);
+
+        return {
+            success: true,
+            data: {
+                items,
+                pagination: {
+                    page: safePage,
+                    pageSize,
+                    total,
+                    totalPages,
+                }
+            }
+        };
+    } catch (error) {
+        console.error("Error fetching admin purchase logs:", error);
+        return { success: false, message: "Satın alma logları alınırken hata oluştu" };
+    }
+}
+
 // --- Users ---
 
 export async function getPendingUsers() {
