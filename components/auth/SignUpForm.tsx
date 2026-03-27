@@ -133,11 +133,6 @@ export default function SignUpForm() {
                 return;
             }
 
-            if (formData.studentNumber.length !== 11) {
-                setError('Öğrenci numarası 11 haneli olmalıdır.');
-                return;
-            }
-
             // Check Student Number Availability
             setIsLoading(true);
             const check = await checkStudentNumber(formData.studentNumber);
@@ -314,7 +309,7 @@ export default function SignUpForm() {
 
             <div className="grid grid-cols-2 gap-4">
                 <CustomSelect label="Sınıf" options={CLASSES} value={formData.studentClass} onChange={(e) => handleChange('studentClass', e.target.value)} placeholder="Sınıf" />
-                <CustomInput label="Öğrenci Numarası" value={formData.studentNumber} onChange={(e) => handleChange('studentNumber', e.target.value)} placeholder="Öğrenci No" maxLength={11} />
+                <CustomInput label="Öğrenci Numarası" value={formData.studentNumber} onChange={(e) => handleChange('studentNumber', e.target.value)} placeholder="Öğrenci No" />
             </div>
 
             <div className="flex justify-end mt-6">

@@ -1,15 +1,14 @@
 import { z } from "zod";
 
 // --- Validation Constants ---
-const STUDENT_NUMBER_REGEX = /^[0-9]{11}$/;
 // Allowed Mime Types for Uploads
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // --- Atomic Schemas ---
 
-export const StudentNumberSchema = z.string().regex(STUDENT_NUMBER_REGEX, {
-    message: "Öğrenci numarası 11 haneli sayı olmalıdır."
+export const StudentNumberSchema = z.string().trim().min(1, {
+    message: "Öğrenci numarası zorunludur."
 });
 
 export const PriceSchema = z.number()
