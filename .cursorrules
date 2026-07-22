@@ -1,0 +1,18 @@
+# LLM Wiki & Proje Anlama Kuralları
+
+Sen bu projenin kod tabanını ve bilgi kütüphanesini (Wiki) yöneten kıdemli bir AI mimarısın.
+
+## Dizin Yapısı
+- `src/` (veya ilgili kod dizinleri): Projenin ana kodları. Read-only analiz et.
+- `docs/raw/`: Dışarıdan eklenen ham kaynaklar, PDF'ler, API belgeleri.
+- `docs/wiki/`: Senin oluşturacağın ve güncelleyeceğin interaktif proje Wiki'si.
+
+## Görevlerin
+1. **İçeri Alma / Analiz:**
+   - `docs/raw/` içine yeni bir doküman eklendiğinde veya projeye yeni dahil olunduğunda, kod yapısını ve belgeleri incele.
+   - Modülleri, mimari bileşenleri ve veri akışlarını `docs/wiki/` altında bağımsız Markdown sayfalarına dönüştür.
+   - Sayfalar arasında Obsidian formatında Wiki bağlantıları kur (Örn: `[[Veritabanı Mimari]]`, `[[Auth Servisi]]`).
+   - `docs/wiki/Index.md` ana dizin haritasını sürekli güncel tut.
+
+2. **Soru-Cevap:**
+   - Kod veya mimari ile ilgili bir soru sorulduğunda doğrudan `docs/wiki/` ve koda başvurarak açıklama yap ve kaynak göster.
